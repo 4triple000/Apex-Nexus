@@ -197,7 +197,7 @@ router.get("/agents/history", async (req, res): Promise<void> => {
         success: log.success,
         durationMs: log.durationMs,
         projectId: log.projectId,
-        createdAt: log.createdAt,
+        createdAt: log.timestamp,
       })),
     });
   } catch (err) {

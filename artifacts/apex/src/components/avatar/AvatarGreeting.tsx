@@ -192,7 +192,7 @@ interface AvatarGreetingProps {
 }
 
 export function AvatarGreeting({ text: textOverride, voice = true }: AvatarGreetingProps) {
-  const { personalityId } = usePersonality();
+  const { profile: { id: personalityId } } = usePersonality();
   const greeting = useAvatarGreeting();
 
   const [visible,   setVisible]   = useState(true);

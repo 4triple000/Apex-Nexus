@@ -76,6 +76,7 @@ interface AgentStep {
   role:   string;
   icon:   string;
   color:  string;
+  glow:   string;
   detail: string;
   status: "idle" | "running" | "done" | "error";
   log:    string;
@@ -187,6 +188,11 @@ function generateSpec(prompt: string, mode: GameMode): GameSpec {
 }
 
 // ── Code templates ────────────────────────────────────────────────────────────
+function weaponTypeName(weapon: string | undefined): string {
+  const name = weapon?.replace(/_/g, "");
+  return name ? name.charAt(0).toUpperCase() + name.slice(1) : "Rifle";
+}
+
 function generateFiles(spec: GameSpec, prompt: string): GeneratedFile[] {
   const theme  = spec.theme.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   const hasMed = spec.player_count >= 32;
@@ -316,7 +322,7 @@ public class WeaponSystem : MonoBehaviour
     [Header("Weapon Config")]
     [SerializeField] private WeaponData[] weapons = new WeaponData[]
     {
-        new WeaponData { type=WeaponType.${spec.weapons[0]?.replace(/_/g, "")?.charAt(0)?.toUpperCase() + spec.weapons[0]?.replace(/_/g, "")?.slice(1) ?? "Rifle"}, damage=${spec.ttk === "fast" ? "35f" : "25f"}, fireRate=${spec.ttk === "fast" ? "0.08f" : "0.12f"}, magazineSize=30, reloadTime=2.2f, bulletSpread=0.02f, range=200f, isAutomatic=true },
+        new WeaponData { type=WeaponType.${weaponTypeName(spec.weapons[0])}, damage=${spec.ttk === "fast" ? "35f" : "25f"}, fireRate=${spec.ttk === "fast" ? "0.08f" : "0.12f"}, magazineSize=30, reloadTime=2.2f, bulletSpread=0.02f, range=200f, isAutomatic=true },
     };
 
     [Header("References")]

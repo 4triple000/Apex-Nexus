@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageBubble, MessageSkeleton, HiveBubble, PROVIDER_CONFIG } from "@/components/chat/message-bubble";
 import { ApexLogo, ApexLogoToggle } from "@/components/ui/ApexLogo";
-import { FloatingVoiceButton } from "@/components/voice/FloatingVoiceButton";
 import { useSendChat, useCastVote } from "@workspace/api-client-react";
 import { useSession } from "@/hooks/use-session";
 import { useAvatar } from "@/contexts/AvatarContext";
@@ -724,7 +723,7 @@ export default function Home() {
               inset: 0,
               background: `radial-gradient(ellipse at center, ${
                 avatar.emotion === "happy" ? "rgba(245,158,11,0.08)"
-                : avatar.emotion === "intense" ? "rgba(239,68,68,0.08)"
+                : avatar.emotion === "serious" ? "rgba(239,68,68,0.08)"
                 : avatar.emotion === "concerned" ? "rgba(249,115,22,0.08)"
                 : "rgba(108,92,231,0.08)"
               } 0%, transparent 70%)`,
@@ -798,7 +797,7 @@ export default function Home() {
               borderRadius: 1,
               background: `linear-gradient(90deg, transparent, ${
                 avatar.emotion === "happy" ? "#F59E0B"
-                : avatar.emotion === "intense" ? "#EF4444"
+                : avatar.emotion === "serious" ? "#EF4444"
                 : avatar.emotion === "concerned" ? "#F97316"
                 : avatar.emotion === "thinking" ? "#4834D4"
                 : "#6C5CE7"
@@ -1125,16 +1124,6 @@ export default function Home() {
         />
       </div>
     </div>
-
-    {/* ── Floating Voice Companion ────────────────────────────────────── */}
-    <FloatingVoiceButton
-      initialMode="chat"
-      onIntentDetected={(intent, text) => {
-        if (intent.intent === "general_conversation" || intent.intent === "ai_assistance") {
-          handleSend(text);
-        }
-      }}
-    />
     </>
   );
 }

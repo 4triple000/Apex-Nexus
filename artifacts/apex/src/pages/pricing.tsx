@@ -106,7 +106,7 @@ const PLANS: PlanDef[] = [
   },
 ];
 
-const SPRING = { type: "spring", stiffness: 340, damping: 28 };
+const SPRING = { type: "spring", stiffness: 340, damping: 28 } as const;
 
 // ── Plan card ─────────────────────────────────────────────────────────────────
 function PlanCard({

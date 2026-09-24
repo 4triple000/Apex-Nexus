@@ -103,7 +103,6 @@ async function executeSandbox(code: string): Promise<ExecResult> {
     const wrapped = `(async () => {\n${code}\n})()`;
     const script  = new vm.Script(wrapped, {
       filename: "apex-sandbox.js",
-      timeout:  EXEC_TIMEOUT_MS,
     });
 
     const result = script.runInContext(sandbox, { timeout: EXEC_TIMEOUT_MS });

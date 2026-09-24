@@ -205,7 +205,7 @@ async function handlePaymentSucceeded(
 
   await recordEvent(
     { id: base.eventId, type: base.eventType } as Stripe.Event,
-    customerId, inv.subscription as string ?? null, user?.id ?? null,
+    customerId, invoiceSubscriptionId(inv), user?.id ?? null,
     "processed", undefined, undefined, undefined,
     (inv.amount_paid as number) ?? null, inv.currency
   );
@@ -230,7 +230,7 @@ async function handlePaymentFailed(
 
   await recordEvent(
     { id: base.eventId, type: base.eventType } as Stripe.Event,
-    customerId, inv.subscription as string ?? null, user?.id ?? null,
+    customerId, invoiceSubscriptionId(inv), user?.id ?? null,
     "processed"
   );
 
@@ -238,6 +238,12 @@ async function handlePaymentFailed(
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Since API version 2025-03-31.basil the subscription lives under invoice.parent
+function invoiceSubscriptionId(inv: Stripe.Invoice): string | null {
+  const sub = inv.parent?.subscription_details?.subscription;
+  return typeof sub === "string" ? sub : sub?.id ?? null;
+}
 
 async function findUserByCustomerId(customerId: string) {
   const [user] = await db

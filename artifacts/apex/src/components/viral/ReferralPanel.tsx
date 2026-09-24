@@ -9,7 +9,7 @@ import type { WaitlistEntry } from "@/utils/referralGenerator";
 import { getPercentileAhead, buildShareText, addReferral, getTotalWaitlist } from "@/utils/referralGenerator";
 import { formatCount } from "@/utils/fakeCounter";
 
-const IOS = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+const IOS = [0.25, 0.46, 0.45, 0.94] as const;
 
 interface ReferralPanelProps {
   entry:     WaitlistEntry;

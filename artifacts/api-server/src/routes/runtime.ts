@@ -89,7 +89,6 @@ async function runJavaScript(
     const wrapped = `(async () => {\n${code}\n})()`;
     const script  = new vm.Script(wrapped, {
       filename: "apex-runtime.js",
-      timeout:  JS_TIMEOUT_MS,
     });
 
     emit("info", "▶ Running JavaScript…");

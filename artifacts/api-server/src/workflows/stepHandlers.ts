@@ -895,8 +895,8 @@ registerHandler("memory.analyze", async (step, context): Promise<StepHandlerResu
       .orderBy(desc(devosLogsTable.createdAt))
       .limit(50);
 
-    const successCount = recentLogs.filter((l) => l.success).length;
-    const errorCount = recentLogs.filter((l) => !l.success).length;
+    const successCount = recentLogs.filter((l) => l.exitCode === 0).length;
+    const errorCount = recentLogs.filter((l) => l.exitCode !== 0).length;
     const avgDuration = recentLogs.length > 0
       ? recentLogs.reduce((sum, l) => sum + (l.durationMs ?? 0), 0) / recentLogs.length
       : 0;

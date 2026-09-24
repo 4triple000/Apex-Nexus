@@ -11,7 +11,6 @@ import {
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { BuilderOnboarding, useBuilderOnboarding } from "@/components/builder/BuilderOnboarding";
 import { ApexLogo } from "@/components/ui/ApexLogo";
-import { FloatingVoiceButton } from "@/components/voice/FloatingVoiceButton";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1320,27 +1319,6 @@ function ApexBuilderMain() {
     addLine({ type: "system", text: "✨ AI generated code" });
   }, [addLine]);
 
-  // ── Voice: generate code from spoken prompt ─────────────────────────────────
-  const voiceGenerateCode = useCallback(async (prompt: string) => {
-    if (!prompt.trim()) return;
-    addLine({ type: "system", text: `🎤 Voice: "${prompt}"` });
-    try {
-      const res  = await apiFetch("/api/devos/generate", {
-        method: "POST",
-        body:   JSON.stringify({ prompt: prompt.trim() }),
-      });
-      const data = await res.json();
-      if (data.code) {
-        setCode(data.code);
-        setDirty(true);
-        setViewMode("editor");
-        addLine({ type: "system", text: "✨ Voice generated code" });
-      }
-    } catch {
-      addLine({ type: "error", text: "Voice generation failed" });
-    }
-  }, [addLine]);
-
   // ── Rollback to last saved ──────────────────────────────────────────────────
   const rollback = useCallback(() => {
     if (!activeFile) return;
@@ -1777,16 +1755,6 @@ function ApexBuilderMain() {
         <LogsHistory projectId={activeProject?.id} />
       </BottomSheet>
 
-      {/* ── Floating Voice Companion (Builder mode) ────────────────────── */}
-      <FloatingVoiceButton
-        initialMode="builder"
-        projectContext={activeProject?.name ?? ""}
-        onBuilderCommand={(action, params) => {
-          const prompt = params.feature ?? params.description ?? params.text ?? action.replace(/_/g, " ");
-          voiceGenerateCode(prompt);
-        }}
-        style={{ bottom: 96, right: 14 }}
-      />
     </div>
   );
 }

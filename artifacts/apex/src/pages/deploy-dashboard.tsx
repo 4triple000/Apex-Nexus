@@ -162,7 +162,7 @@ export default function DeployDashboardPage() {
         <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
           {(["all", "live", "failed"] as const).map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
-              padding: "7px 14px", borderRadius: 20, border: "none", cursor: "pointer",
+              padding: "7px 14px", borderRadius: 20, cursor: "pointer",
               background: filter === f ? "rgba(124,92,231,0.2)" : "rgba(255,255,255,0.05)",
               color: filter === f ? "#a29bfe" : "#636e72",
               fontWeight: filter === f ? 700 : 400, fontSize: 12,

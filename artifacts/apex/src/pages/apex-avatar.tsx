@@ -47,7 +47,7 @@ function mapVoiceToAvatarState(
   if (voiceState === "processing")  return "thinking";
   if (voiceState === "speaking")    return "speaking";
   if (voiceState === "error")       return "error";
-  if (voiceMode   === "building")   return "building";
+  if (voiceMode   === "builder")   return "building";
   return "idle";
 }
 

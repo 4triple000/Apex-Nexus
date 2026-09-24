@@ -30,7 +30,7 @@ const COLOR_MAP: Record<string, string> = {
   yellow: "#ffdd44", purple: "#a855f7", orange: "#ff8c00",
   cyan: "#00cfff", pink: "#ff79a8", gold: "#ffcc33", gray: "#888",
 };
-function rc(c: string) { return COLOR_MAP[c?.toLowerCase()] ?? c ?? "#888"; }
+function rc(c?: string) { return COLOR_MAP[c?.toLowerCase() ?? ""] ?? c ?? "#888"; }
 
 // ── Session ID for like/save attribution ─────────────────────────────────────
 

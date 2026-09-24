@@ -305,7 +305,7 @@ interface AvatarReengagementProps {
 }
 
 export function AvatarReengagement({ message, onDismiss }: AvatarReengagementProps) {
-  const { personalityId } = usePersonality();
+  const { profile: { id: personalityId } } = usePersonality();
 
   const [phase,    setPhase]    = useState<Phase>("look");
   const [visible,  setVisible]  = useState(true);

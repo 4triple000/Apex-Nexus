@@ -271,9 +271,9 @@ export default function GameEnginePage() {
 
   const connectSocket = useCallback(() => {
     if (socketRef.current?.connected) return;
-    const sock = io(api(""), {
+    // socket.io takes the namespace from the URL path, not an option
+    const sock = io(`${window.location.origin}/game`, {
       path:      "/api/socket.io",
-      namespace: "/game",
       transports: ["websocket", "polling"],
     });
     socketRef.current = sock;
