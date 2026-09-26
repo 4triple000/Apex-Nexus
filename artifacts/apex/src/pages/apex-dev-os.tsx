@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { BuilderOnboarding, useBuilderOnboarding } from "@/components/builder/BuilderOnboarding";
 import { ApexLogo } from "@/components/ui/ApexLogo";
+import { authHeaders } from "@/lib/authSession";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -762,10 +763,11 @@ function PipelinePanel({
     setRunning(true); setStages([]);
     const res  = await apiFetch("/api/devos/pipeline", {
       method: "POST",
+      headers: authHeaders(),
       body: JSON.stringify({ code, projectId, fileId, testCode: testCode.trim() || undefined }),
     });
     const data = await res.json();
-    setStages(data.stages ?? []);
+    setStages(data.stages ?? (data.error ? [{ stage: "Run", status: "fail", output: data.error }] : []));
     setRunning(false);
   }, [code, running, projectId, fileId, testCode]);
 
@@ -1265,6 +1267,7 @@ function ApexBuilderMain() {
 
     const res  = await apiFetch("/api/devos/execute", {
       method: "POST",
+      headers: authHeaders(),
       body: JSON.stringify({ code, projectId: activeProject?.id, fileId: activeFile?.id }),
     });
     const data = await res.json();

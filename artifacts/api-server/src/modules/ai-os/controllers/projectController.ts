@@ -125,7 +125,7 @@ export async function createProject(req: Request, res: Response): Promise<void> 
 // ── GET /api/projects/:id ─────────────────────────────────────────────────────
 
 export async function getProject(req: Request, res: Response): Promise<void> {
-  const id = parseInt(req.params.id ?? "");
+  const id = parseInt(String(req.params.id ?? ""));
   if (isNaN(id)) { badRequest(res, "Invalid project ID"); return; }
 
   try {
@@ -146,7 +146,7 @@ export async function getProject(req: Request, res: Response): Promise<void> {
 // ── PUT /api/projects/:id ─────────────────────────────────────────────────────
 
 export async function updateProject(req: Request, res: Response): Promise<void> {
-  const id = parseInt(req.params.id ?? "");
+  const id = parseInt(String(req.params.id ?? ""));
   if (isNaN(id)) { badRequest(res, "Invalid project ID"); return; }
 
   const parsed = updateSchema.safeParse(req.body);
@@ -174,7 +174,7 @@ export async function updateProject(req: Request, res: Response): Promise<void> 
 // ── DELETE /api/projects/:id ──────────────────────────────────────────────────
 
 export async function deleteProject(req: Request, res: Response): Promise<void> {
-  const id = parseInt(req.params.id ?? "");
+  const id = parseInt(String(req.params.id ?? ""));
   if (isNaN(id)) { badRequest(res, "Invalid project ID"); return; }
 
   try {
@@ -193,7 +193,7 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
 // ── GET /api/projects/:id/summary ─────────────────────────────────────────────
 
 export async function getProjectSummary(req: Request, res: Response): Promise<void> {
-  const id = parseInt(req.params.id ?? "");
+  const id = parseInt(String(req.params.id ?? ""));
   if (isNaN(id)) { badRequest(res, "Invalid project ID"); return; }
 
   try {

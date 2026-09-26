@@ -2,19 +2,23 @@
  * Mobile App Router
  * Mounts at /api/mobile/*
  *
+ * Auth: register/login return a `sessionId`. Every other endpoint requires it
+ * (x-apex-auth or x-session-id header) and acts only on that user's data.
+ *
  * Endpoints:
  *   POST /mobile/auth/register  — Email/password signup
  *   POST /mobile/auth/login     — Email/password login
  *   POST /mobile/chat           — AI chat with memory context
  *   GET  /mobile/conversations  — List user's conversations
  *   GET  /mobile/conversations/:id/messages — Get conversation messages
- *   GET  /mobile/memory/:userId — Get user's AI memory
+ *   GET  /mobile/memory/:userId — Get user's AI memory (must be the signed-in user)
  *   POST /mobile/extract-memory — AI-powered memory extraction from a message
  */
 
-import { Router, type IRouter } from "express";
+import { randomBytes } from "node:crypto";
+import { Router, type IRouter, type Response } from "express";
 import { z } from "zod";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import {
   mobileConversationsTable,
@@ -24,14 +28,33 @@ import {
 import { hashPassword, verifyPassword } from "./crypto";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { extractMemoryFromMessage, buildMemorySystemPrompt } from "../memory/extractor";
-import { success, badRequest, notFound, serverError, unauthorized } from "../../shared/utils/response";
+import { success, badRequest, notFound, serverError, unauthorized, forbidden } from "../../shared/utils/response";
+import { requireUser } from "../../shared/middleware/requireAuth";
+import type { ApexRequest } from "../../shared/types";
 import { logger } from "../../lib/logger";
 
 const router: IRouter = Router();
 
 // ── Auth helpers ───────────────────────────────────────────────────────────────
 function generateSessionId(): string {
-  return `mobile_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+  return `mobile_${randomBytes(32).toString("hex")}`;
+}
+
+// requireUser guarantees req.userId is set
+function currentUserId(req: ApexRequest): number {
+  return req.userId!;
+}
+
+async function ownsConversation(userId: number, conversationId: number): Promise<boolean> {
+  const [conv] = await db.select({ id: mobileConversationsTable.id })
+    .from(mobileConversationsTable)
+    .where(and(eq(mobileConversationsTable.id, conversationId), eq(mobileConversationsTable.userId, userId)))
+    .limit(1);
+  return !!conv;
+}
+
+function rejectOtherUser(res: Response): void {
+  forbidden(res, "You can only access your own data");
 }
 
 function randomUsername(): string {
@@ -70,6 +93,7 @@ router.post("/mobile/auth/register", async (req, res): Promise<void> => {
 
     success(res, {
       userId: user!.id,
+      sessionId,
       email: user!.email,
       username: user!.username,
       avatarEmoji: user!.avatarEmoji,
@@ -98,8 +122,16 @@ router.post("/mobile/auth/login", async (req, res): Promise<void> => {
     const valid = await verifyPassword(parsed.data.password, user.passwordHash);
     if (!valid) { unauthorized(res, "Invalid email or password"); return; }
 
+    // Older accounts may predate session IDs — issue one on login
+    let sessionId = user.sessionId;
+    if (!sessionId) {
+      sessionId = generateSessionId();
+      await db.update(usersTable).set({ sessionId }).where(eq(usersTable.id, user.id));
+    }
+
     success(res, {
       userId: user.id,
+      sessionId,
       email: user.email,
       username: user.username,
       avatarEmoji: user.avatarEmoji,
@@ -115,9 +147,8 @@ router.post("/mobile/auth/login", async (req, res): Promise<void> => {
 // Regex extraction removed — replaced by AI-powered extraction via extractMemoryFromMessage
 
 // ── POST /mobile/chat ──────────────────────────────────────────────────────────
-router.post("/mobile/chat", async (req, res): Promise<void> => {
+router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const schema = z.object({
-    userId: z.number().int().positive(),
     message: z.string().min(1).max(4000),
     conversationId: z.number().int().positive().optional(),
   });
@@ -125,7 +156,12 @@ router.post("/mobile/chat", async (req, res): Promise<void> => {
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body"); return; }
 
-  const { userId, message, conversationId: existingConvId } = parsed.data;
+  const userId = currentUserId(req);
+  const { message, conversationId: existingConvId } = parsed.data;
+  if (existingConvId && !(await ownsConversation(userId, existingConvId))) {
+    notFound(res, "Conversation not found");
+    return;
+  }
 
   try {
     // 1. Get or create conversation
@@ -193,9 +229,8 @@ router.post("/mobile/chat", async (req, res): Promise<void> => {
 });
 
 // ── GET /mobile/conversations ──────────────────────────────────────────────────
-router.get("/mobile/conversations", async (req, res): Promise<void> => {
-  const userId = parseInt(req.query.userId as string);
-  if (isNaN(userId)) { badRequest(res, "userId query param required"); return; }
+router.get("/mobile/conversations", requireUser, async (req: ApexRequest, res): Promise<void> => {
+  const userId = currentUserId(req);
 
   const conversations = await db.select()
     .from(mobileConversationsTable)
@@ -207,9 +242,13 @@ router.get("/mobile/conversations", async (req, res): Promise<void> => {
 });
 
 // ── GET /mobile/conversations/:id/messages ─────────────────────────────────────
-router.get("/mobile/conversations/:id/messages", async (req, res): Promise<void> => {
-  const conversationId = parseInt(req.params.id);
+router.get("/mobile/conversations/:id/messages", requireUser, async (req: ApexRequest, res): Promise<void> => {
+  const conversationId = parseInt(String(req.params.id));
   if (isNaN(conversationId)) { badRequest(res, "Invalid conversation ID"); return; }
+  if (!(await ownsConversation(currentUserId(req), conversationId))) {
+    notFound(res, "Conversation not found");
+    return;
+  }
 
   const messages = await db.select()
     .from(mobileMessagesTable)
@@ -221,9 +260,10 @@ router.get("/mobile/conversations/:id/messages", async (req, res): Promise<void>
 });
 
 // ── GET /mobile/memory/:userId ─────────────────────────────────────────────────
-router.get("/mobile/memory/:userId", async (req, res): Promise<void> => {
-  const userId = parseInt(req.params.userId);
+router.get("/mobile/memory/:userId", requireUser, async (req: ApexRequest, res): Promise<void> => {
+  const userId = parseInt(String(req.params.userId));
   if (isNaN(userId)) { badRequest(res, "Invalid user ID"); return; }
+  if (userId !== currentUserId(req)) { rejectOtherUser(res); return; }
 
   const memory = await db.select()
     .from(mobileMemoryTable)
@@ -236,7 +276,7 @@ router.get("/mobile/memory/:userId", async (req, res): Promise<void> => {
 // ── POST /mobile/extract-memory ────────────────────────────────────────────────
 // Standalone endpoint to run AI memory extraction on a single message.
 // Useful for batch processing, testing, or manual memory management.
-router.post("/mobile/extract-memory", async (req, res): Promise<void> => {
+router.post("/mobile/extract-memory", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const schema = z.object({
     user_id: z.number().int().positive("user_id must be a positive integer"),
     message: z.string().min(1, "message is required").max(4000),
@@ -247,6 +287,8 @@ router.post("/mobile/extract-memory", async (req, res): Promise<void> => {
     badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body");
     return;
   }
+
+  if (parsed.data.user_id !== currentUserId(req)) { rejectOtherUser(res); return; }
 
   try {
     const result = await extractMemoryFromMessage(parsed.data.user_id, parsed.data.message);

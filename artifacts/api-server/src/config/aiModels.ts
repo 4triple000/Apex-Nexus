@@ -2,6 +2,7 @@
  * AI model configuration for Apex Brain.
  * Centralizes all model selection, parameter tuning, and routing logic.
  */
+import type { AvatarAction } from "../shared/types";
 
 export type ModelProvider = "openai" | "claude" | "perplexity";
 export type ModelTier = "fast" | "balanced" | "powerful";
@@ -106,7 +107,7 @@ Output a structured JSON: { "facts": [], "preferences": [], "context": "", "impo
 
 // ── Emotion → Avatar mapping ─────────────────────────────────────────────────
 
-export const EMOTION_AVATAR_MAP: Record<string, { expression: string; gesture: string; intensity: number }> = {
+export const EMOTION_AVATAR_MAP = {
   happy: { expression: "happy", gesture: "nod", intensity: 0.8 },
   excited: { expression: "excited", gesture: "wave", intensity: 1.0 },
   thinking: { expression: "thinking", gesture: "point", intensity: 0.6 },
@@ -114,4 +115,4 @@ export const EMOTION_AVATAR_MAP: Record<string, { expression: string; gesture: s
   confused: { expression: "thinking", gesture: "shrug", intensity: 0.5 },
   surprised: { expression: "surprised", gesture: "none", intensity: 0.9 },
   neutral: { expression: "neutral", gesture: "none", intensity: 0.3 },
-};
+} satisfies Record<string, AvatarAction>;

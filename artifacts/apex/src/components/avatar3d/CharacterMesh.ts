@@ -57,15 +57,16 @@ function box(
   transform?: (v: Vec3) => Vec3
 ): Tri[] {
   const hw = w / 2, hh = h / 2, hd = d / 2;
-  const vs: [number, number, number][] = [
+  const corners: [number, number, number][] = [
     [cx-hw, cy-hh, cz-hd], [cx+hw, cy-hh, cz-hd],
     [cx+hw, cy+hh, cz-hd], [cx-hw, cy+hh, cz-hd],
     [cx-hw, cy-hh, cz+hd], [cx+hw, cy-hh, cz+hd],
     [cx+hw, cy+hh, cz+hd], [cx-hw, cy+hh, cz+hd],
-  ].map(([x, y, z]) => {
+  ];
+  const vs: Vec3[] = corners.map(([x, y, z]) => {
     const v = v3(x, y, z);
     return transform ? transform(v) : v;
-  }) as any;
+  });
 
   const faces: [number, number, number, number][] = [
     [0,1,2,3], // back

@@ -7,18 +7,21 @@
  */
 import { Router, type IRouter } from "express";
 import { spawn }                from "node:child_process";
-import vm                       from "node:vm";
 import { db, devosProjectsTable, devosFilesTable, devosLogsTable } from "@workspace/db";
 import { eq, desc, and }        from "drizzle-orm";
 import type { Server as SocketIOServer, Socket } from "socket.io";
 import { logger }               from "../lib/logger";
+import {
+  runJavaScriptIsolated, runPythonIsolated, pythonExecutionEnabled, PYTHON_DISABLED_MESSAGE,
+} from "../lib/codeSandbox";
+import { requireUser, resolveUserId } from "../shared/middleware/requireAuth";
+import { codeExecLimiter } from "../shared/middleware/rateLimiter";
 
 const router: IRouter = Router();
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const JS_TIMEOUT_MS  = 8_000;
 const PY_TIMEOUT_MS  = 10_000;
-const MAX_OUTPUT     = 50_000; // chars
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,14 +37,7 @@ export interface RuntimeResult {
 
 interface LogLine { type: "stdout" | "stderr" | "info" | "error"; text: string; ts: number }
 
-// ── JavaScript execution (Node vm sandbox) ────────────────────────────────────
-
-const JS_BLOCKED = [
-  "process","require","module","exports","__dirname","__filename",
-  "global","globalThis","eval","Function","fetch","XMLHttpRequest",
-  "WebSocket","Worker","setTimeout","setInterval","clearTimeout",
-  "clearInterval","setImmediate","clearImmediate","queueMicrotask",
-];
+// ── JavaScript execution (isolated child process) ─────────────────────────────
 
 async function runJavaScript(
   code: string,
@@ -55,69 +51,29 @@ async function runJavaScript(
     lines.push(l);
     onLine?.(l);
   };
+  const joined = (type: LogLine["type"]) => lines.filter(l => l.type === type).map(l => l.text).join("\n");
 
-  const makeLogger = (type: string) =>
-    (...args: unknown[]) => {
-      const msg = args.map(a => {
-        if (a === null || a === undefined) return String(a);
-        try { return typeof a === "object" ? JSON.stringify(a, null, 2) : String(a); }
-        catch { return String(a); }
-      }).join(" ");
-      emit(type === "error" ? "stderr" : "stdout", msg);
-    };
-
-  const sandbox: Record<string, unknown> = {
-    console: {
-      log:   makeLogger("log"),
-      error: makeLogger("error"),
-      warn:  makeLogger("warn"),
-      info:  makeLogger("info"),
-      debug: makeLogger("debug"),
-      table: (d: unknown) => makeLogger("log")(JSON.stringify(d, null, 2)),
+  emit("info", "▶ Running JavaScript…");
+  const run = await runJavaScriptIsolated(code, {
+    timeoutMs: JS_TIMEOUT_MS,
+    onLine: (line) => {
+      if (line.type === "result") return;
+      emit(line.type === "error" ? "stderr" : "stdout", line.text);
     },
-    JSON, Math, Array, Object, String, Number, Boolean, BigInt,
-    parseInt, parseFloat, isNaN, isFinite, Promise, Map, Set,
-    WeakMap, WeakSet, Symbol, Error, TypeError, RangeError,
-    SyntaxError, ReferenceError, RegExp, Date, Infinity, NaN,
-    undefined,
-    ...Object.fromEntries(JS_BLOCKED.map(k => [k, undefined])),
-  };
+  });
 
-  vm.createContext(sandbox);
-
-  try {
-    const wrapped = `(async () => {\n${code}\n})()`;
-    const script  = new vm.Script(wrapped, {
-      filename: "apex-runtime.js",
-    });
-
-    emit("info", "▶ Running JavaScript…");
-    const result = script.runInContext(sandbox, { timeout: JS_TIMEOUT_MS });
-
-    if (result && typeof (result as Promise<unknown>).then === "function") {
-      await Promise.race([
-        result as Promise<unknown>,
-        new Promise((_, rej) =>
-          setTimeout(() => rej(new Error(`Timed out after ${JS_TIMEOUT_MS}ms`)), JS_TIMEOUT_MS)
-        ),
-      ]);
-    }
-
-    const stdout = lines.filter(l => l.type === "stdout").map(l => l.text).join("\n");
-    const stderr = lines.filter(l => l.type === "stderr").map(l => l.text).join("\n");
-    emit("info", `✓ Done in ${Date.now() - start}ms`);
-
-    return { success: true, language: "javascript", stdout, stderr, durationMs: Date.now() - start, exitCode: 0 };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+  if (!run.ok) {
+    const msg = run.error ?? "Execution failed";
     emit("error", msg);
     return {
       success: false, language: "javascript",
-      stdout: lines.filter(l => l.type === "stdout").map(l => l.text).join("\n"),
-      stderr: lines.filter(l => l.type === "stderr").map(l => l.text).join("\n"),
-      error: msg, durationMs: Date.now() - start, exitCode: 1,
+      stdout: joined("stdout"), stderr: joined("stderr"),
+      error: msg, durationMs: Date.now() - start, exitCode: run.exitCode || 1,
     };
   }
+
+  emit("info", `✓ Done in ${Date.now() - start}ms`);
+  return { success: true, language: "javascript", stdout: joined("stdout"), stderr: joined("stderr"), durationMs: Date.now() - start, exitCode: 0 };
 }
 
 // ── Python execution (child_process) ──────────────────────────────────────────
@@ -150,6 +106,11 @@ async function runPython(
     onLine?.(l);
   };
 
+  if (!pythonExecutionEnabled()) {
+    emit("error", PYTHON_DISABLED_MESSAGE);
+    return { success: false, language: "python", stdout: "", stderr: PYTHON_DISABLED_MESSAGE, error: PYTHON_DISABLED_MESSAGE, durationMs: 0, exitCode: 1 };
+  }
+
   const pythonBin = await findPython();
   if (!pythonBin) {
     const msg = "Python 3 is not available in this environment.";
@@ -159,51 +120,23 @@ async function runPython(
 
   emit("info", `▶ Running Python (${pythonBin})…`);
 
-  return new Promise((resolve) => {
-    let stdout = "";
-    let stderr = "";
-    let timedOut = false;
-
-    const proc = spawn(pythonBin, ["-c", code], {
-      timeout:   PY_TIMEOUT_MS,
-      env:       { PATH: "/usr/bin:/usr/local/bin:/bin", HOME: "/tmp", PYTHONDONTWRITEBYTECODE: "1" },
-      cwd:       "/tmp",
-    });
-
-    const watchdog = setTimeout(() => {
-      timedOut = true;
-      proc.kill("SIGKILL");
-    }, PY_TIMEOUT_MS);
-
-    proc.stdout.on("data", (chunk: Buffer) => {
-      const text = chunk.toString().slice(0, MAX_OUTPUT - stdout.length);
-      stdout += text;
-      text.split("\n").filter(Boolean).forEach(line => emit("stdout", line));
-    });
-    proc.stderr.on("data", (chunk: Buffer) => {
-      const text = chunk.toString().slice(0, MAX_OUTPUT - stderr.length);
-      stderr += text;
-      text.split("\n").filter(Boolean).forEach(line => emit("stderr", line));
-    });
-
-    proc.on("close", (code) => {
-      clearTimeout(watchdog);
-      const dur = Date.now() - start;
-      if (timedOut) {
-        const msg = `Execution timed out after ${PY_TIMEOUT_MS}ms`;
-        emit("error", msg);
-        resolve({ success: false, language: "python", stdout, stderr: stderr + "\n" + msg, error: msg, durationMs: dur, exitCode: 124 });
-      } else {
-        emit("info", `✓ Done in ${dur}ms · exit ${code}`);
-        resolve({ success: code === 0, language: "python", stdout, stderr, error: code !== 0 ? stderr || "Process exited with code " + String(code) : undefined, durationMs: dur, exitCode: code ?? 0 });
-      }
-    });
-    proc.on("error", (err) => {
-      clearTimeout(watchdog);
-      emit("error", err.message);
-      resolve({ success: false, language: "python", stdout, stderr, error: err.message, durationMs: Date.now() - start, exitCode: 1 });
-    });
+  const run = await runPythonIsolated(pythonBin, code, {
+    timeoutMs: PY_TIMEOUT_MS,
+    onStdout: (text) => text.split("\n").filter(Boolean).forEach(line => emit("stdout", line)),
+    onStderr: (text) => text.split("\n").filter(Boolean).forEach(line => emit("stderr", line)),
   });
+
+  if (run.timedOut) {
+    const msg = `Execution timed out after ${PY_TIMEOUT_MS}ms`;
+    emit("error", msg);
+    return { success: false, language: "python", stdout: run.stdout, stderr: run.stderr + "\n" + msg, error: msg, durationMs: run.durationMs, exitCode: 124 };
+  }
+  emit("info", `✓ Done in ${run.durationMs}ms · exit ${run.exitCode}`);
+  return {
+    success: run.exitCode === 0, language: "python", stdout: run.stdout, stderr: run.stderr,
+    error: run.exitCode !== 0 ? run.stderr || "Process exited with code " + String(run.exitCode) : undefined,
+    durationMs: run.durationMs, exitCode: run.exitCode,
+  };
 }
 
 // ── Dispatch by language ──────────────────────────────────────────────────────
@@ -235,7 +168,7 @@ async function runCode(
 // ── REST Endpoint ─────────────────────────────────────────────────────────────
 
 // POST /api/runtime/execute
-router.post("/runtime/execute", async (req, res): Promise<void> => {
+router.post("/runtime/execute", requireUser, codeExecLimiter, async (req, res): Promise<void> => {
   const { code, language = "javascript", projectId, fileId } = req.body as {
     code?: string; language?: string; projectId?: number; fileId?: number;
   };
@@ -412,17 +345,35 @@ router.get("/runtime/projects/:id/logs", async (req, res): Promise<void> => {
 export function setupRuntimeSockets(io: SocketIOServer): void {
   const ns = io.of("/runtime");
 
+  // Only signed-in users may run code over the socket
+  ns.use(async (socket, next) => {
+    const auth = socket.handshake.auth as { token?: string; sessionId?: string };
+    const userId = await resolveUserId({
+      token: auth.token,
+      sessionId: auth.sessionId ?? (socket.handshake.headers["x-session-id"] as string | undefined),
+    });
+    if (!userId) { next(new Error("Please sign in to run code.")); return; }
+    socket.data.userId = userId;
+    next();
+  });
+
   ns.on("connection", (socket: Socket) => {
     logger.info({ id: socket.id }, "[Runtime] client connected");
 
     // Client sends: { code, language, projectId?, fileId? }
+    let running = false;
     socket.on("run", async (payload: { code: string; language: string; projectId?: number; fileId?: number }) => {
-      const { code, language = "javascript", projectId, fileId } = payload;
+      const { code, language = "javascript", projectId, fileId } = payload ?? {};
 
       if (!code?.trim()) {
         socket.emit("error", { message: "code required" });
         return;
       }
+      if (running) {
+        socket.emit("error", { message: "A run is already in progress" });
+        return;
+      }
+      running = true;
 
       socket.emit("run:start", { language, ts: Date.now() });
 
@@ -431,7 +382,7 @@ export function setupRuntimeSockets(io: SocketIOServer): void {
       const result = await runCode(code, language, (line) => {
         lines.push(line);
         socket.emit("run:line", line);
-      });
+      }).finally(() => { running = false; });
 
       socket.emit("run:done", result);
 

@@ -6,6 +6,7 @@
  */
 import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import { useLocation } from "wouter";
+import { authHeaders } from "@/lib/authSession";
 
 const MonacoEditor = lazy(() => import("@monaco-editor/react").then(m => ({ default: m.default })));
 
@@ -481,7 +482,7 @@ export default function NexusIDE() {
       const t0 = Date.now();
       const res = await fetch(`${BASE}/api/runtime/execute`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ code: content, language }),
       });
       const data = await res.json();
@@ -591,7 +592,7 @@ export default function NexusIDE() {
       addTerm("info", "  ⚙ Building deployment…");
       const deployRes = await fetch(`${BASE}/api/deploy/projects/${pid}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-session-id": sessionId },
+        headers: { "Content-Type": "application/json", "x-session-id": sessionId, ...authHeaders() },
         body: JSON.stringify({}),
       });
       const deployData = await deployRes.json();
@@ -1290,7 +1291,7 @@ function EditorSkeleton() {
 function TerminalPanel({ lines, open, height, onToggle, onClear, termEndRef }: {
   lines: TerminalLine[]; open: boolean; height: number;
   onToggle: () => void; onClear: () => void;
-  termEndRef: React.RefObject<HTMLDivElement>;
+  termEndRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const COLORS: Record<string, string> = {
     stdout: "#22c55e", stderr: "#ef4444", info: "#06b6d4",

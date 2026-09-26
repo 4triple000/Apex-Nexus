@@ -1048,8 +1048,8 @@ async function persistFix(fix: AutopilotFix): Promise<AutopilotFix> {
   // Store feedback loop: { error, cause, fix, result } → memory system
   try {
     await memoryLog({
-      projectId:  fix.error.projectId ?? null,
-      sessionId:  fix.error.context.sessionId ?? null,
+      projectId:  fix.error.projectId ?? undefined,
+      sessionId:  fix.error.context.sessionId ?? undefined,
       type:       "autopilot",
       content:    `Autopilot ${fix.result}: ${fix.fix.description}`,
       metadata: {

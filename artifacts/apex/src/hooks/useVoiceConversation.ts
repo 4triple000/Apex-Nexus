@@ -236,11 +236,10 @@ export function useVoiceConversation(opts: ConversationOptions = {}) {
 
   const buildRecognition = useCallback((): SpeechRecognition | null => {
     if (typeof window === "undefined") return null;
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return null;
+    const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return null;
 
-    const r: SpeechRecognition = new SpeechRecognition();
+    const r: SpeechRecognition = new SpeechRecognitionCtor();
     r.lang       = "en-US";
     r.continuous = !pushToTalk;
     r.interimResults = true;

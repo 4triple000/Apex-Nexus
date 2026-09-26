@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { Search, Bell, ChevronDown } from "lucide-react";
 
 export function TopBar() {
@@ -59,24 +59,6 @@ export function TopBar() {
             style={{ top: 8, right: 8, width: 6, height: 6, background: "#3B82F6" }}
           />
         </button>
-
-        {/* Apex Orb pill */}
-        <Link href="/apex-os">
-          <button
-            className="flex items-center gap-2 text-sm font-medium px-4 py-1.5 rounded-full"
-            style={{
-              background: "linear-gradient(135deg, #7C3AED, #3B82F6)",
-              color: "white",
-              boxShadow: "0 0 16px rgba(124,58,237,0.35)",
-            }}
-          >
-            <div
-              className="rounded-full"
-              style={{ width: 7, height: 7, background: "white", boxShadow: "0 0 8px rgba(255,255,255,0.8)", animation: "pulse 2s infinite" }}
-            />
-            Apex Orb
-          </button>
-        </Link>
 
         {/* Avatar */}
         <div

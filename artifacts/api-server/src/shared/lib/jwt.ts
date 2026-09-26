@@ -31,7 +31,7 @@ const ACCESS_TTL  = "15m";
 const REFRESH_TTL = "30d";
 
 function secret(): string {
-  return env.sessionSecret || "apex-jwt-fallback-change-me";
+  return env.sessionSecret;
 }
 
 // ── Sign ──────────────────────────────────────────────────────────────────────

@@ -9,6 +9,8 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, apexDeploymentsTable, devosProjectsTable, devosFilesTable } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
+import { runPythonIsolated, pythonExecutionEnabled, PYTHON_DISABLED_MESSAGE } from "../lib/codeSandbox";
+import { requireUser } from "../shared/middleware/requireAuth";
 import type { DeployedFile } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -321,8 +323,8 @@ async function serveDeployedApp(req: Request, res: Response): Promise<void> {
 // ── Deploy endpoint ────────────────────────────────────────────────────────────
 
 // POST /api/deploy/projects/:id
-router.post("/deploy/projects/:id", async (req, res): Promise<void> => {
-  const projectId = parseInt(req.params["id"]!);
+router.post("/deploy/projects/:id", requireUser, async (req, res): Promise<void> => {
+  const projectId = parseInt(String(req.params["id"]));
   const sessionId = req.headers["x-session-id"] as string || "runtime-default";
 
   try {
@@ -398,22 +400,11 @@ router.post("/deploy/projects/:id", async (req, res): Promise<void> => {
         } else if (project.language === "python") {
           // Pre-execute Python and capture output
           try {
-            const { spawn } = await import("node:child_process");
             const mainFile  = filesSnapshot.find(f => f.path === "main.py") ?? filesSnapshot[0];
-            if (mainFile) {
-              const output = await new Promise<{ stdout: string; stderr: string }>((resolve) => {
-                let stdout = "";
-                let stderr = "";
-                const proc = spawn("python3", ["-c", mainFile.content], {
-                  timeout: 10_000,
-                  env: { PATH: "/usr/bin:/usr/local/bin:/bin", PYTHONDONTWRITEBYTECODE: "1" },
-                  cwd: "/tmp",
-                });
-                proc.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
-                proc.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
-                proc.on("close", () => resolve({ stdout, stderr }));
-                proc.on("error", () => resolve({ stdout, stderr }));
-              });
+            if (!pythonExecutionEnabled()) {
+              previewHtml = buildPythonOutputPage(project.name, "", PYTHON_DISABLED_MESSAGE, slug);
+            } else if (mainFile) {
+              const output = await runPythonIsolated("python3", mainFile.content, { timeoutMs: 10_000 });
               previewHtml = buildPythonOutputPage(project.name, output.stdout, output.stderr, slug);
             }
           } catch (e) {

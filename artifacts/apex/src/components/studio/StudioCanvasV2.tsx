@@ -224,7 +224,7 @@ function CanvasInner({
   );
 
   const handleNodeDragStop = useCallback(
-    (_: React.MouseEvent, node: Node) => {
+    (_: MouseEvent | TouchEvent, node: Node) => {
       setLocalNodes((nds) => {
         const updated = nds.map((n) =>
           n.id === node.id ? { ...n, position: node.position } : n
@@ -262,7 +262,7 @@ function CanvasInner({
   );
 
   const handleMoveEnd = useCallback(
-    (_: MouseEvent | TouchEvent, vp: Viewport) => {
+    (_: MouseEvent | TouchEvent | null, vp: Viewport) => {
       onViewportChange({ x: vp.x, y: vp.y, zoom: vp.zoom });
     },
     [onViewportChange]

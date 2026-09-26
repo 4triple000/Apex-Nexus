@@ -1,7 +1,7 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════════════╗
  * ║  APEX UNIVERSAL AUTH MIDDLEWARE                                          ║
- * ║  Accepts: Authorization: Bearer <jwt>  OR  x-session-id: <session>      ║
+ * ║  Accepts: Authorization: Bearer <jwt>  OR  x-apex-auth / x-session-id   ║
  * ║  Backward compatible with all existing frontend code                     ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  */
@@ -76,6 +76,7 @@ export async function requireAuth(
 
   // 2. Fall back to x-session-id header (backward compat)
   const sessionId =
+    (req.headers["x-apex-auth"] as string) ||
     (req.headers["x-session-id"] as string) ||
     (req.body?.sessionId as string) ||
     (req.query.sessionId as string);
@@ -97,6 +98,39 @@ export async function requireAuth(
   next();
 }
 
+// ── requireUser — like requireAuth, but the session must belong to a real account ──
+// requireAuth accepts any x-session-id; use this for routes that must not be anonymous
+// (e.g. running user code on the server).
+
+export async function requireUser(
+  req: ApexRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await requireAuth(req, res, () => {
+    if (!req.userId) {
+      unauthorized(res, "Please sign in to use this feature.");
+      return;
+    }
+    next();
+  });
+}
+
+// ── resolveUserId — for non-HTTP transports (socket.io handshakes) ────────────
+
+export async function resolveUserId(credentials: {
+  token?: string;
+  sessionId?: string;
+}): Promise<number | null> {
+  if (credentials.token) {
+    return verifyAccessToken(credentials.token)?.userId ?? null;
+  }
+  if (credentials.sessionId) {
+    return (await resolveSessionUser(credentials.sessionId))?.id ?? null;
+  }
+  return null;
+}
+
 // ── optionalAuth — attaches identity if present, never blocks ─────────────────
 
 export async function optionalAuth(
@@ -114,7 +148,8 @@ export async function optionalAuth(
     }
   } else {
     const sessionId =
-      (req.headers["x-session-id"] as string) ||
+      (req.headers["x-apex-auth"] as string) ||
+    (req.headers["x-session-id"] as string) ||
       (req.body?.sessionId as string) ||
       (req.query.sessionId as string);
 

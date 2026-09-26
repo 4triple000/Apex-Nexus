@@ -115,7 +115,6 @@ router.get("/billing/plans", async (_req, res): Promise<void> => {
   } catch (_err) {
     logger.warn("Stripe unavailable — returning static plan list");
     const plans = (["free", "pro", "enterprise"] as PlanTier[]).map(tier => ({
-      tier,
       ...PLAN_METADATA[tier],
       stripePrices: [],
     }));

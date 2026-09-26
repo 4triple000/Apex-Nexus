@@ -15,18 +15,21 @@ interface WindowEntry {
   resetAt: number;
 }
 
-const windows = new Map<string, WindowEntry>();
+// One window map per limiter, so separate limits don't share a counter
+const allWindows: Map<string, WindowEntry>[] = [];
 
 // Clean up old windows every 5 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [key, entry] of windows.entries()) {
-    if (entry.resetAt < now) windows.delete(key);
+  for (const windows of allWindows) {
+    for (const [key, entry] of windows.entries()) {
+      if (entry.resetAt < now) windows.delete(key);
+    }
   }
-}, 5 * 60_000);
+}, 5 * 60_000).unref();
 
 function getRateLimitKey(req: ApexRequest): string {
-  return req.sessionId || req.ip || "anonymous";
+  return (req.userId ? `user:${req.userId}` : req.sessionId) || req.ip || "anonymous";
 }
 
 // ── General rate limiter (configurable) ──────────────────────────────────────
@@ -34,6 +37,8 @@ export function createRateLimiter(opts?: { windowMs?: number; max?: number; mess
   const windowMs = opts?.windowMs ?? env.rateLimitWindowMs;
   const max = opts?.max ?? env.rateLimitMaxRequests;
   const message = opts?.message ?? "Too many requests. Please slow down.";
+  const windows = new Map<string, WindowEntry>();
+  allWindows.push(windows);
 
   return function rateLimiter(req: ApexRequest, res: Response, next: NextFunction): void {
     const key = getRateLimitKey(req);
@@ -73,4 +78,10 @@ export const authLimiter = createRateLimiter({
   windowMs: 15 * 60_000, // 15 minutes
   max: 10,
   message: "Too many auth attempts. Please wait 15 minutes.",
+});
+
+export const codeExecLimiter = createRateLimiter({
+  windowMs: 60_000,
+  max: 20,
+  message: "Too many code runs. Please wait a minute.",
 });

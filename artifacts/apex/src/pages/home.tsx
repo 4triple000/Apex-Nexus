@@ -235,7 +235,7 @@ export default function Home() {
     }
   };
 
-  const handleVote = (provider: string, prompt?: string) => {
+  const handleVote = (provider: "openai" | "claude" | "perplexity", prompt?: string) => {
     if (!sessionId) return;
     castVote.mutate({ data: { provider, sessionId, prompt: prompt ?? undefined } });
   };
@@ -427,10 +427,8 @@ export default function Home() {
 
     {/* ═══ MOBILE CHAT VIEW (hidden on desktop) ════════════════════════════ */}
     <div
-      className="lg:hidden"
+      className="flex flex-col lg:hidden"
       style={{
-        display: "flex",
-        flexDirection: "column",
         height: "100%",
         background: "#0F1115",
         position: "relative",

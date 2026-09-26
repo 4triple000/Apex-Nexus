@@ -304,11 +304,9 @@ export default function ApexOSPage() {
     setLastResponse(null);
     try {
       const result = await sendChat.mutateAsync({
-        sessionId, message: q, mode: "chat", aiPreference: "auto",
-        personalityPrompt: globalSystemPrompt,
+        data: { sessionId, message: `${globalSystemPrompt}\n\nUser message: ${q}`, mode: "chat" },
       });
-      const text = (result as any)?.response ?? (result as any)?.content ?? "Done.";
-      setLastResponse(typeof text === "string" ? text : JSON.stringify(text));
+      setLastResponse(result.messages[0]?.content || "Done.");
     } catch {
       setLastResponse("Something went wrong. Try again.");
     } finally {

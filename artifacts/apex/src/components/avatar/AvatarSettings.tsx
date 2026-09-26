@@ -3,7 +3,7 @@ import { X, Plus, Trash2, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { AvatarStore } from '@/hooks/useAvatarStore';
 import { SKIN_TONES, HAIR_STYLES, HAIR_COLORS, EYE_COLORS, OUTFITS, BODY_TYPES } from './AvatarFace';
 import { Personality, buildPersonalityPrompt, DEFAULT_PERSONALITIES } from '@/lib/personalityEngine';
-import { Avatar3DScene } from '@/components/avatar3d/Avatar3DScene';
+import { LazyAvatar3DScene as Avatar3DScene } from '@/components/avatar3d/LazyAvatar3DScene';
 import { cn } from '@/lib/utils';
 
 interface AvatarSettingsProps {

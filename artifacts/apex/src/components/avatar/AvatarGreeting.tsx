@@ -137,9 +137,8 @@ function MiniAvatarOrb({ primary, secondary, glow, speaking }: {
       {speaking && (
         <div style={{
           position: "absolute",
-          bottom: -18, left: "50%",
-          transform: "translateX(-50%)",
-          display: "flex", alignItems: "flex-end", gap: 2,
+          bottom: -18, left: 0, right: 0,
+          display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 2,
           height: 16,
           animation: "ag-fade-in 0.25s ease both",
         }}>
@@ -282,8 +281,10 @@ export function AvatarGreeting({ text: textOverride, voice = true }: AvatarGreet
         style={{
           position: "fixed",
           top: "max(env(safe-area-inset-top, 0px), 12px)",
-          left: "50%",
-          transform: "translateX(-50%)",
+          // Centered with margins, not a transform: the slide animation owns `transform`
+          left: 0,
+          right: 0,
+          margin: "0 auto",
           width: "calc(100% - 32px)",
           maxWidth: 420,
           zIndex: 9001,

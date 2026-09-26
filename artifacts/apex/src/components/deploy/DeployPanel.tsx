@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { authHeaders } from "@/lib/authSession";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -127,7 +128,7 @@ export function DeployPanel({ projectId, projectName, onClose }: Props) {
     try {
       const data = await apiFetch<{ deploymentId: number; slug: string; status: string; version: number }>(
         `/api/deploy/projects/${projectId}`,
-        { method: "POST" }
+        { method: "POST", headers: { "Content-Type": "application/json", "x-session-id": getSessionId(), ...authHeaders() } }
       );
 
       // Optimistically add/update deployment in list

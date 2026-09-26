@@ -9,6 +9,9 @@ import { db, devosProjectsTable, devosFilesTable, devosLogsTable } from "@worksp
 import { eq, desc, and, sql } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import vm from "vm";
+import { runJavaScriptIsolated } from "../lib/codeSandbox";
+import { requireUser } from "../shared/middleware/requireAuth";
+import { codeExecLimiter } from "../shared/middleware/rateLimiter";
 
 const router: IRouter = Router();
 
@@ -28,111 +31,27 @@ interface ExecResult {
   durationMs: number;
 }
 
-// Blocked dangerous built-ins
-const BLOCKED = [
-  "process", "require", "module", "exports", "__dirname", "__filename",
-  "global", "globalThis", "eval", "Function", "fetch",
-  "XMLHttpRequest", "WebSocket", "Worker",
-  "setTimeout", "setInterval", "clearTimeout", "clearInterval",
-  "setImmediate", "clearImmediate", "queueMicrotask",
-];
-
 async function executeSandbox(code: string): Promise<ExecResult> {
+  const startTime = Date.now();
   const logs: LogEntry[] = [];
-  const startTime        = Date.now();
-
-  const makeLogger = (type: string) =>
-    (...args: unknown[]) => {
-      const message = args
-        .map(a => {
-          if (a === null)      return "null";
-          if (a === undefined) return "undefined";
-          try { return typeof a === "object" ? JSON.stringify(a, null, 2) : String(a); }
-          catch { return String(a); }
-        })
-        .join(" ");
-      logs.push({ type, message, timeMs: Date.now() - startTime });
-    };
-
-  const sandbox: Record<string, unknown> = {
-    console: {
-      log:   makeLogger("log"),
-      error: makeLogger("error"),
-      warn:  makeLogger("warn"),
-      info:  makeLogger("info"),
-      debug: makeLogger("debug"),
-      table: (d: unknown) => makeLogger("log")(JSON.stringify(d, null, 2)),
+  const run = await runJavaScriptIsolated(code, {
+    timeoutMs: EXEC_TIMEOUT_MS,
+    onLine: (line) => {
+      if (line.type !== "result") logs.push({ type: line.type, message: line.text, timeMs: Date.now() - startTime });
     },
-    // Safe globals
-    JSON,
-    Math,
-    Array,
-    Object,
-    String,
-    Number,
-    Boolean,
-    BigInt,
-    parseInt,
-    parseFloat,
-    isNaN,
-    isFinite,
-    Promise,
-    Map,
-    Set,
-    WeakMap,
-    WeakSet,
-    Symbol,
-    Error,
-    TypeError,
-    RangeError,
-    SyntaxError,
-    ReferenceError,
-    RegExp,
-    Date,
-    Infinity,
-    NaN,
-    undefined,
-    // Block everything dangerous
-    ...Object.fromEntries(BLOCKED.map(k => [k, undefined])),
-  };
-
-  vm.createContext(sandbox);
-
-  try {
-    // Wrap in async IIFE so users can use await at top level
-    const wrapped = `(async () => {\n${code}\n})()`;
-    const script  = new vm.Script(wrapped, {
-      filename: "apex-sandbox.js",
-    });
-
-    const result = script.runInContext(sandbox, { timeout: EXEC_TIMEOUT_MS });
-    let finalResult: unknown = undefined;
-
-    if (result && typeof (result as Promise<unknown>).then === "function") {
-      finalResult = await Promise.race([
-        result as Promise<unknown>,
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`Execution timed out after ${EXEC_TIMEOUT_MS}ms`)), EXEC_TIMEOUT_MS)
-        ),
-      ]);
-    } else {
-      finalResult = result;
-    }
-
-    return {
-      success:    true,
-      result:     finalResult !== undefined ? String(finalResult) : undefined,
-      logs,
-      durationMs: Date.now() - startTime,
-    };
-  } catch (err) {
-    return {
-      success:    false,
-      error:      err instanceof Error ? err.message : String(err),
-      logs,
-      durationMs: Date.now() - startTime,
-    };
+  });
+  if (!run.ok) {
+    // The final error is reported in `error`, not duplicated in the logs
+    const last = logs[logs.length - 1];
+    if (last?.type === "error" && last.message === run.error) logs.pop();
   }
+  return {
+    success:    run.ok,
+    result:     run.result,
+    error:      run.error,
+    logs,
+    durationMs: run.durationMs,
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -297,7 +216,7 @@ router.delete("/devos/projects/:id/files/:fileId", async (req, res): Promise<voi
 // ─────────────────────────────────────────────────────────────────────────────
 
 // POST /api/devos/execute
-router.post("/devos/execute", async (req, res): Promise<void> => {
+router.post("/devos/execute", requireUser, codeExecLimiter, async (req, res): Promise<void> => {
   try {
     const { code, projectId, fileId } = req.body as {
       code?: string; projectId?: number; fileId?: number;
@@ -479,7 +398,7 @@ router.post("/devos/generate", async (req, res): Promise<void> => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // POST /api/devos/pipeline  — run edit → validate → test → report
-router.post("/devos/pipeline", async (req, res): Promise<void> => {
+router.post("/devos/pipeline", requireUser, codeExecLimiter, async (req, res): Promise<void> => {
   try {
     const { code, projectId, fileId, testCode } = req.body as {
       code?: string; projectId?: number; fileId?: number; testCode?: string;
@@ -596,7 +515,7 @@ router.delete("/devos/projects/:id/logs", async (req, res): Promise<void> => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // POST /api/devos/engine-hook  — run code in game engine context
-router.post("/devos/engine-hook", async (req, res): Promise<void> => {
+router.post("/devos/engine-hook", requireUser, codeExecLimiter, async (req, res): Promise<void> => {
   try {
     const { code, gameConfig } = req.body as { code?: string; gameConfig?: object };
     if (!code?.trim()) { res.status(400).json({ error: "code required" }); return; }

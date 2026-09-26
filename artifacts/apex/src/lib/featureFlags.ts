@@ -109,7 +109,9 @@ export const CURRENT_LAUNCH_PHASE: LaunchPhase = DEFAULT_PHASE;
 // ── Admin console override ─────────────────────────────────────────────────────
 
 if (typeof window !== 'undefined') {
-  (window as Record<string, unknown>).setPhase = (phase: string) => {
+  const consoleApi = window as unknown as Record<string, unknown>;
+
+  consoleApi.setPhase = (phase: string) => {
     if (!PHASE_ORDER.includes(phase as LaunchPhase)) {
       console.warn(
         `[Apex] Unknown phase: "${phase}". Valid values: ${PHASE_ORDER.join(', ')}`
@@ -121,13 +123,13 @@ if (typeof window !== 'undefined') {
     window.location.reload();
   };
 
-  (window as Record<string, unknown>).getPhase = () => {
+  consoleApi.getPhase = () => {
     const p = getActivePhase();
     console.info(`%c[Apex] Current phase: "${p}"`, 'color:#A29BFE;font-weight:bold');
     return p;
   };
 
-  (window as Record<string, unknown>).resetPhase = () => {
+  consoleApi.resetPhase = () => {
     localStorage.removeItem(STORAGE_KEY);
     console.info(`%c[Apex] Phase reset to default: "${DEFAULT_PHASE}". Reloading...`, 'color:#4ADE80;font-weight:bold');
     window.location.reload();

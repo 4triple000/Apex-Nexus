@@ -81,7 +81,8 @@ router.post("/memory/store", requireSession, async (req, res): Promise<void> => 
     : undefined;
 
   try {
-    await storeMemory({ sessionId, ...parsed.data, expiresAt });
+    const { expiresInDays: _expiresInDays, value, ...fields } = parsed.data;
+    await storeMemory({ sessionId, ...fields, value: value ?? null, expiresAt });
     success(res, { stored: true, key: parsed.data.key, message: "Memory stored successfully" });
   } catch (err) {
     logger.error({ err }, "Memory store error");
@@ -125,8 +126,8 @@ router.delete("/memory/clear", requireSession, async (req, res): Promise<void> =
   const sessionId = req.headers["x-session-id"] as string;
 
   try {
-    const result = await clearMemory(sessionId);
-    success(res, { cleared: true, ...result, message: "Memory cleared" });
+    await clearMemory(sessionId);
+    success(res, { cleared: true, message: "Memory cleared" });
   } catch (err) {
     logger.error({ err }, "Memory clear error");
     serverError(res, "Failed to clear memory");

@@ -94,7 +94,7 @@ router.post("/builder-agent/edit", async (req: ApexRequest, res) => {
 // ── GET /api/builder-agent/project/:id ───────────────────────────────────────
 
 router.get("/builder-agent/project/:id", async (req: ApexRequest, res) => {
-  const projectId = parseInt(req.params["id"] ?? "0");
+  const projectId = parseInt(String(req.params["id"] ?? "0"));
   if (!projectId) { badRequest(res, "Invalid project ID"); return; }
 
   try {

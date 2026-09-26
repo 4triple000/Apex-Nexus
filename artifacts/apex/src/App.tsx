@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,64 +14,69 @@ import { PaywallProvider } from "@/contexts/PaywallContext";
 import { FTUEGate } from "@/components/ftue/FTUEScreen";
 import { ApexLogo } from "@/components/ui/ApexLogo";
 import { EngineProvider } from "@/engine/EngineContext";
-import Home from "@/pages/home";
-import WorkflowBuilderPage from "@/pages/workflow-builder";
-import AiStudioPage from "@/pages/ai-studio";
-import ArenaPage from "@/pages/arena";
-import ApexOSPage from "@/pages/apex-os";
-import LoginPage from "@/pages/login";
-import Screenshot from "@/pages/screenshot";
-import Usage from "@/pages/usage";
-import AvatarPage from "@/pages/avatar";
-import WorkflowsPage from "@/pages/workflows";
-import { DMPage } from "@/pages/dm";
-import StudioPage, { StudioProjectPage } from "@/pages/studio";
-import MarketplacePage from "@/pages/marketplace";
-import FeedPage from "@/pages/feed";
-import ProfilePage from "@/pages/profile";
-import ExplorePage from "@/pages/explore";
-import PricingPage from "@/pages/pricing";
-import CreatorDashboardPage from "@/pages/creator-dashboard";
-import InsightsPage from "@/pages/insights";
-import MultiplayerPage from "@/pages/multiplayer";
-import { ApexFeaturesPage } from "@/pages/apex-features";
-import LandingPage from "@/pages/landing";
-import GameEnginePage from "@/pages/game-engine";
-import GameEcosystemPage from "@/pages/game-ecosystem";
-import ApexDevOSPage from "@/pages/apex-dev-os";
-import ApexAvatarPage from "@/pages/apex-avatar";
-import ApexBuilderPage from "@/pages/apex-builder";
-import NexusBuilderPage from "@/pages/nexus-builder";
-import DomainSettingsPage from "@/pages/domain-settings";
-import DevCockpitPage from "@/pages/dev-cockpit";
-import RuntimePage from "@/pages/runtime";
-import DeployDashboardPage from "@/pages/deploy-dashboard";
-import NotFound from "@/pages/not-found";
+
+// Pages load on demand so the first visit only downloads what it shows
+const Home = lazy(() => import("@/pages/home"));
+const WorkflowBuilderPage = lazy(() => import("@/pages/workflow-builder"));
+const AiStudioPage = lazy(() => import("@/pages/ai-studio"));
+const ArenaPage = lazy(() => import("@/pages/arena"));
+const ApexOSPage = lazy(() => import("@/pages/apex-os"));
+const LoginPage = lazy(() => import("@/pages/login"));
+const Screenshot = lazy(() => import("@/pages/screenshot"));
+const Usage = lazy(() => import("@/pages/usage"));
+const AvatarPage = lazy(() => import("@/pages/avatar"));
+const WorkflowsPage = lazy(() => import("@/pages/workflows"));
+const DMPage = lazy(() => import("@/pages/dm").then((m) => ({ default: m.DMPage })));
+const StudioPage = lazy(() => import("@/pages/studio"));
+const StudioProjectPage = lazy(() => import("@/pages/studio").then((m) => ({ default: m.StudioProjectPage })));
+const MarketplacePage = lazy(() => import("@/pages/marketplace"));
+const FeedPage = lazy(() => import("@/pages/feed"));
+const ProfilePage = lazy(() => import("@/pages/profile"));
+const ExplorePage = lazy(() => import("@/pages/explore"));
+const PricingPage = lazy(() => import("@/pages/pricing"));
+const CreatorDashboardPage = lazy(() => import("@/pages/creator-dashboard"));
+const InsightsPage = lazy(() => import("@/pages/insights"));
+const MultiplayerPage = lazy(() => import("@/pages/multiplayer"));
+const ApexFeaturesPage = lazy(() => import("@/pages/apex-features").then((m) => ({ default: m.ApexFeaturesPage })));
+const LandingPage = lazy(() => import("@/pages/landing"));
+const GameEnginePage = lazy(() => import("@/pages/game-engine"));
+const GameEcosystemPage = lazy(() => import("@/pages/game-ecosystem"));
+const ApexDevOSPage = lazy(() => import("@/pages/apex-dev-os"));
+const ApexAvatarPage = lazy(() => import("@/pages/apex-avatar"));
+const ApexBuilderPage = lazy(() => import("@/pages/apex-builder"));
+const NexusBuilderPage = lazy(() => import("@/pages/nexus-builder"));
+const DomainSettingsPage = lazy(() => import("@/pages/domain-settings"));
+const DevCockpitPage = lazy(() => import("@/pages/dev-cockpit"));
+const RuntimePage = lazy(() => import("@/pages/runtime"));
+const DeployDashboardPage = lazy(() => import("@/pages/deploy-dashboard"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 const queryClient = new QueryClient();
+
+function FullScreenLoader() {
+  return (
+    <div style={{
+      minHeight: "100dvh", background: "#07080E",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", gap: 18,
+    }}>
+      <ApexLogo size={72} state="spinning" radius={20} />
+      <span style={{
+        fontSize: 12, fontWeight: 700, letterSpacing: "0.14em",
+        color: "rgba(255,255,255,0.25)", textTransform: "uppercase",
+      }}>
+        Loading…
+      </span>
+    </div>
+  );
+}
 
 // ── Layout wrapper — shows loading spinner while auth resolves, then renders app.
 //    Auth is OPTIONAL — guests can use the app without an account. ──────────────
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <div style={{
-        minHeight: "100dvh", background: "#07080E",
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center", gap: 18,
-      }}>
-        <ApexLogo size={72} state="spinning" radius={20} />
-        <span style={{
-          fontSize: 12, fontWeight: 700, letterSpacing: "0.14em",
-          color: "rgba(255,255,255,0.25)", textTransform: "uppercase",
-        }}>
-          Loading…
-        </span>
-      </div>
-    );
-  }
+  if (isLoading) return <FullScreenLoader />;
 
   return <FTUEGate>{children}</FTUEGate>;
 }
@@ -133,6 +139,7 @@ function Router() {
       <Route>
         <ProtectedLayout>
           <Layout>
+            <Suspense fallback={null}>
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/screenshot" component={Screenshot} />
@@ -153,6 +160,7 @@ function Router() {
               <Route path="/apex-features" component={ApexFeaturesPage} />
               <Route component={NotFound} />
             </Switch>
+            </Suspense>
           </Layout>
         </ProtectedLayout>
       </Route>
@@ -173,7 +181,9 @@ function App() {
                   <EngineProvider>
                     <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
                       <PaywallProvider>
-                        <Router />
+                        <Suspense fallback={<FullScreenLoader />}>
+                          <Router />
+                        </Suspense>
                       </PaywallProvider>
                     </WouterRouter>
                   </EngineProvider>

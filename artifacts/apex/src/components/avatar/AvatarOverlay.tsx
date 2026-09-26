@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Settings2 } from 'lucide-react';
 import { AvatarSettings } from './AvatarSettings';
-import { Avatar3DScene } from '@/components/avatar3d/Avatar3DScene';
+import { LazyAvatar3DScene as Avatar3DScene } from '@/components/avatar3d/LazyAvatar3DScene';
 import { AvatarStore, AvatarState, moodFromState, energyFromState } from '@/hooks/useAvatarStore';
 import { cn } from '@/lib/utils';
 
