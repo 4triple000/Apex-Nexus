@@ -271,9 +271,9 @@ export default function GameEnginePage() {
 
   const connectSocket = useCallback(() => {
     if (socketRef.current?.connected) return;
-    const sock = io(api(""), {
+    // socket.io takes the namespace from the URL path, not an option
+    const sock = io(`${window.location.origin}/game`, {
       path:      "/api/socket.io",
-      namespace: "/game",
       transports: ["websocket", "polling"],
     });
     socketRef.current = sock;
@@ -400,7 +400,7 @@ export default function GameEnginePage() {
       {/* ── Share toast notification ── */}
       {shareToast && (
         <div style={{
-          position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)",
+          position: "fixed", bottom: 24, left: 0, right: 0, margin: "0 auto", width: "fit-content",
           background: "rgba(20,20,32,0.96)", border: "1px solid rgba(108,92,231,0.4)",
           borderRadius: 12, padding: "12px 20px", fontSize: 14, fontWeight: 600,
           color: "#A29BFE", zIndex: 9999, backdropFilter: "blur(16px)",

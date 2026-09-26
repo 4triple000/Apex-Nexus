@@ -266,7 +266,7 @@ router.get("/marketplace/creator-dashboard", async (_req, res): Promise<void> =>
     ? items.reduce((s, i) => s + (i.ratingAvg ?? 0), 0) / items.length
     : 0;
 
-  const topItem = items.sort((a, b) => b.rankingScore - a.rankingScore)[0];
+  const topItem = items.sort((a, b) => (b.rankingScore ?? 0) - (a.rankingScore ?? 0))[0];
 
   res.json({
     totalWorkflows: totalWorkflows.length,

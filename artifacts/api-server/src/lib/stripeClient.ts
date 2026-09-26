@@ -1,9 +1,13 @@
 import Stripe from "stripe";
 import { StripeSync } from "stripe-replit-sync";
 
+// Pinned Stripe API version. The billing code reads fields in this version's shape
+// (e.g. invoice.parent.subscription_details, subscription item billing periods).
+const STRIPE_API_VERSION = "2025-03-31.basil" as Stripe.LatestApiVersion;
+
 let stripeSyncInstance: StripeSync | null = null;
 
-export async function getUncachableStripeClient(): Promise<Stripe> {
+async function getStripeSecretKey(): Promise<string> {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const identity = process.env.REPL_IDENTITY;
   const renewal = process.env.WEB_REPL_RENEWAL;
@@ -18,7 +22,7 @@ export async function getUncachableStripeClient(): Promise<Stripe> {
     });
     if (tokenRes.ok) {
       const tokenData = await tokenRes.json() as { credentials: { secret_key: string } };
-      return new Stripe(tokenData.credentials.secret_key, { apiVersion: "2025-03-31.basil" });
+      return tokenData.credentials.secret_key;
     }
   }
 
@@ -27,13 +31,20 @@ export async function getUncachableStripeClient(): Promise<Stripe> {
   if (!key) {
     throw new Error("No Stripe credentials found. Connect the Stripe integration or set STRIPE_SECRET_KEY.");
   }
-  return new Stripe(key, { apiVersion: "2025-03-31.basil" });
+  return key;
+}
+
+export async function getUncachableStripeClient(): Promise<Stripe> {
+  return new Stripe(await getStripeSecretKey(), { apiVersion: STRIPE_API_VERSION });
 }
 
 export async function getStripeSync(): Promise<StripeSync> {
   if (!stripeSyncInstance) {
-    const stripe = await getUncachableStripeClient();
-    stripeSyncInstance = new StripeSync({ stripe, databaseUrl: process.env.DATABASE_URL! });
+    stripeSyncInstance = new StripeSync({
+      stripeSecretKey: await getStripeSecretKey(),
+      stripeApiVersion: STRIPE_API_VERSION,
+      poolConfig: { connectionString: process.env.DATABASE_URL },
+    });
   }
   return stripeSyncInstance;
 }

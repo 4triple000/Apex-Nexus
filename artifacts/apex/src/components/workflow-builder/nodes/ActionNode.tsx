@@ -24,7 +24,7 @@ function getPreview(action: WorkflowAction): string {
 }
 
 export const ActionNode = memo(({ data, selected }: NodeProps) => {
-  const d = data as ActionNodeData;
+  const d = data as unknown as ActionNodeData;
   const { action } = d;
   const meta = ACTION_META[action.type as ActionType] ?? {
     label: action.type,

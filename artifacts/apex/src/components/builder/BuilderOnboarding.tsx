@@ -6,6 +6,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { authHeaders } from "@/lib/authSession";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -319,6 +320,7 @@ export function BuilderOnboarding({ onComplete }: { onComplete: () => void }) {
       // Execute the code and collect output
       const execRes  = await apiFetch("/api/devos/execute", {
         method: "POST",
+        headers: authHeaders(),
         body: JSON.stringify({ code, projectId: pid }),
       });
       const execData = await execRes.json();

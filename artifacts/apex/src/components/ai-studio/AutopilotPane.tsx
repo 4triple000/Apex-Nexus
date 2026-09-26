@@ -407,7 +407,7 @@ function SelfImprovingLog({ logs }: { logs: InteractionLog[] }) {
             <div className="h-full rounded-full" style={{ width: `${successRate}%`, background: "linear-gradient(90deg, #22c55e, #4ade80)" }} />
           </div>
         </div>
-        <div className="divide-y" style={{ divideColor: "#21262D" }}>
+        <div className="divide-y divide-[#21262D]">
           {recent.map((log, i) => (
             <div key={i} className="flex items-center gap-2.5 px-3 py-2">
               <span className="text-base leading-none flex-shrink-0">{typeIcons[log.type] ?? "●"}</span>

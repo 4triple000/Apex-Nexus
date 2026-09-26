@@ -137,7 +137,7 @@ export async function createWorkflowHandler(req: Request, res: Response): Promis
       description: body.description,
       type: body.type as WorkflowType,
       trigger: body.trigger as WorkflowTrigger,
-      steps: body.steps,
+      steps: body.steps?.map((s, i) => ({ ...s, stepId: s.stepId ?? `step-${i + 1}` })),
       projectId: body.projectId,
       enabled: body.enabled,
       tags: body.tags,
@@ -257,7 +257,7 @@ export async function getExecutionHistoryHandler(req: Request, res: Response): P
 // ── GET /api/os/workflows/:id ─────────────────────────────────────────────────
 
 export async function getWorkflowHandler(req: Request, res: Response): Promise<void> {
-  const workflowId = req.params.id;
+  const workflowId = String(req.params.id);
   const projectId = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
 
   if (!workflowId) { badRequest(res, "Workflow ID required"); return; }
@@ -275,7 +275,7 @@ export async function getWorkflowHandler(req: Request, res: Response): Promise<v
 // ── PUT /api/os/workflows/:id ─────────────────────────────────────────────────
 
 export async function updateWorkflowHandler(req: Request, res: Response): Promise<void> {
-  const workflowId = req.params.id;
+  const workflowId = String(req.params.id);
   const projectId = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
 
   if (!workflowId) { badRequest(res, "Workflow ID required"); return; }
@@ -303,7 +303,7 @@ export async function updateWorkflowHandler(req: Request, res: Response): Promis
 // ── DELETE /api/os/workflows/:id ─────────────────────────────────────────────
 
 export async function deleteWorkflowHandler(req: Request, res: Response): Promise<void> {
-  const workflowId = req.params.id;
+  const workflowId = String(req.params.id);
   const projectId = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
 
   if (!workflowId) { badRequest(res, "Workflow ID required"); return; }
@@ -320,7 +320,7 @@ export async function deleteWorkflowHandler(req: Request, res: Response): Promis
 // ── POST /api/os/workflows/:id/run ────────────────────────────────────────────
 
 export async function runWorkflowHandler(req: Request, res: Response): Promise<void> {
-  const workflowId = req.params.id;
+  const workflowId = String(req.params.id);
   if (!workflowId) { badRequest(res, "Workflow ID required"); return; }
 
   const parsed = runSchema.safeParse(req.body);

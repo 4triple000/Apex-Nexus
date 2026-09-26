@@ -6,7 +6,6 @@ import { TopBar } from "./topbar";
 import { RightPanel } from "./right-panel";
 import { AvatarOverlay } from "@/components/avatar/AvatarOverlay";
 import { useAvatar } from "@/contexts/AvatarContext";
-import { ApexCore } from "@/components/apex/ApexCore";
 import { ApexControlPanel } from "@/components/apex/ApexControlPanel";
 
 function PageTransition({ children, location }: { children: ReactNode; location: string }) {
@@ -48,7 +47,6 @@ export function Layout({ children }: { children: ReactNode }) {
         <div aria-hidden style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 160, background: "linear-gradient(to top, rgba(10,10,15,0.90) 0%, transparent 100%)", pointerEvents: "none", zIndex: 5 }} />
 
         <ApexControlPanel />
-        <ApexCore />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingBottom: 96, paddingTop: 4 }}>
           <PageTransition location={location}>{children}</PageTransition>
@@ -81,7 +79,6 @@ export function Layout({ children }: { children: ReactNode }) {
             {/* Page content */}
             <main className="flex-1 flex flex-col overflow-hidden relative">
               <ApexControlPanel />
-              <ApexCore />
               <PageTransition location={location}>{children}</PageTransition>
             </main>
 

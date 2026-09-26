@@ -658,7 +658,8 @@ Rules:
       currentParams.avoidPatterns,
       (aiSuggestion.avoidPatterns as string[]) ?? [],
     ),
-    preferredComplexity: (aiSuggestion.preferredComplexity as string) ?? currentParams.preferredComplexity,
+    preferredComplexity: (["low", "medium", "high"] as const).find((c) => c === aiSuggestion.preferredComplexity)
+      ?? currentParams.preferredComplexity,
   };
 
   // Check if anything actually changed
@@ -796,11 +797,11 @@ export async function updateWorkflowTemplates(
       continue;
     }
 
-    const step = workflow.steps.find((s) => s.id === stepId);
+    const step = workflow.steps.find((s) => s.stepId === stepId);
     if (!step) continue;
 
-    const currentRetries = (step as Record<string, unknown>).retries as number | undefined ?? 0;
-    const currentTimeout = (step as Record<string, unknown>).timeoutMs as number | undefined ?? 5_000;
+    const currentRetries = step.retries ?? 0;
+    const currentTimeout = step.timeoutMs ?? 5_000;
     const newRetries     = currentRetries + THRESHOLDS.RETRY_INCREMENT;
     const newTimeout     = Math.min(
       Math.round(currentTimeout * THRESHOLDS.TIMEOUT_MULTIPLIER),
@@ -811,8 +812,8 @@ export async function updateWorkflowTemplates(
     try {
       await updateWorkflow(wfId, {
         steps: workflow.steps.map((s) =>
-          s.id === stepId
-            ? { ...s, retries: newRetries, timeoutMs: newTimeout } as typeof s
+          s.stepId === stepId
+            ? { ...s, retries: newRetries, timeoutMs: newTimeout }
             : s,
         ),
       });

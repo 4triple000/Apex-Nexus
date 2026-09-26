@@ -11,7 +11,7 @@ import {
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { BuilderOnboarding, useBuilderOnboarding } from "@/components/builder/BuilderOnboarding";
 import { ApexLogo } from "@/components/ui/ApexLogo";
-import { FloatingVoiceButton } from "@/components/voice/FloatingVoiceButton";
+import { authHeaders } from "@/lib/authSession";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -763,10 +763,11 @@ function PipelinePanel({
     setRunning(true); setStages([]);
     const res  = await apiFetch("/api/devos/pipeline", {
       method: "POST",
+      headers: authHeaders(),
       body: JSON.stringify({ code, projectId, fileId, testCode: testCode.trim() || undefined }),
     });
     const data = await res.json();
-    setStages(data.stages ?? []);
+    setStages(data.stages ?? (data.error ? [{ stage: "Run", status: "fail", output: data.error }] : []));
     setRunning(false);
   }, [code, running, projectId, fileId, testCode]);
 
@@ -1266,6 +1267,7 @@ function ApexBuilderMain() {
 
     const res  = await apiFetch("/api/devos/execute", {
       method: "POST",
+      headers: authHeaders(),
       body: JSON.stringify({ code, projectId: activeProject?.id, fileId: activeFile?.id }),
     });
     const data = await res.json();
@@ -1318,27 +1320,6 @@ function ApexBuilderMain() {
     setDirty(true);
     setViewMode("editor");
     addLine({ type: "system", text: "✨ AI generated code" });
-  }, [addLine]);
-
-  // ── Voice: generate code from spoken prompt ─────────────────────────────────
-  const voiceGenerateCode = useCallback(async (prompt: string) => {
-    if (!prompt.trim()) return;
-    addLine({ type: "system", text: `🎤 Voice: "${prompt}"` });
-    try {
-      const res  = await apiFetch("/api/devos/generate", {
-        method: "POST",
-        body:   JSON.stringify({ prompt: prompt.trim() }),
-      });
-      const data = await res.json();
-      if (data.code) {
-        setCode(data.code);
-        setDirty(true);
-        setViewMode("editor");
-        addLine({ type: "system", text: "✨ Voice generated code" });
-      }
-    } catch {
-      addLine({ type: "error", text: "Voice generation failed" });
-    }
   }, [addLine]);
 
   // ── Rollback to last saved ──────────────────────────────────────────────────
@@ -1777,16 +1758,6 @@ function ApexBuilderMain() {
         <LogsHistory projectId={activeProject?.id} />
       </BottomSheet>
 
-      {/* ── Floating Voice Companion (Builder mode) ────────────────────── */}
-      <FloatingVoiceButton
-        initialMode="builder"
-        projectContext={activeProject?.name ?? ""}
-        onBuilderCommand={(action, params) => {
-          const prompt = params.feature ?? params.description ?? params.text ?? action.replace(/_/g, " ");
-          voiceGenerateCode(prompt);
-        }}
-        style={{ bottom: 96, right: 14 }}
-      />
     </div>
   );
 }

@@ -135,7 +135,7 @@ export async function analyzePatterns(req: Request, res: Response): Promise<void
 // ── DELETE /api/os/memory/:projectId ─────────────────────────────────────────
 
 export async function clearProjectLogs(req: Request, res: Response): Promise<void> {
-  const projectId = parseInt(req.params.projectId ?? "");
+  const projectId = parseInt(String(req.params.projectId ?? ""));
   if (isNaN(projectId)) { badRequest(res, "Invalid project ID"); return; }
 
   try {

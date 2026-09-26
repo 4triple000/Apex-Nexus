@@ -21,6 +21,7 @@ import { FeatureModal } from "@/components/features/FeatureModal";
 import { DevPanel } from "@/components/features/DevPanel";
 
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+const IOS_EASE = [0.25, 0.46, 0.45, 0.94] as const;
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
 // ── Hero carousel ─────────────────────────────────────────────────────────────
@@ -101,7 +102,7 @@ function HeroCarousel({ onPreview }: { onPreview: (f: ApexFeature) => void }) {
           <div style={{ height: 3, borderRadius: 99, background: "rgba(255,255,255,0.07)", overflow: "hidden" }}>
             <motion.div
               animate={{ width: `${feature.readiness}%` }}
-              transition={{ duration: 1.0, ease: IOS }}
+              transition={{ duration: 1.0, ease: IOS_EASE }}
               style={{
                 height: "100%", borderRadius: 99,
                 background: `linear-gradient(90deg, ${feature.accent}, ${feature.accent}99)`,
@@ -366,7 +367,7 @@ export function ApexFeaturesPage() {
         {phase === "all" && !search && (
           <motion.section
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: IOS }}
+            transition={{ duration: 0.4, ease: IOS_EASE }}
             style={{ marginBottom: 22 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
               <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.05)" }} />

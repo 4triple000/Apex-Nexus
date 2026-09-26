@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./lib/db" },
+    { "path": "./lib/api-zod" },
+    { "path": "./lib/api-client-react" },
+    { "path": "./lib/integrations/openai-ai-server" }
+  ]
+}

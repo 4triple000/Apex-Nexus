@@ -305,7 +305,7 @@ interface AvatarReengagementProps {
 }
 
 export function AvatarReengagement({ message, onDismiss }: AvatarReengagementProps) {
-  const { personalityId } = usePersonality();
+  const { profile: { id: personalityId } } = usePersonality();
 
   const [phase,    setPhase]    = useState<Phase>("look");
   const [visible,  setVisible]  = useState(true);
@@ -408,7 +408,8 @@ export function AvatarReengagement({ message, onDismiss }: AvatarReengagementPro
         style={{
           position: "fixed",
           bottom: "max(env(safe-area-inset-bottom, 0px), 84px)",
-          left: "50%", transform: "translateX(-50%)",
+          // Centered with margins, not a transform: the slide animation owns `transform`
+          left: 0, right: 0, margin: "0 auto",
           width: "calc(100% - 32px)", maxWidth: 420,
           zIndex: 8901,
           animation: cardAnim,

@@ -8,7 +8,7 @@ interface DelayNodeData {
 }
 
 export const DelayNode = memo(({ data, selected }: NodeProps) => {
-  const d = data as DelayNodeData;
+  const d = data as unknown as DelayNodeData;
   const duration = Number((d.action.data as Record<string, unknown>)?.duration ?? 5);
   const unit = String((d.action.data as Record<string, unknown>)?.unit ?? "minutes");
 

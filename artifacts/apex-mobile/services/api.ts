@@ -8,17 +8,30 @@ const getBaseUrl = () => {
   return domain ? `https://${domain}` : "http://localhost:8080";
 };
 
+// Session credential from login/register; set by AuthContext
+let authSessionId: string | null = null;
+
+export function setAuthSession(sessionId: string | null): void {
+  authSessionId = sessionId;
+}
+
 async function apexFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getBaseUrl()}/api${path}`;
   const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...(authSessionId ? { "x-apex-auth": authSessionId } : {}),
       ...options?.headers,
     },
   });
 
-  const json = (await res.json()) as { ok: boolean; data?: T; error?: string };
+  let json: { ok: boolean; data?: T; error?: string };
+  try {
+    json = (await res.json()) as typeof json;
+  } catch {
+    throw new Error(`Server error (${res.status})`);
+  }
   if (!json.ok) throw new Error(json.error ?? "API error");
   return json.data as T;
 }
@@ -28,6 +41,7 @@ export interface RegisterInput { email: string; password: string; username?: str
 export interface LoginInput { email: string; password: string }
 export interface AuthResponse {
   userId: number;
+  sessionId: string;
   email: string;
   username: string;
   avatarEmoji: string;
@@ -43,7 +57,7 @@ export const authApi = {
 };
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-export interface ChatInput { userId: number; message: string; conversationId?: number }
+export interface ChatInput { message: string; conversationId?: number }
 export interface ChatResponse { content: string; conversationId: number; tokensUsed?: number }
 export interface ConversationMessage { id: number; role: "user" | "assistant"; content: string; createdAt: string }
 export interface Conversation { id: number; userId: number; title: string; createdAt: string }
@@ -52,8 +66,8 @@ export const chatApi = {
   send: (data: ChatInput) =>
     apexFetch<ChatResponse>("/mobile/chat", { method: "POST", body: JSON.stringify(data) }),
 
-  getConversations: (userId: number) =>
-    apexFetch<{ conversations: Conversation[] }>(`/mobile/conversations?userId=${userId}`),
+  getConversations: () =>
+    apexFetch<{ conversations: Conversation[] }>("/mobile/conversations"),
 
   getMessages: (conversationId: number) =>
     apexFetch<{ messages: ConversationMessage[] }>(`/mobile/conversations/${conversationId}/messages`),

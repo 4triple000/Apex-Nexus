@@ -13,7 +13,7 @@ export interface AiSuggestionJob {
   triggerMessageId?: number;
 }
 
-type JobHandler = (data: AiSuggestionJob) => Promise<void>;
+type JobHandler = (data: AiSuggestionJob) => Promise<unknown>;
 let handler: JobHandler | null = null;
 
 let bullQueue: import("bullmq").Queue<AiSuggestionJob> | null = null;

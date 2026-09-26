@@ -5,11 +5,13 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setAuthSession } from "@/services/api";
 
 const AUTH_KEY = "apex_mobile_user";
 
 export interface ApexUser {
   userId: number;
+  sessionId: string;
   email: string;
   username: string;
   avatarEmoji: string;
@@ -39,7 +41,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .then((raw) => {
         if (raw) {
           try {
-            setUser(JSON.parse(raw) as ApexUser);
+            const saved = JSON.parse(raw) as ApexUser;
+            // Accounts saved before session IDs existed must sign in again
+            if (saved.sessionId) {
+              setAuthSession(saved.sessionId);
+              setUser(saved);
+            }
           } catch {}
         }
       })
@@ -48,11 +55,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (userData: ApexUser) => {
     await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(userData));
+    setAuthSession(userData.sessionId);
     setUser(userData);
   };
 
   const logout = async () => {
     await AsyncStorage.removeItem(AUTH_KEY);
+    setAuthSession(null);
     setUser(null);
   };
 

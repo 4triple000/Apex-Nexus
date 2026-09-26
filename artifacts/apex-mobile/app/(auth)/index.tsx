@@ -61,6 +61,7 @@ export default function AuthScreen() {
 
       await login({
         userId: user.userId,
+        sessionId: user.sessionId,
         email: user.email,
         username: user.username,
         avatarEmoji: user.avatarEmoji,

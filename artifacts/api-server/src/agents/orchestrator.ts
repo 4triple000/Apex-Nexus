@@ -137,8 +137,16 @@ Pipeline rules:
 
     const raw = response.choices[0]?.message?.content ?? "";
     const json = raw.match(/\{[\s\S]*\}/)?.[0] ?? raw;
-    const parsed = JSON.parse(json) as RouteDecision;
-    return parsed;
+    const parsed = JSON.parse(json) as Partial<RouteDecision>;
+    const isAgentId = (id: unknown): id is AgentId => typeof id === "string" && id in AGENT_REGISTRY;
+    if (!isAgentId(parsed.primaryAgent)) throw new Error("Unknown agent in AI routing");
+    const pipeline = Array.isArray(parsed.pipeline) ? parsed.pipeline.filter(isAgentId) : [];
+    return {
+      primaryAgent: parsed.primaryAgent,
+      confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0.5,
+      reasoning: parsed.reasoning ?? "",
+      pipeline: pipeline.length ? pipeline : [parsed.primaryAgent],
+    };
   } catch {
     // Fallback to builder
     return {

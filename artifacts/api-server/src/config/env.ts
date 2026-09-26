@@ -22,8 +22,10 @@ export const env = {
   // Database
   databaseUrl: requireEnv("DATABASE_URL"),
 
-  // Session
-  sessionSecret: optionalEnv("SESSION_SECRET", "apex-dev-secret-change-in-production"),
+  // Session — signs login tokens, so a known default would let anyone forge them
+  sessionSecret: process.env.NODE_ENV === "production"
+    ? requireEnv("SESSION_SECRET")
+    : optionalEnv("SESSION_SECRET", "apex-dev-secret-change-in-production"),
 
   // Stripe
   stripeWebhookSecret: optionalEnv("STRIPE_WEBHOOK_SECRET"),

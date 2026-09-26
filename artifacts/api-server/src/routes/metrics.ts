@@ -51,7 +51,7 @@ router.get("/metrics/project/:id", async (req, res): Promise<void> => {
     ]);
 
     const totalLogs     = allLogs.length;
-    const successCount  = allLogs.filter((l) => l.success).length;
+    const successCount  = allLogs.filter((l) => l.exitCode === 0).length;
     const failCount     = totalLogs - successCount;
     const errorRate     = totalLogs > 0 ? (failCount / totalLogs) * 100 : 0;
     const avgLatency    = totalLogs > 0

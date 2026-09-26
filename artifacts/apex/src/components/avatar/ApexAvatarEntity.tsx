@@ -175,7 +175,7 @@ export const ApexAvatarEntity = memo(function ApexAvatarEntity({
 
   // Eye blink timer
   const [eyesClosed, setEyesClosed] = useState(false);
-  const blinkRef = useRef<ReturnType<typeof setTimeout>>();
+  const blinkRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
     const scheduleBlink = () => {
       blinkRef.current = setTimeout(() => {

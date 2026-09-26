@@ -115,7 +115,6 @@ router.get("/billing/plans", async (_req, res): Promise<void> => {
   } catch (_err) {
     logger.warn("Stripe unavailable — returning static plan list");
     const plans = (["free", "pro", "enterprise"] as PlanTier[]).map(tier => ({
-      tier,
       ...PLAN_METADATA[tier],
       stripePrices: [],
     }));
@@ -211,7 +210,9 @@ router.get("/billing/status", requireSession, async (req, res): Promise<void> =>
         const stripe = await getUncachableStripeClient();
         const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
         liveStripeStatus = sub.status;
-        periodEnd = new Date((sub as { current_period_end: number }).current_period_end * 1000).toISOString();
+        // Since API version 2025-03-31.basil the billing period lives on subscription items
+        const currentPeriodEnd = sub.items.data[0]?.current_period_end;
+        if (currentPeriodEnd) periodEnd = new Date(currentPeriodEnd * 1000).toISOString();
       } catch {
         logger.warn("Could not fetch live Stripe subscription — using cached status");
       }

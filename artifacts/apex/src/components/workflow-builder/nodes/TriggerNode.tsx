@@ -9,7 +9,7 @@ interface TriggerNodeData {
 }
 
 export const TriggerNode = memo(({ data, selected }: NodeProps) => {
-  const d = data as TriggerNodeData;
+  const d = data as unknown as TriggerNodeData;
   const meta = TRIGGER_META[d.trigger] ?? {
     label: d.trigger,
     icon: "⚡",

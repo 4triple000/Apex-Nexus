@@ -11,6 +11,7 @@ import { Link }    from "wouter";
 import { io }      from "socket.io-client";
 import type { Socket } from "socket.io-client";
 import { DeployPanel } from "@/components/deploy/DeployPanel";
+import { authHeaders, getAuthSessionId } from "@/lib/authSession";
 
 // Monaco is loaded lazily so the bundle stays small
 const MonacoEditor = lazy(() => import("@monaco-editor/react"));
@@ -67,7 +68,12 @@ async function api<T>(path: string, opts?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", "x-session-id": SESSION_ID },
     ...opts,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const text = await res.text();
+    let message = text;
+    try { message = (JSON.parse(text) as { error?: string }).error ?? text; } catch { /* not JSON */ }
+    throw new Error(message);
+  }
   return res.json() as Promise<T>;
 }
 
@@ -480,6 +486,7 @@ export default function RuntimePage() {
     const socket = io("/runtime", {
       path:       "/api/socket.io",
       transports: ["websocket", "polling"],
+      auth:       { sessionId: getAuthSessionId() },
     });
 
     socket.on("run:start", () => {
@@ -616,6 +623,7 @@ export default function RuntimePage() {
       try {
         const res = await api<RunResult>("/runtime/execute", {
           method: "POST",
+          headers: { "Content-Type": "application/json", "x-session-id": SESSION_ID, ...authHeaders() },
           body:   JSON.stringify({ code, language: lang, projectId: project?.id, fileId: activeFile?.id }),
         });
         // Reconstruct lines from result

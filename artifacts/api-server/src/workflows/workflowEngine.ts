@@ -112,7 +112,8 @@ export async function createWorkflow(
       tags: definition.tags ?? [],
       chainTo: definition.chainTo,
       chainOnError: definition.chainOnError,
-      ...definition,
+      projectId: definition.projectId,
+      sessionId: definition.sessionId,
     };
   }
 
@@ -464,7 +465,7 @@ export async function getWorkflow(
 ): Promise<Workflow | null> {
   return (
     _registry.get(workflowId) ??
-    (projectId ? await _loadWorkflowFromDB(workflowId, projectId) : null)
+    (projectId ? (await _loadWorkflowFromDB(workflowId, projectId)) ?? null : null)
   );
 }
 
@@ -528,14 +529,15 @@ async function _persistWorkflowToDB(
 
     if (!project) return;
 
-    const existing = (project.workflows ?? []) as Workflow[];
+    // The JSONB column is typed for AI-OS workflows but also stores engine workflows
+    const existing = (project.workflows ?? []) as unknown as Workflow[];
     const updated = isUpdate
       ? existing.map((w) => (w.id === workflow.id ? workflow : w))
       : [...existing.filter((w) => w.id !== workflow.id), workflow];
 
     await db
       .update(apexOsProjectsTable)
-      .set({ workflows: updated as typeof project.workflows, updatedAt: new Date() })
+      .set({ workflows: updated as unknown as typeof project.workflows, updatedAt: new Date() })
       .where(eq(apexOsProjectsTable.id, projectId));
   } catch (err) {
     logger.error({ err, workflowId: workflow.id, projectId }, "WorkflowEngine: DB persist failed");

@@ -289,7 +289,7 @@ export function PipelineBuilder({ initial, onSave, onClose, isSaving }: Props) {
                                   step.provider === p.id ? 'ring-2' : 'opacity-60 hover:opacity-100'
                                 )}
                                 style={step.provider === p.id
-                                  ? { background: p.bgColor, borderColor: p.color, ringColor: p.color, border: `1px solid ${p.color}` }
+                                  ? { background: p.bgColor, border: `1px solid ${p.color}`, '--tw-ring-color': p.color } as React.CSSProperties
                                   : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
                               >
                                 <span className="text-lg leading-none">{p.icon}</span>

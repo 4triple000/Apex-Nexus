@@ -159,7 +159,7 @@ export interface RouteDecision {
   primaryAgent: AgentId;
   confidence: number;
   reasoning: string;
-  pipeline: PipelineStep[];
+  pipeline: AgentId[];
 }
 
 // ── Agent interface contract ───────────────────────────────────────────────────

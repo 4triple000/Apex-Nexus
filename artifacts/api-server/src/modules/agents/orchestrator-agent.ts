@@ -71,8 +71,8 @@ export interface OrchestratorCycle {
 }
 
 interface OrchestratorObservation {
-  metrics:       ReturnType<typeof autonomousSystem["metrics"]>;
-  status:        ReturnType<typeof autonomousSystem["status"]>;
+  metrics:       (typeof autonomousSystem)["metrics"];
+  status:        (typeof autonomousSystem)["status"];
   patterns:      string[];
   agentHistory:  string;
   summary:       string;

@@ -622,7 +622,14 @@ function WorkflowsPageInner() {
       {/* Builder overlay */}
       {showBuilder && (
         <PipelineBuilder
-          initial={editingWorkflow ?? undefined}
+          initial={editingWorkflow
+            ? {
+                ...editingWorkflow,
+                description: editingWorkflow.description ?? undefined,
+                category: editingWorkflow.category ?? undefined,
+                authorName: editingWorkflow.authorName ?? undefined,
+              }
+            : undefined}
           onSave={handleSave}
           onClose={() => { setShowBuilder(false); setEditingWorkflow(null); }}
           isSaving={createWorkflow.isPending || updateWorkflow.isPending}

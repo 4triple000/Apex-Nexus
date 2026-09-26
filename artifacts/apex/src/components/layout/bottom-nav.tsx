@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  MessageSquare, Hammer, Swords, User, Aperture,
+  MessageSquare, Hammer, Swords, User,
 } from "lucide-react";
 
 const SPRING  = "cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -11,7 +11,6 @@ const FAST_IN = "cubic-bezier(0.55, 0, 1, 0.45)";
 const NAV_ITEMS = [
   { href: "/",               icon: MessageSquare, label: "AI Chat"  },
   { href: "/nexus-builder",  icon: Hammer,        label: "Builder"  },
-  { href: "/apex-avatar",    icon: Aperture,      label: "Orb",       center: true },
   { href: "/arena",          icon: Swords,        label: "Battle"   },
   { href: "/avatar",         icon: User,          label: "Identity" },
 ] as const;
@@ -21,78 +20,6 @@ type NavItem = (typeof NAV_ITEMS)[number];
 function NavItem({ item, isActive }: { item: NavItem; isActive: boolean }) {
   const [pressed, setPressed] = useState(false);
   const Icon = item.icon;
-
-  /* ── CENTER ORB FAB ─────────────────────────────────────────────────────── */
-  if ((item as any).center) {
-    return (
-      <Link href={item.href}>
-        <div
-          onPointerDown={() => setPressed(true)}
-          onPointerUp={() => setPressed(false)}
-          onPointerLeave={() => setPressed(false)}
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 6px",
-            flexShrink: 0,
-            background: isActive
-              ? "linear-gradient(135deg, #6C5CE7 0%, #A29BFE 50%, #FD79A8 100%)"
-              : "linear-gradient(135deg, #4A3DB3 0%, #6C5CE7 50%, #C14F8A 100%)",
-            boxShadow: isActive
-              ? [
-                  "0 0 0 1.5px rgba(162,155,254,0.45)",
-                  "0 0 22px rgba(108,92,231,0.8)",
-                  "0 0 48px rgba(108,92,231,0.32)",
-                  "0 0 72px rgba(253,121,168,0.18)",
-                  "0 8px 24px rgba(0,0,0,0.55)",
-                  "inset 0 1px 0 rgba(255,255,255,0.22)",
-                ].join(", ")
-              : [
-                  "0 0 0 1px rgba(108,92,231,0.28)",
-                  "0 0 18px rgba(108,92,231,0.45)",
-                  "0 0 34px rgba(253,121,168,0.12)",
-                  "0 6px 18px rgba(0,0,0,0.52)",
-                  "inset 0 1px 0 rgba(255,255,255,0.16)",
-                ].join(", "),
-            transform: pressed
-              ? "translateY(-2px) scale(0.90)"
-              : isActive
-              ? "translateY(-10px) scale(1.10)"
-              : "translateY(-6px) scale(1.00)",
-            transition: pressed
-              ? `transform 0.11s ${FAST_IN}`
-              : [
-                  `transform 0.40s ${SPRING}`,
-                  `box-shadow 0.30s ${IOS}`,
-                  `background 0.25s ${IOS}`,
-                ].join(", "),
-            cursor: "pointer",
-            borderTop: "1px solid rgba(255,255,255,0.22)",
-            willChange: "transform",
-            position: "relative",
-          }}
-        >
-          <Icon
-            style={{
-              width: 22,
-              height: 22,
-              color: "white",
-              strokeWidth: 2.1,
-              filter: isActive
-                ? "drop-shadow(0 0 8px rgba(255,255,255,0.7))"
-                : "drop-shadow(0 0 3px rgba(255,255,255,0.3))",
-              transform: isActive ? "scale(1.1)" : "scale(1)",
-              transition: `transform 0.35s ${SPRING}, filter 0.25s ${IOS}`,
-            }}
-          />
-        </div>
-      </Link>
-    );
-  }
 
   /* ── REGULAR TAB ──────────────────────────────────────────────────────── */
   return (

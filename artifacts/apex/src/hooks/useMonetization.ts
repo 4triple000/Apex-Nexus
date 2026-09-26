@@ -12,7 +12,7 @@ async function req<T>(url: string, opts?: RequestInit): Promise<T> {
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type SubscriptionTier = "free" | "pro" | "creator_pro";
+export type SubscriptionTier = "free" | "pro" | "creator_pro" | "enterprise";
 
 export interface Plan {
   id: string;

@@ -37,7 +37,7 @@ function PlatformBadge({ platform }: { platform: string }) {
 
 // ── Long-press hook ───────────────────────────────────────────────────────────
 function useLongPress(callback: () => void, ms = 480) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const start = useCallback(() => {
     timerRef.current = setTimeout(callback, ms);
   }, [callback, ms]);
@@ -313,7 +313,7 @@ export function ChatView({ conversation, contact, messages }: ChatViewProps) {
   const [shareMsg, setShareMsg]         = useState<DmMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef       = useRef<HTMLTextAreaElement>(null);
-  const suggestTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const suggestTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const sendMessage  = useSendMessage();
   const typingAssist = useTypingAssist();

@@ -43,7 +43,7 @@ const PERSONALITY_LABELS: Record<string, string> = {
 };
 
 export function ShareModal({ prompt, response, provider, responseTime, context = "chat", onClose }: ShareModalProps) {
-  const { personalityId } = usePersonality();
+  const { profile: { id: personalityId } } = usePersonality();
   const cardRef = useRef<HTMLDivElement>(null);
   const { status, dataUrl, generateImage, copyAsImage, downloadImage, nativeShare } = useShareCard();
 
