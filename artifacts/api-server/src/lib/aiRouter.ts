@@ -1,4 +1,32 @@
-import { openai } from "@workspace/integrations-openai-ai-server";
+import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
+import { openai, isOpenAIConfigured } from "@workspace/integrations-openai-ai-server";
+
+// Real provider clients. Each is created on first use, so the server starts without keys;
+// a provider with no key answers with a clear "not connected" error instead of pretending.
+let anthropicClient: Anthropic | null = null;
+function getAnthropic(): Anthropic | null {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  anthropicClient ??= new Anthropic();
+  return anthropicClient;
+}
+
+let perplexityClient: OpenAI | null = null;
+function getPerplexity(): OpenAI | null {
+  if (!process.env.PERPLEXITY_API_KEY) return null;
+  // Perplexity serves an OpenAI-compatible chat completions API
+  perplexityClient ??= new OpenAI({ apiKey: process.env.PERPLEXITY_API_KEY, baseURL: "https://api.perplexity.ai" });
+  return perplexityClient;
+}
+
+/** Which chat providers have credentials on this server. */
+export function providerStatus(): Record<AiProvider, boolean> {
+  return {
+    openai:     isOpenAIConfigured(),
+    claude:     !!process.env.ANTHROPIC_API_KEY,
+    perplexity: !!process.env.PERPLEXITY_API_KEY,
+  };
+}
 
 // ── Human voice layer ─────────────────────────────────────────────────────────
 // Injected into every system prompt so Apex always sounds like a real person.
@@ -44,9 +72,24 @@ function routeToProvider(message: string, preferredProvider?: string): AiProvide
   const complexKeywords = ["explain", "analyze", "compare", "write", "essay", "code", "implement", "design", "architecture", "detailed", "thorough"];
   const isComplex = complexKeywords.some(k => lower.includes(k));
 
-  if (isFactual) return "perplexity";
-  if (isComplex) return "claude";
-  return "openai";
+  const ideal: AiProvider = isFactual ? "perplexity" : isComplex ? "claude" : "openai";
+  // Auto-route only to providers that are actually connected
+  const status = providerStatus();
+  if (status[ideal]) return ideal;
+  return (Object.keys(status) as AiProvider[]).find((p) => status[p]) ?? ideal;
+}
+
+const CALLERS: Record<AiProvider, (message: string) => Promise<AiResponse>> = {
+  openai:     (m) => callOpenAI(m),
+  claude:     (m) => callClaude(m),
+  perplexity: (m) => callPerplexity(m),
+};
+
+// Battle and Hive use every connected provider (all of them if none are, so the errors explain why)
+function activeProviders(): AiProvider[] {
+  const status = providerStatus();
+  const connected = (Object.keys(status) as AiProvider[]).filter((p) => status[p]);
+  return connected.length ? connected : (Object.keys(status) as AiProvider[]);
 }
 
 async function callOpenAI(message: string, personalizationHint?: string): Promise<AiResponse> {
@@ -81,26 +124,34 @@ async function callClaude(message: string, personalizationHint?: string): Promis
   const start = Date.now();
   const baseSystem = `You are Apex (Claude mode) — thoughtful, analytical, great at nuanced reasoning and long-form writing. Provide detailed, well-structured responses.\n\n${HUMAN_VOICE_RULES}`;
   const systemContent = personalizationHint ? `${baseSystem}\n${personalizationHint}` : baseSystem;
+  const client = getAnthropic();
+  if (!client) {
+    return { provider: "claude", content: "", responseTime: 0, error: "Claude isn't connected yet. Add ANTHROPIC_API_KEY on the server." };
+  }
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 8192,
-      messages: [
-        { role: "system", content: systemContent },
-        { role: "user", content: message }
-      ],
+    const response = await client.beta.messages.create({
+      model: "claude-opus-5-5",
+      max_tokens: 16000,
+      output_config: { effort: "low" },
+      // On a safety decline, the API re-runs the request on a suitable fallback model
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      system: systemContent,
+      messages: [{ role: "user", content: message }],
     });
-    return {
-      provider: "claude",
-      content: response.choices[0]?.message?.content ?? "No response",
-      responseTime: Date.now() - start,
-    };
+    if (response.stop_reason === "refusal") {
+      return { provider: "claude", content: "", responseTime: Date.now() - start, error: "Claude declined to answer that one." };
+    }
+    const content = response.content
+      .flatMap((block) => (block.type === "text" ? [block.text] : []))
+      .join("");
+    return { provider: "claude", content: content || "No response", responseTime: Date.now() - start };
   } catch (err) {
     return {
       provider: "claude",
       content: "",
       responseTime: Date.now() - start,
-      error: err instanceof Error ? err.message : "Claude error",
+      error: err instanceof Anthropic.APIError ? `Claude error ${err.status ?? ""}: ${err.message}`.trim() : err instanceof Error ? err.message : "Claude error",
     };
   }
 }
@@ -109,10 +160,13 @@ async function callPerplexity(message: string, personalizationHint?: string): Pr
   const start = Date.now();
   const baseSystem = `You are Apex (Research mode) — specialized in factual information, current events, and research. Provide accurate, well-cited reasoning with clarity.\n\n${HUMAN_VOICE_RULES}`;
   const systemContent = personalizationHint ? `${baseSystem}\n${personalizationHint}` : baseSystem;
+  const client = getPerplexity();
+  if (!client) {
+    return { provider: "perplexity", content: "", responseTime: 0, error: "Perplexity isn't connected yet. Add PERPLEXITY_API_KEY on the server." };
+  }
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 8192,
+    const response = await client.chat.completions.create({
+      model: "sonar-pro",
       messages: [
         { role: "system", content: systemContent },
         { role: "user", content: message }
@@ -149,38 +203,26 @@ export async function chatSingle(message: string, preferredProvider?: string, pe
 }
 
 export async function chatBattle(message: string): Promise<AiResponse[]> {
-  const [openaiResult, claudeResult, perplexityResult] = await Promise.all([
-    callOpenAI(message),
-    callClaude(message),
-    callPerplexity(message),
-  ]);
-  return [openaiResult, claudeResult, perplexityResult];
+  return Promise.all(activeProviders().map((p) => CALLERS[p](message)));
 }
 
 export async function chatHive(message: string): Promise<{ responses: AiResponse[]; combined: string }> {
-  const [openaiResult, claudeResult, perplexityResult] = await Promise.all([
-    callOpenAI(message),
-    callClaude(message),
-    callPerplexity(message),
-  ]);
-
-  const responses = [openaiResult, claudeResult, perplexityResult];
+  const responses = await Promise.all(activeProviders().map((p) => CALLERS[p](message)));
   const validResponses = responses.filter(r => !r.error && r.content);
+  const NAMES: Record<string, string> = { openai: "ChatGPT", claude: "Claude", perplexity: "Perplexity" };
 
-  const combinedPrompt = `You are a synthesis engine. Three different AI perspectives have responded to a user's question. Synthesize the best answer from all three, combining the strongest insights from each without repeating information. Be concise and comprehensive.
+  const combinedPrompt = `You are a synthesis engine. Several AI models have responded to a user's question. Synthesize the best answer from them, combining the strongest insights from each without repeating information. Be concise and comprehensive.
 
 User's question: ${message}
 
-GPT-4 response: ${openaiResult.content || "[failed]"}
-
-Claude response: ${claudeResult.content || "[failed]"}
-
-Perplexity response: ${perplexityResult.content || "[failed]"}
+${validResponses.map((r) => `${NAMES[r.provider] ?? r.provider} response: ${r.content}`).join("\n\n")}
 
 Synthesized answer:`;
 
-  let combined = "Failed to synthesize responses.";
-  if (validResponses.length > 0) {
+  let combined = responses.find((r) => r.error)?.error ?? "Failed to synthesize responses.";
+  if (validResponses.length === 1) {
+    combined = validResponses[0].content;
+  } else if (validResponses.length > 1) {
     const start = Date.now();
     try {
       const synthesisResponse = await openai.chat.completions.create({

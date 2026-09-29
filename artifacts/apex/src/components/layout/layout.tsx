@@ -37,14 +37,12 @@ export function Layout({ children }: { children: ReactNode }) {
       ══════════════════════════════════════════════ */}
       <div
         className="lg:hidden min-h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
-        style={{ background: "#0A0A0F", borderColor: "rgba(108,92,231,0.12)" }}
+        style={{ background: "var(--mg-bg)", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
       >
-        {/* Ambient gradient orbs */}
-        <div aria-hidden style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: 640, height: 320, background: "radial-gradient(ellipse at 50% 0%, rgba(108,92,231,0.16) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
-        <div aria-hidden style={{ position: "fixed", top: "35%", left: -60, width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,210,211,0.06) 0%, transparent 70%)", filter: "blur(48px)", pointerEvents: "none", zIndex: 0 }} />
-        <div aria-hidden style={{ position: "fixed", top: "68%", right: -40, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle, rgba(253,121,168,0.07) 0%, transparent 70%)", filter: "blur(48px)", pointerEvents: "none", zIndex: 0 }} />
-        <div aria-hidden style={{ position: "fixed", inset: 0, backgroundImage: "linear-gradient(rgba(108,92,231,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(108,92,231,0.03) 1px, transparent 1px)", backgroundSize: "48px 48px", pointerEvents: "none", zIndex: 0 }} />
-        <div aria-hidden style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: 160, background: "linear-gradient(to top, rgba(10,10,15,0.90) 0%, transparent 100%)", pointerEvents: "none", zIndex: 5 }} />
+        {/* Midnight Glass: soft moving light that the frosted surfaces pick up */}
+        <div aria-hidden className="mg-blob" style={{ width: 280, height: 280, top: 60, left: -90, background: "rgba(108,92,231,0.55)" }} />
+        <div aria-hidden className="mg-blob" style={{ width: 240, height: 240, top: "42%", right: -80, background: "rgba(0,194,255,0.32)", animationDelay: "-5s" }} />
+        <div aria-hidden className="mg-blob" style={{ width: 220, height: 220, bottom: 40, left: 10, background: "rgba(255,79,163,0.26)", animationDelay: "-10s" }} />
 
         <ApexControlPanel />
 

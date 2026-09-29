@@ -66,13 +66,13 @@ export function ApexControlPanel() {
           zIndex: 55,
           width: 42,
           height: 42,
-          borderRadius: 14,
+          borderRadius: "50%",
           background: open
-            ? "linear-gradient(135deg, rgba(108,92,231,0.4), rgba(162,155,254,0.2))"
-            : "rgba(20,18,30,0.75)",
-          border: `1px solid ${open ? "rgba(108,92,231,0.5)" : "rgba(255,255,255,0.1)"}`,
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
+            ? "linear-gradient(135deg, rgba(139,123,255,0.45), rgba(162,155,254,0.2))"
+            : "linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.045))",
+          border: `1px solid ${open ? "rgba(139,123,255,0.55)" : "rgba(255,255,255,0.16)"}`,
+          backdropFilter: "blur(22px) saturate(180%)",
+          WebkitBackdropFilter: "blur(22px) saturate(180%)",
           cursor: "pointer",
           display: "flex",
           flexDirection: "column",
@@ -82,8 +82,8 @@ export function ApexControlPanel() {
           padding: 0,
           transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
           boxShadow: open
-            ? "0 0 20px rgba(108,92,231,0.4)"
-            : "0 4px 16px rgba(0,0,0,0.4)",
+            ? "0 0 20px rgba(139,123,255,0.45)"
+            : "inset 0 1px 0 rgba(255,255,255,0.32), 0 8px 24px rgba(0,0,0,0.3)",
         }}
       >
         {/* Strawberry-menu lines */}

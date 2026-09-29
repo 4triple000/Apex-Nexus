@@ -1,11 +1,16 @@
 import { Router, type IRouter } from "express";
 import { SendChatBody, AnalyzeScreenshotBody } from "@workspace/api-zod";
-import { chatSingle, chatBattle, chatHive } from "../lib/aiRouter";
+import { chatSingle, chatBattle, chatHive, providerStatus } from "../lib/aiRouter";
 import { incrementUsage } from "../lib/usageTracker";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { trackInteraction, getUserPersonalization } from "../lib/learningEngine";
 
 const router: IRouter = Router();
+
+// Which AI models are connected, so the app can mark the others as "not connected"
+router.get("/chat/providers", (_req, res): void => {
+  res.json({ providers: providerStatus() });
+});
 
 router.post("/chat", async (req, res): Promise<void> => {
   const parsed = SendChatBody.safeParse(req.body);
