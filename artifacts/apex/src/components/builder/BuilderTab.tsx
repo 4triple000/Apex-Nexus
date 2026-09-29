@@ -9,6 +9,8 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import AutonomousPanel from "./AutonomousPanel";
+import { useAuth } from "@/contexts/AuthContext";
+import { authHeaders } from "@/lib/authSession";
 import OrchestratorPanel from "../agents/OrchestratorPanel";
 
 // ── Design tokens (matching game-engine.tsx) ───────────────────────────────
@@ -17,7 +19,6 @@ const CARD   = "rgba(255,255,255,0.04)";
 const BORDER = "rgba(255,255,255,0.08)";
 const GRAD   = "linear-gradient(135deg,#6C5CE7,#A29BFE,#FD79A8)";
 const GOLD   = "#ffcc33";
-const DEV_LS_KEY = "apex_builder_devkey";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface PlanFile {
@@ -85,9 +86,9 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
   const [buildLog,     setBuildLog]     = useState<string[]>([]);
 
   // Dev mode state
+  // Developer Mode (apply code changes) is only offered to the app owner
+  const isOwner = !!useAuth().user?.isOwner;
   const [devMode,          setDevMode]          = useState(false);
-  const [devKey,           setDevKey]           = useState("");
-  const [showKeyInput,     setShowKeyInput]      = useState(false);
   const [keyError,         setKeyError]          = useState<string | null>(null);
   const [planError,        setPlanError]         = useState<string | null>(null);
 
@@ -100,62 +101,29 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
   // Sub-tab: "builder" | "autonomous" | "orchestrator"
   const [subTab, setSubTab] = useState<"builder" | "autonomous" | "orchestrator">("builder");
 
-  // Load stored dev key on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(DEV_LS_KEY);
-    if (stored) { setDevKey(stored); setDevMode(true); }
-  }, []);
-
   // Fetch snapshots when dev mode activates
   useEffect(() => {
-    if (devMode && devKey) fetchSnapshots();
-  }, [devMode, devKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (devMode) fetchSnapshots();
+  }, [devMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchSnapshots = useCallback(async () => {
-    if (!devKey) return;
     setLoadingSnapshots(true);
     try {
-      const res = await fetch(api(`/api/builder/snapshots?key=${encodeURIComponent(devKey)}`));
-      if (res.status === 403) { handleBadKey(); return; }
+      const res = await fetch(api("/api/builder/snapshots"), { headers: authHeaders() });
+      if (res.status === 401 || res.status === 403) { handleNotOwner(); return; }
       const data = await res.json() as { snapshots: Snapshot[] };
       setSnapshots(data.snapshots ?? []);
     } catch { /* non-fatal */ }
     finally { setLoadingSnapshots(false); }
-  }, [devKey, api]);
+  }, [api]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Dev key handlers ────────────────────────────────────────────────────
-  const tryActivateDevMode = async () => {
-    if (!devKey.trim()) return;
-    // Validate by hitting a protected endpoint
-    try {
-      const res = await fetch(api(`/api/builder/snapshots?key=${encodeURIComponent(devKey.trim())}`));
-      if (res.status === 403) {
-        setKeyError("Wrong developer key");
-        return;
-      }
-      localStorage.setItem(DEV_LS_KEY, devKey.trim());
-      setDevMode(true);
-      setShowKeyInput(false);
-      setKeyError(null);
-      const data = await res.json() as { snapshots: Snapshot[] };
-      setSnapshots(data.snapshots ?? []);
-    } catch {
-      setKeyError("Could not reach server");
-    }
-  };
-
-  const handleBadKey = () => {
-    localStorage.removeItem(DEV_LS_KEY);
+  const handleNotOwner = () => {
     setDevMode(false);
-    setDevKey("");
-    setKeyError("Session expired — re-enter dev key");
+    setKeyError("Developer Mode is only available to the app owner.");
   };
 
   const exitDevMode = () => {
-    localStorage.removeItem(DEV_LS_KEY);
     setDevMode(false);
-    setDevKey("");
-    setShowKeyInput(false);
     setSnapshots([]);
   };
 
@@ -186,18 +154,18 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
 
   // ── Apply plan (dev only) ───────────────────────────────────────────────
   const applyPlan = async () => {
-    if (!plan || !devKey) return;
+    if (!plan || !devMode) return;
     setApplying(true);
     setApplyResults(null);
     setBuildLog(["🔒 Creating snapshot before applying…"]);
     try {
       const res  = await fetch(api("/api/builder/apply"), {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ key: devKey, plan }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body:    JSON.stringify({ plan }),
       });
 
-      if (res.status === 403) { handleBadKey(); return; }
+      if (res.status === 401 || res.status === 403) { handleNotOwner(); return; }
 
       const data = await res.json() as { success: boolean; snapshotId: string; results: ApplyResult[] };
 
@@ -223,16 +191,16 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
 
   // ── Rollback ────────────────────────────────────────────────────────────
   const rollback = async (snapshotId: string) => {
-    if (!devKey || rollingBack) return;
+    if (!devMode || rollingBack) return;
     setRollingBack(snapshotId);
     setRollbackResult(null);
     try {
       const res = await fetch(api("/api/builder/rollback"), {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ key: devKey, snapshotId }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body:    JSON.stringify({ snapshotId }),
       });
-      if (res.status === 403) { handleBadKey(); return; }
+      if (res.status === 401 || res.status === 403) { handleNotOwner(); return; }
       const data = await res.json() as { success: boolean; results: Array<{ path: string; status: string }> };
       const ok   = data.results.filter((r) => r.status === "restored").length;
       setRollbackResult(`↩ Rolled back ${ok} file${ok !== 1 ? "s" : ""}. Vite HMR will reload.`);
@@ -281,7 +249,7 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
 
       {/* ── Autonomous System panel ── */}
       {subTab === "autonomous" && (
-        <AutonomousPanel devKey={devMode ? devKey : undefined} />
+        <AutonomousPanel ownerMode={devMode} />
       )}
 
       {/* ── Orchestrator Agent panel ── */}
@@ -326,51 +294,21 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
           <span style={{ flex: 1, fontSize: 13, color: "#666" }}>
             User mode — simulate features &amp; build personal content
           </span>
-          <button
-            onClick={() => setShowKeyInput(!showKeyInput)}
-            style={{
-              background: "none", border: `1px solid ${BORDER}`,
-              borderRadius: 8, color: "#555", fontSize: 11, fontWeight: 700,
-              padding: "4px 10px", cursor: "pointer",
-            }}
-          >🔐 Dev Key</button>
+          {isOwner && (
+            <button
+              onClick={() => { setKeyError(null); setDevMode(true); }}
+              style={{
+                background: "none", border: `1px solid ${BORDER}`,
+                borderRadius: 8, color: "#555", fontSize: 11, fontWeight: 700,
+                padding: "4px 10px", cursor: "pointer",
+              }}
+            >🔐 Developer Mode</button>
+          )}
         </div>
       )}
 
-      {/* ── Dev key input (hidden until triggered) ── */}
-      {showKeyInput && !devMode && (
-        <div style={{
-          borderRadius: 12, background: "rgba(255,204,51,0.05)",
-          border: "1px solid rgba(255,204,51,0.20)",
-          padding: 14, display: "flex", flexDirection: "column", gap: 10,
-        }}>
-          <div style={{ fontSize: 12, color: "#888" }}>Enter the developer key to unlock code-apply capabilities:</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              type="password"
-              value={devKey}
-              onChange={(e) => setDevKey(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && tryActivateDevMode()}
-              placeholder="Developer key…"
-              style={{
-                flex: 1, background: "rgba(255,255,255,0.06)",
-                border: `1px solid ${BORDER}`, borderRadius: 8,
-                color: "#fff", padding: "8px 12px", fontSize: 13, outline: "none",
-              }}
-            />
-            <button
-              onClick={tryActivateDevMode}
-              style={{
-                padding: "8px 16px", borderRadius: 8, border: "none",
-                background: "rgba(255,204,51,0.15)", color: GOLD,
-                fontWeight: 700, fontSize: 13, cursor: "pointer",
-              }}
-            >Activate</button>
-          </div>
-          {keyError && (
-            <div style={{ fontSize: 12, color: "#FF6B6B" }}>{keyError}</div>
-          )}
-        </div>
+      {keyError && !devMode && (
+        <div style={{ fontSize: 12, color: "#FF6B6B" }}>{keyError}</div>
       )}
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ PROMPT INPUT ━━━━━━━━━━━━━━━━━━ */}

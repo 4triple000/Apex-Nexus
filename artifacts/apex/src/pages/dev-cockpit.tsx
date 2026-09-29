@@ -7,9 +7,9 @@
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation, Link } from "wouter";
+import { authHeaders } from "@/lib/authSession";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const DEV_KEY  = "apex-dev-2024";
 const BASE_URL = (import.meta.env.BASE_URL as string).replace(/\/$/, "");
 const API      = `${BASE_URL}/api`;
 
@@ -269,7 +269,7 @@ User request: `;
 
   const loadSnapshots = useCallback(async () => {
     try {
-      const r = await fetch(`${API}/builder/snapshots?key=${DEV_KEY}`);
+      const r = await fetch(`${API}/builder/snapshots`, { headers: authHeaders() });
       const d = await r.json() as { snapshots: Snapshot[] };
       setSnapshots(d.snapshots ?? []);
     } catch { /* silently fail */ }
@@ -296,7 +296,7 @@ User request: `;
 
       const r = await fetch(`${API}/builder/plan`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ prompt: finalPrompt, devMode: true }),
       });
       const d = await r.json() as { plan: Plan; offline?: boolean };
@@ -316,8 +316,8 @@ User request: `;
     try {
       const r = await fetch(`${API}/builder/apply`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: DEV_KEY, plan }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ plan }),
       });
       const d = await r.json() as { success: boolean; results: Array<{ path: string; status: string }> };
       if (d.success) {
@@ -347,8 +347,8 @@ User request: `;
     try {
       await fetch(`${API}/builder/rollback`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: DEV_KEY, snapshotId }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ snapshotId }),
       });
       setMsg("✓ Rolled back — Vite HMR reloading");
       void loadSnapshots();
@@ -729,7 +729,7 @@ export default function DevCockpitPage() {
   const loadTree = useCallback(async (r: string) => {
     setTreeLoading(true);
     try {
-      const res = await fetch(`${API}/builder/tree?key=${DEV_KEY}&root=${r}`);
+      const res = await fetch(`${API}/builder/tree?root=${r}`, { headers: authHeaders() });
       const d   = await res.json() as { tree: FileNode[] };
       setTree(d.tree ?? []);
     } catch { setTree([]); }
@@ -745,7 +745,7 @@ export default function DevCockpitPage() {
     setSelectedFile(filePath);
     setSaveMsg("");
     try {
-      const res = await fetch(`${API}/builder/read?key=${DEV_KEY}&filePath=${encodeURIComponent(filePath)}`);
+      const res = await fetch(`${API}/builder/read?filePath=${encodeURIComponent(filePath)}`, { headers: authHeaders() });
       const d   = await res.json() as { content: string };
       setFileContent(d.content ?? "");
       setEditedContent(d.content ?? "");
@@ -764,8 +764,8 @@ export default function DevCockpitPage() {
     try {
       const res = await fetch(`${API}/builder/write`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: DEV_KEY, filePath: selectedFile, content: editedContent }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ filePath: selectedFile, content: editedContent }),
       });
       const d = await res.json() as { success: boolean };
       if (d.success) {

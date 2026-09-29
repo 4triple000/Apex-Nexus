@@ -613,175 +613,10 @@ function AnalyticsModal({ game, onClose }: { game: GameEntry; onClose: () => voi
   );
 }
 
-// ── Publish Tab ────────────────────────────────────────────────────────────────
-
-function PublishTab({ onPublished }: { onPublished: () => void }) {
-  const [name, setName] = useState("");
-  const [creatorName, setCreatorName] = useState("Player");
-  const [tags, setTags] = useState("");
-  const [status, setStatus] = useState<"idle" | "generating" | "publishing" | "done" | "error">("idle");
-  const [viralName, setViralName] = useState("");
-  const [viralConfig, setViralConfig] = useState<Record<string, unknown> | null>(null);
-  const [viralTags, setViralTags] = useState<string[]>([]);
-  const [inspiration, setInspiration] = useState("");
-
-  const generateViral = async () => {
-    setStatus("generating");
-    setViralConfig(null);
-    try {
-      const res = await apiFetch("/api/game-feed/viral-generate", {
-        method: "POST",
-        body: JSON.stringify({ inspiration: inspiration.trim() || undefined }),
-      });
-      const data = await res.json();
-      if (data.config) {
-        setViralConfig(data.config);
-        setViralName(data.suggestedName || "Viral Game");
-        setViralTags(data.suggestedTags || []);
-        setName(data.suggestedName || "");
-        setStatus("idle");
-      } else {
-        setStatus("error");
-      }
-    } catch {
-      setStatus("error");
-    }
-  };
-
-  const publishViral = async () => {
-    if (!viralConfig) return;
-    setStatus("publishing");
-    try {
-      const res = await apiFetch("/api/game-feed/publish", {
-        method: "POST",
-        body: JSON.stringify({
-          name: name || viralName,
-          creatorName,
-          createdBy: "ai",
-          gameConfig: viralConfig,
-          tags: viralTags,
-          isRemix: false,
-        }),
-      });
-      const data = await res.json();
-      if (data.entry) {
-        setStatus("done");
-        setTimeout(() => { setStatus("idle"); setViralConfig(null); onPublished(); }, 2000);
-      }
-    } catch {
-      setStatus("error");
-    }
-  };
-
-  return (
-    <div style={{ padding: "0 0 24px" }}>
-      {/* Header */}
-      <div style={{
-        background: "linear-gradient(135deg, rgba(108,92,231,0.15), rgba(253,121,168,0.1))",
-        borderRadius: 20, padding: 20, marginBottom: 20,
-        border: "1px solid rgba(108,92,231,0.2)",
-      }}>
-        <h2 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: "0 0 6px" }}>
-          🚀 AI Viral Engine
-        </h2>
-        <p style={{ color: "#a0a8b8", fontSize: 13, margin: 0, lineHeight: 1.5 }}>
-          Our AI analyzes the top trending games and generates a fresh viral variant designed for maximum engagement.
-        </p>
-      </div>
-
-      {/* Inspiration */}
-      <div style={{ marginBottom: 14 }}>
-        <label style={{ color: "#a0a8b8", fontSize: 12, fontWeight: 700, display: "block", marginBottom: 8 }}>
-          CREATIVE DIRECTION (optional)
-        </label>
-        <input value={inspiration} onChange={e => setInspiration(e.target.value)}
-          placeholder="e.g. underwater adventure, neon cyberpunk, candy world…"
-          style={{
-            width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 12, padding: "12px 14px", color: "#fff", fontSize: 14, outline: "none",
-            boxSizing: "border-box",
-          }}
-        />
-      </div>
-
-      <motion.button
-        whileTap={{ scale: 0.95 }}
-        onClick={generateViral}
-        disabled={status === "generating"}
-        style={{
-          width: "100%", background: "linear-gradient(135deg,#6C5CE7,#A29BFE,#FD79A8)",
-          border: "none", borderRadius: 16, padding: "16px 0",
-          color: "#fff", fontSize: 16, fontWeight: 800,
-          cursor: status === "generating" ? "wait" : "pointer",
-          marginBottom: 20, boxShadow: "0 8px 32px rgba(108,92,231,0.3)",
-        }}
-      >
-        {status === "generating" ? "⟳ Analyzing trends & generating…" : "✨ Generate Viral Game"}
-      </motion.button>
-
-      {/* Preview */}
-      {viralConfig && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div style={{ background: "#07080E", borderRadius: 16, padding: 16,
-            border: "1px solid rgba(108,92,231,0.2)", marginBottom: 16, textAlign: "center" }}>
-            <GamePreviewCanvas config={viralConfig} size={280} />
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-            {viralTags.map(t => (
-              <span key={t} style={{ background: "rgba(108,92,231,0.2)", color: "#A29BFE",
-                fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>
-                #{t}
-              </span>
-            ))}
-          </div>
-
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Game name"
-            style={{ width: "100%", background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12,
-              padding: "10px 14px", color: "#fff", fontSize: 14, outline: "none",
-              boxSizing: "border-box", marginBottom: 10 }}
-          />
-          <input value={creatorName} onChange={e => setCreatorName(e.target.value)} placeholder="Creator name"
-            style={{ width: "100%", background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)", borderRadius: 12,
-              padding: "10px 14px", color: "#fff", fontSize: 14, outline: "none",
-              boxSizing: "border-box", marginBottom: 14 }}
-          />
-
-          {status === "done" ? (
-            <div style={{ textAlign: "center", padding: 20, background: "rgba(0,206,201,0.1)",
-              borderRadius: 14, border: "1px solid rgba(0,206,201,0.3)" }}>
-              <div style={{ fontSize: 32 }}>🎉</div>
-              <p style={{ color: "#00CEC9", fontWeight: 700, margin: "8px 0 0" }}>Published to the feed!</p>
-            </div>
-          ) : (
-            <motion.button whileTap={{ scale: 0.95 }} onClick={publishViral}
-              disabled={status === "publishing"}
-              style={{ width: "100%", background: "linear-gradient(135deg,#00CEC9,#74B9FF)",
-                border: "none", borderRadius: 16, padding: "15px 0",
-                color: "#fff", fontSize: 15, fontWeight: 800,
-                cursor: status === "publishing" ? "wait" : "pointer" }}
-            >
-              {status === "publishing" ? "Publishing…" : "🚀 Publish to Feed"}
-            </motion.button>
-          )}
-        </motion.div>
-      )}
-
-      {status === "error" && (
-        <div style={{ textAlign: "center", padding: 16, color: "#E17055" }}>
-          Something went wrong. Try again.
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function GameEcosystemPage() {
-  const [tab, setTab] = useState<"discover" | "publish" | "about">("discover");
+  const [tab, setTab] = useState<"discover" | "about">("discover");
   const [games, setGames] = useState<GameEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -833,14 +668,8 @@ export default function GameEcosystemPage() {
     setPlayingGame(game);
   };
 
-  const handlePublished = () => {
-    loadFeed(activeTag);
-    setTab("discover");
-  };
-
   const tabs = [
     { id: "discover" as const, label: "🏠 Discover" },
-    { id: "publish"  as const, label: "🚀 Publish"  },
     { id: "about"    as const, label: "ℹ About"     },
   ];
 
@@ -935,7 +764,7 @@ export default function GameEcosystemPage() {
               <div style={{ textAlign: "center", padding: 60, color: "#636e72" }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>🎮</div>
                 <p style={{ fontWeight: 700 }}>No games yet</p>
-                <p style={{ fontSize: 13 }}>Publish the first one!</p>
+                <p style={{ fontSize: 13 }}>Check back soon!</p>
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -952,8 +781,6 @@ export default function GameEcosystemPage() {
           </>
         )}
 
-        {/* Publish Tab */}
-        {tab === "publish" && <PublishTab onPublished={handlePublished} />}
 
         {/* About Tab */}
         {tab === "about" && (

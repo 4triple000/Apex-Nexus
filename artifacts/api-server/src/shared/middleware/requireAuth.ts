@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { unauthorized, forbidden } from "../utils/response";
 import { logger } from "../../lib/logger";
 import { cacheGet, cacheSet } from "../../core/cache";
+import { isOwnerEmail } from "../lib/owner";
 
 // ── Extract Bearer token from Authorization header ────────────────────────────
 
@@ -113,6 +114,32 @@ export async function requireUser(
       return;
     }
     next();
+  });
+}
+
+// ── requireOwner — signed-in user whose email is listed in OWNER_EMAILS ────────
+
+export async function requireOwner(
+  req: ApexRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  await requireUser(req, res, async () => {
+    try {
+      const [user] = await db
+        .select({ email: usersTable.email })
+        .from(usersTable)
+        .where(eq(usersTable.id, req.userId!))
+        .limit(1);
+      if (!isOwnerEmail(user?.email)) {
+        forbidden(res, "This area is only available to the app owner.");
+        return;
+      }
+      next();
+    } catch (err) {
+      logger.error({ err }, "[requireOwner] lookup failed");
+      forbidden(res, "This area is only available to the app owner.");
+    }
   });
 }
 

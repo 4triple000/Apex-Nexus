@@ -360,7 +360,7 @@ export default function GameEnginePage() {
           }}>🎮</div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.01em" }}>Apex Game Engine</div>
-            <div style={{ fontSize: 11, color: "#555" }}>v4 · Internal Module · AI Maps · Multiplayer</div>
+            <div style={{ fontSize: 11, color: "#555" }}>AI Maps · Multiplayer</div>
           </div>
         </div>
       </div>
