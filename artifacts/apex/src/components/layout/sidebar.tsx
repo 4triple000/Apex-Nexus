@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { href: "/feed",           icon: PenLine,       label: "Content Writer" },
   { href: "/profile",        icon: Archive,       label: "Memory"         },
   { href: "/avatar",         icon: User,          label: "Identity"       },
-  { href: "/nexus-builder",  icon: Hammer,        label: "Nexus Builder"  },
+  { href: "/ai-studio",      icon: Hammer,        label: "AI Studio"      },
   { href: "/dev-cockpit",    icon: Terminal,      label: "Dev Cockpit",   ownerOnly: true },
 ];
 

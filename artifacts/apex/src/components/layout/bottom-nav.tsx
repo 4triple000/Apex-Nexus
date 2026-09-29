@@ -10,7 +10,7 @@ const FAST_IN = "cubic-bezier(0.55, 0, 1, 0.45)";
 
 const NAV_ITEMS = [
   { href: "/",               icon: MessageSquare, label: "AI Chat"  },
-  { href: "/nexus-builder",  icon: Hammer,        label: "Builder"  },
+  { href: "/ai-studio",      icon: Hammer,        label: "Builder"  },
   { href: "/arena",          icon: Swords,        label: "Battle"   },
   { href: "/avatar",         icon: User,          label: "Identity" },
 ] as const;
