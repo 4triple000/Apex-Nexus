@@ -43,7 +43,6 @@ const GameEnginePage = lazy(() => import("@/pages/game-engine"));
 const GameEcosystemPage = lazy(() => import("@/pages/game-ecosystem"));
 const ApexDevOSPage = lazy(() => import("@/pages/apex-dev-os"));
 const ApexAvatarPage = lazy(() => import("@/pages/apex-avatar"));
-const NexusBuilderPage = lazy(() => import("@/pages/nexus-builder"));
 const DomainSettingsPage = lazy(() => import("@/pages/domain-settings"));
 const DevCockpitPage = lazy(() => import("@/pages/dev-cockpit"));
 const RuntimePage = lazy(() => import("@/pages/runtime"));
@@ -117,12 +116,12 @@ function Router() {
       <Route path="/apex-avatar">
         <ProtectedLayout><ApexAvatarPage /></ProtectedLayout>
       </Route>
-      {/* Apex Builder was merged into AI Studio */}
+      {/* Apex Builder and Nexus Builder were merged into AI Studio */}
       <Route path="/apex-builder">
         <Redirect to="/ai-studio" replace />
       </Route>
       <Route path="/nexus-builder">
-        <NexusBuilderPage />
+        <Redirect to="/ai-studio" replace />
       </Route>
       <Route path="/domain-settings">
         <DomainSettingsPage />

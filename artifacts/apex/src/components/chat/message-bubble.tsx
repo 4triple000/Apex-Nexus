@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Volume2, VolumeX, ThumbsUp, Check, Sparkles, Zap, Brain, Globe, Copy, CheckCheck, Share2 } from "lucide-react";
+import { RiOpenaiFill } from "react-icons/ri";
+import { SiClaude, SiPerplexity } from "react-icons/si";
+import { Volume2, VolumeX, ThumbsUp, Check, Sparkles, Zap, Copy, CheckCheck, Share2 } from "lucide-react";
 import { ShareModal } from "@/components/share/ShareModal";
 import { ApexLogoMini } from "@/components/ui/ApexLogo";
 
@@ -59,21 +61,21 @@ interface ProviderCfg {
 
 export const PROVIDER_CONFIG: Record<string, ProviderCfg> = {
   openai: {
-    name: "GPT-4",
+    name: "ChatGPT",
     color: "#10A37F",
     glow: "rgba(16,163,127,0.28)",
     glowStrong: "rgba(16,163,127,0.55)",
-    icon: Sparkles,
+    icon: RiOpenaiFill,
     gradient: "linear-gradient(135deg, rgba(16,163,127,0.10) 0%, rgba(16,163,127,0.04) 100%)",
     border: "rgba(16,163,127,0.22)",
     rankBorder: "#10A37F",
   },
   claude: {
-    name: "Claude 3",
+    name: "Claude",
     color: "#D97757",
     glow: "rgba(217,119,87,0.28)",
     glowStrong: "rgba(217,119,87,0.55)",
-    icon: Brain,
+    icon: SiClaude,
     gradient: "linear-gradient(135deg, rgba(217,119,87,0.10) 0%, rgba(217,119,87,0.04) 100%)",
     border: "rgba(217,119,87,0.22)",
     rankBorder: "#D97757",
@@ -83,7 +85,7 @@ export const PROVIDER_CONFIG: Record<string, ProviderCfg> = {
     color: "#228BE6",
     glow: "rgba(34,139,230,0.28)",
     glowStrong: "rgba(34,139,230,0.55)",
-    icon: Globe,
+    icon: SiPerplexity,
     gradient: "linear-gradient(135deg, rgba(34,139,230,0.10) 0%, rgba(34,139,230,0.04) 100%)",
     border: "rgba(34,139,230,0.22)",
     rankBorder: "#228BE6",

@@ -17,6 +17,8 @@ import { useVoiceToneAnalysis, VOICE_EMOTION_LABELS, VOICE_EMOTION_EMOJI, VOICE_
 import { usePrivacy } from "@/contexts/PrivacyContext";
 import { useCharacterSwitch } from "@/contexts/CharacterContext";
 import { useLocation } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
+import { HubHeader, ModelSearch, ModeChips, ModelCarousel, ModeCard, ModelLogo, modelById, useProviderStatus } from "@/components/home/HomeHub";
 import { Volume2, VolumeX, ShieldOff } from "lucide-react";
 import { ApexAvatar3D } from "@/components/avatar/ApexAvatar3D";
 import { useSpeechOutput } from "@/hooks/useSpeechOutput";
@@ -78,6 +80,8 @@ export default function Home() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const sendChat  = useSendChat();
+  const { user }  = useAuth();
+  const providerStatus = useProviderStatus();
   const castVote  = useCastVote();
   const tts       = useSpeechOutput();
   const { privacyMode, togglePrivacyMode } = usePrivacy();
@@ -211,9 +215,10 @@ export default function Home() {
         avatar.setEmotion(hiveEmotion);
         triggerGesture(hiveEmotion);
       } else {
-        const aiContent = response.messages[0]?.content || "No response received.";
+        const aiError   = response.messages[0]?.error;
+        const aiContent = response.messages[0]?.content || aiError || "No response received.";
         const aiMsg: Message = {
-          id: crypto.randomUUID(), role: "ai", content: aiContent,
+          id: crypto.randomUUID(), role: "ai", content: aiContent, error: aiError,
           provider: (response.messages[0]?.provider as any) || "auto",
           responseTime: response.messages[0]?.responseTime, timestamp: Date.now(),
         };
@@ -430,274 +435,63 @@ export default function Home() {
       className="flex flex-col lg:hidden"
       style={{
         height: "100%",
-        background: "#0F1115",
+        flex: 1,
+        minHeight: 0,
+        background: "transparent",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* ── Ambient background glow ──────────────────────────── */}
-      <div
-        style={{
-          position: "absolute",
-          top: -120,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 500,
-          height: 300,
-          background: "radial-gradient(ellipse, rgba(108,92,231,0.12) 0%, transparent 70%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
 
       {/* ── Header ───────────────────────────────────────────── */}
-      <div
-        style={{
-          flexShrink: 0,
-          padding: "20px 16px 16px",
-          background: "rgba(15,17,21,0.85)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-        }}
-      >
-        {/* ── Title row — clean: reserved ☰ zone | Apex Nexus | voice ──── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          {/* Left — reserved space for the fixed ☰ hamburger (ApexControlPanel) */}
-          <div style={{ width: 48 }} />
-
-          {/* Center — Apex Nexus branding */}
-          <div style={{ textAlign: "center" }}>
-            <h1 style={{ fontSize: 17, fontWeight: 700, color: "#FFFFFF", letterSpacing: "-0.03em", lineHeight: 1 }}>
-              Apex Nexus
-            </h1>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, marginTop: 3 }}>
-              <div style={{
-                width: 5, height: 5, borderRadius: "50%",
-                background: sendChat.isPending ? "#FACC15" : "#4ADE80",
-                boxShadow: sendChat.isPending ? "0 0 8px rgba(250,204,21,0.80)" : "0 0 8px rgba(74,222,128,0.80)",
-                animation: "live-dot-pulse 2.5s ease-in-out infinite",
-              }} />
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.30)", fontWeight: 500, letterSpacing: "0.04em" }}>
-                {sendChat.isPending ? "THINKING" : "ONLINE"}
-              </span>
-            </div>
-          </div>
-
-          {/* Right — voice toggle (compact, high-value action kept) */}
-          <div style={{ width: 48, display: "flex", justifyContent: "flex-end", alignItems: "center" }}>
-            <button
-              onClick={() => { tts.toggle(); if (tts.isEnabled) tts.stop(); }}
-              className="haptic-sm"
-              title={tts.isEnabled ? "Voice On" : "Voice Off"}
-              style={{
-                width: 34, height: 34, borderRadius: "50%", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                background: tts.isEnabled ? "rgba(74,222,128,0.12)" : "rgba(255,255,255,0.05)",
-                border: tts.isEnabled ? "1px solid rgba(74,222,128,0.28)" : "1px solid rgba(255,255,255,0.09)",
-                boxShadow: tts.isSpeaking ? "0 0 12px rgba(74,222,128,0.40)" : "none",
-                transition: `all 0.22s ${EASE_IOS}`,
-              }}
-            >
-              {tts.isEnabled
-                ? <Volume2 style={{ width: 14, height: 14, color: tts.isSpeaking ? "#4ADE80" : "rgba(74,222,128,0.80)" }} />
-                : <VolumeX style={{ width: 14, height: 14, color: "rgba(255,255,255,0.28)" }} />}
-            </button>
-          </div>
+      {messages.length === 0 ? (
+        <div style={{ flexShrink: 0, padding: "10px 16px 0", position: "relative", zIndex: 10 }}>
+          <HubHeader name={user?.username} onAvatar={() => nav("/profile")} />
         </div>
-
-
-        {/* ── Mode switcher — sliding pill ────────────────────── */}
-        {(() => {
-          const modeIdx = MODES.findIndex((m) => m.id === mode);
-          return (
-            <div
-              style={{
-                position: "relative",
-                display: "flex",
-                padding: "4px",
-                borderRadius: 18,
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                marginBottom: 14,
-              }}
-            >
-              {/* Sliding pill background */}
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  top: 4,
-                  left: `calc(${modeIdx} * (100% - 8px) / 3 + 4px)`,
-                  width: "calc((100% - 8px) / 3)",
-                  bottom: 4,
-                  borderRadius: 13,
-                  background: "linear-gradient(135deg, #6C5CE7 0%, #8B5CF6 50%, #A29BFE 100%)",
-                  boxShadow: [
-                    "0 0 0 1px rgba(162,155,254,0.20)",
-                    "0 4px 14px rgba(108,92,231,0.45)",
-                    "0 2px 6px rgba(0,0,0,0.30)",
-                    "inset 0 1px 0 rgba(255,255,255,0.18)",
-                  ].join(", "),
-                  transition: `left 0.36s ${EASE_SPRING}`,
-                  willChange: "left",
-                  pointerEvents: "none",
-                  zIndex: 0,
-                }}
-              />
-
-              {MODES.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setMode(m.id)}
-                  data-testid={`button-mode-${m.id}`}
-                  style={{
-                    flex: 1,
-                    position: "relative",
-                    zIndex: 1,
-                    padding: "9px 4px",
-                    borderRadius: 13,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: "0.05em",
-                    textTransform: "uppercase",
-                    color: mode === m.id ? "white" : "rgba(255,255,255,0.32)",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: `color 0.24s ${EASE_IOS}, transform 0.18s ${EASE_SPRING}`,
-                    transform: "scale(1)",
-                    willChange: "color",
-                  }}
-                  onPointerDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.93)"; }}
-                  onPointerUp={(e)   => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
-                  onPointerLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          );
-        })()}
-
-        {/* ── AI Provider pills (chat mode only) ──────────────── */}
-        {mode === "chat" && (
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2, scrollbarWidth: "none" }}>
-            {PROVIDERS.map((p) => {
-              const active = aiPreference === p.id;
-              return (
-                <button
-                  key={p.id}
-                  data-testid={`button-provider-${p.id}`}
-                  onClick={() => setAiPreference(p.id)}
-                  className="haptic-pill"
-                  style={{
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "6px 12px",
-                    borderRadius: 99,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: active ? "white" : "rgba(255,255,255,0.40)",
-                    background: active
-                      ? `linear-gradient(135deg, ${p.color}33, ${p.color}18)`
-                      : "rgba(255,255,255,0.04)",
-                    border: active ? `1px solid ${p.color}55` : "1px solid rgba(255,255,255,0.07)",
-                    boxShadow: active ? `0 0 16px ${p.glow}, 0 2px 8px rgba(0,0,0,0.25)` : "none",
-                    transition: [
-                      `color 0.20s ${EASE_IOS}`,
-                      `background 0.22s ${EASE_IOS}`,
-                      `border-color 0.22s ${EASE_IOS}`,
-                      `box-shadow 0.22s ${EASE_IOS}`,
-                    ].join(", "),
-                    letterSpacing: "0.02em",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {p.id === "auto" ? (
-                    <ApexLogoToggle
-                      isAuto={active}
-                      size={14}
-                    />
-                  ) : (
-                    <span style={{ fontSize: 12 }}>{p.emoji}</span>
-                  )}
-                  {p.label}
-                  {active && (
-                    <span
-                      style={{
-                        width: 5,
-                        height: 5,
-                        borderRadius: "50%",
-                        background: p.color,
-                        boxShadow: `0 0 8px ${p.glow}`,
-                        animation: "live-dot-pulse 2s ease-in-out infinite",
-                      }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ── Mode hint banners ─────────────────────────────── */}
-        {mode === "battle" && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 12, background: "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(251,191,36,0.06))", border: "1px solid rgba(239,68,68,0.18)" }}>
-            <span style={{ fontSize: 13 }}>⚔️</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", background: "linear-gradient(90deg, #EF4444, #FBBF24)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                Battle Mode
-              </div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", fontWeight: 500 }}>
-                3 AIs compete · ranked by speed · vote for best
-              </div>
-            </div>
-            <button
-              onClick={() => window.location.href = "/arena"}
-              style={{
-                flexShrink: 0, padding: "5px 10px",
-                borderRadius: 8, border: "1px solid rgba(239,68,68,0.35)",
-                background: "linear-gradient(135deg, rgba(239,68,68,0.22), rgba(251,191,36,0.12))",
-                fontSize: 9, fontWeight: 800, color: "white",
-                cursor: "pointer", letterSpacing: "0.04em", textTransform: "uppercase",
-                whiteSpace: "nowrap",
-              }}
-            >
-              ⚔ Arena
-            </button>
-          </div>
-        )}
-        {mode === "hive" && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", borderRadius: 12, background: "linear-gradient(135deg, rgba(190,75,219,0.10), rgba(108,28,224,0.06))", border: "1px solid rgba(190,75,219,0.22)" }}>
-            <span style={{ fontSize: 13 }}>🧠</span>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", background: "linear-gradient(90deg, #BE4BDB, #A29BFE)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                Hive Mind
-              </div>
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", fontWeight: 500 }}>
-                GPT-4 · Claude · Perplexity collaborate → 1 unified answer
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      ) : (
+        <div style={{ flexShrink: 0, padding: "10px 16px 10px", position: "relative", zIndex: 10, display: "flex", alignItems: "center", gap: 10 }}>
+          {/* The fixed ☰ menu button (ApexControlPanel) sits in this space */}
+          <div style={{ width: 42, flexShrink: 0 }} aria-hidden />
+          <button
+            onClick={() => setMessages([])}
+            className="mg-glass mg-press mg-focus"
+            aria-label="Back to home"
+            style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 14px 0 10px", borderRadius: 20, color: "var(--mg-ink)", cursor: "pointer", minWidth: 0 }}
+          >
+            {mode === "chat"
+              ? <ModelLogo id={aiPreference} size={18} />
+              : <span style={{ fontSize: 15 }}>{mode === "battle" ? "⚔️" : "🐝"}</span>}
+            <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
+              {mode === "chat" ? modelById(aiPreference).name : mode === "battle" ? "Battle" : "Hive"}
+            </span>
+            <span style={{ fontSize: 11, color: "var(--mg-ink-3)", fontWeight: 600 }}>
+              {sendChat.isPending ? "thinking…" : "New chat"}
+            </span>
+          </button>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={() => { tts.toggle(); if (tts.isEnabled) tts.stop(); }}
+            className="mg-glass mg-press mg-focus"
+            aria-label={tts.isEnabled ? "Turn voice off" : "Turn voice on"}
+            style={{ width: 40, height: 40, borderRadius: "50%", cursor: "pointer", display: "grid", placeItems: "center", padding: 0, boxShadow: tts.isSpeaking ? "0 0 14px rgba(74,222,128,0.45)" : undefined }}
+          >
+            {tts.isEnabled
+              ? <Volume2 style={{ width: 16, height: 16, color: "#4ADE80" }} />
+              : <VolumeX style={{ width: 16, height: 16, color: "var(--mg-ink-3)" }} />}
+          </button>
+        </div>
+      )}
 
       {/* ── 3D Avatar Panel ────────────────────────────────────── */}
       <div
         style={{
           flexShrink: 0,
           overflow: "hidden",
-          maxHeight: avatar3DEnabled ? 200 : 0,
-          opacity: avatar3DEnabled ? 1 : 0,
+          maxHeight: avatar3DEnabled && messages.length > 0 ? 200 : 0,
+          opacity: avatar3DEnabled && messages.length > 0 ? 1 : 0,
           transition: `max-height 0.40s ${EASE_IOS}, opacity 0.30s ${EASE_IOS}`,
-          borderBottom: avatar3DEnabled ? "1px solid rgba(255,255,255,0.06)" : "none",
-          background: "linear-gradient(180deg, rgba(15,17,21,0.95) 0%, rgba(8,8,14,0.98) 100%)",
+          borderBottom: "none",
+          background: "transparent",
           position: "relative",
           zIndex: 5,
           // Personality-driven animation CSS vars
@@ -823,42 +617,19 @@ export default function Home() {
         }}
         onClick={() => {}}
       >
-        {/* Empty state */}
+        {/* Empty state: the home hub */}
         {messages.length === 0 && (
-          <div style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", paddingBottom: 96 }}>
-            <div style={{ paddingTop: 8 }}>
-              <SmartRecommendations compact showTitle maxItems={3} />
-            </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 12,
-                paddingBottom: 32,
-              }}
-            >
-              {/* Apex logo mark */}
-              <div
-                style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 22,
-                  background: "linear-gradient(135deg, #6C5CE7 0%, #A29BFE 50%, #FD79A8 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 28,
-                  boxShadow: "0 8px 32px rgba(108,92,231,0.40)",
-                  animation: "avatar-breathe 3s ease-in-out infinite",
-                }}
-              >
-                ◆
-              </div>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.30)", fontWeight: 500, letterSpacing: "0.02em" }}>
-                Start a conversation
-              </p>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 4, paddingBottom: 150 }}>
+            <ModelSearch
+              onPickModel={(id) => { setMode("chat"); setAiPreference(id); }}
+              onPickMode={setMode}
+              onAsk={handleSend}
+            />
+            <ModeChips mode={mode} onChange={setMode} />
+            {mode === "chat"
+              ? <ModelCarousel value={aiPreference} onChange={setAiPreference} status={providerStatus} />
+              : <ModeCard mode={mode} status={providerStatus} />}
+            <SmartRecommendations compact showTitle maxItems={3} />
           </div>
         )}
 
@@ -1059,7 +830,7 @@ export default function Home() {
           left: 0,
           right: 0,
           padding: "8px 12px 16px",
-          background: "linear-gradient(to top, rgba(15,17,21,1) 60%, transparent 100%)",
+          background: "linear-gradient(to top, rgba(10,9,24,0.96) 55%, transparent 100%)",
           zIndex: 10,
         }}
       >

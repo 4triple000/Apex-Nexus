@@ -6,7 +6,7 @@ import { ChatView } from "../components/dm/ChatView";
 import { AnalyticsPanel } from "../components/dm/AnalyticsPanel";
 import { useMetaStatus } from "../hooks/useDM";
 import { MessageSquare, BarChart2, Plus, X, ChevronLeft } from "lucide-react";
-import { ApexLogo } from "@/components/ui/ApexLogo";
+import { SiInstagram, SiMessenger } from "react-icons/si";
 
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SPRING = { type: "spring" as const, stiffness: 340, damping: 30 };
@@ -30,8 +30,8 @@ export function DMPage() {
 
   return (
     <div style={{
-      display: "flex", flexDirection: "column", height: "100%",
-      background: "#07080E", overflow: "hidden",
+      display: "flex", flexDirection: "column", height: "100%", flex: 1, minHeight: 0,
+      background: "transparent", overflow: "hidden",
     }}>
 
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -41,10 +41,7 @@ export function DMPage() {
         transition={{ duration: 0.28 }}
         style={{
           flexShrink: 0,
-          background: "rgba(7,8,14,0.98)",
-          backdropFilter: "blur(24px)",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-          padding: "14px 14px 10px",
+          padding: "10px 16px 12px",
         }}
       >
         <AnimatePresence mode="wait">
@@ -89,15 +86,17 @@ export function DMPage() {
               transition={SPRING}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                {/* Brand */}
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <ApexLogo size={30} state="idle" radius={9} />
+                {/* Title — the fixed ☰ menu button sits in the 42px space on the left */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 42 }}>
+                  <div style={{ width: 42, flexShrink: 0 }} aria-hidden />
                   <div>
-                    <h1 style={{ fontSize: 18, fontWeight: 900, color: "white", letterSpacing: "-0.02em", margin: 0, lineHeight: 1 }}>
-                      Conversations
+                    <h1 style={{ fontSize: 20, fontWeight: 700, color: "var(--mg-ink)", letterSpacing: "-0.02em", margin: 0, lineHeight: 1.1 }}>
+                      Messages
                     </h1>
-                    <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.22)", letterSpacing: "0.14em", textTransform: "uppercase", margin: "3px 0 0" }}>
-                      Apex · AI Messaging
+                    <p style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--mg-ink-3)", margin: "3px 0 0" }}>
+                      <SiInstagram size={11} color="#E1306C" /> Instagram
+                      <span aria-hidden>·</span>
+                      <SiMessenger size={11} color="#0A7CFF" /> Messenger
                     </p>
                   </div>
                 </div>
@@ -109,16 +108,18 @@ export function DMPage() {
                   border: "1px solid rgba(255,255,255,0.07)",
                 }}>
                   {([
-                    { id: "inbox" as Tab,     icon: <MessageSquare style={{ width: 12, height: 12 }} />, label: "Inbox"  },
-                    { id: "analytics" as Tab, icon: <BarChart2     style={{ width: 12, height: 12 }} />, label: "Stats"  },
+                    { id: "inbox" as Tab,     icon: <MessageSquare style={{ width: 16, height: 16 }} />, label: "Inbox"  },
+                    { id: "analytics" as Tab, icon: <BarChart2     style={{ width: 16, height: 16 }} />, label: "Stats"  },
                   ]).map(({ id, icon, label }) => (
                     <motion.button
                       key={id}
+                      aria-label={label}
+                      title={label}
                       whileTap={{ scale: 0.92 }}
                       onClick={() => setTab(id)}
                       style={{
                         display: "flex", alignItems: "center", gap: 5,
-                        padding: "6px 10px", borderRadius: 11,
+                        padding: 8, borderRadius: 11,
                         fontSize: 10, fontWeight: 700,
                         background: tab === id ? "rgba(108,92,231,0.28)" : "transparent",
                         border: tab === id ? "1px solid rgba(162,155,254,0.30)" : "1px solid transparent",
@@ -128,41 +129,53 @@ export function DMPage() {
                         boxShadow: tab === id ? "0 0 12px rgba(108,92,231,0.22)" : "none",
                       }}
                     >
-                      {icon}{label}
+                      {icon}
                     </motion.button>
                   ))}
                 </div>
               </div>
 
-              {/* Meta connection banner */}
+              {/* Account connection card */}
               <AnimatePresence>
                 {showMetaBanner && metaStatus && !metaStatus.configured && (
                   <motion.div
-                    initial={{ opacity: 0, y: -8, height: 0 }}
-                    animate={{ opacity: 1, y: 0, height: "auto" }}
-                    exit={{ opacity: 0, y: -8, height: 0 }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      padding: "10px 13px", borderRadius: 16,
-                      background: "rgba(34,139,230,0.07)",
-                      border: "1px solid rgba(34,139,230,0.20)",
-                    }}
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="mg-glass"
+                    style={{ borderRadius: 22, padding: 14, display: "grid", gap: 10 }}
                   >
-                    <span style={{ fontSize: 18, flexShrink: 0 }}>📱</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: "#60A5FA", margin: 0 }}>
-                        Connect Instagram or Messenger
-                      </p>
-                      <p style={{ fontSize: 10, color: "rgba(96,165,250,0.50)", margin: "2px 0 0", lineHeight: 1.4 }}>
-                        Add META_APP_ID + META_APP_SECRET to activate real DMs
-                      </p>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: "var(--mg-ink)", margin: 0 }}>
+                          Connect your inboxes
+                        </p>
+                        <p style={{ fontSize: 12, color: "var(--mg-ink-2)", margin: "3px 0 0", lineHeight: 1.45 }}>
+                          Bring your Instagram and Facebook Messenger DMs into Apex. Until then, you can try it with demo conversations.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowMetaBanner(false)}
+                        aria-label="Hide"
+                        style={{ color: "var(--mg-ink-3)", cursor: "pointer", padding: 4, background: "none", border: "none" }}
+                      >
+                        <X style={{ width: 14, height: 14 }} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setShowMetaBanner(false)}
-                      style={{ color: "rgba(255,255,255,0.22)", cursor: "pointer", padding: 4 }}
-                    >
-                      <X style={{ width: 12, height: 12 }} />
-                    </button>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      {[
+                        { name: "Instagram", Icon: SiInstagram, color: "#E1306C" },
+                        { name: "Messenger", Icon: SiMessenger, color: "#0A7CFF" },
+                      ].map(({ name, Icon, color }) => (
+                        <div key={name} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 10px", borderRadius: 16, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                          <Icon size={18} color={color} />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--mg-ink)" }}>{name}</div>
+                            <div style={{ fontSize: 11, color: "var(--mg-ink-3)" }}>Coming soon</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

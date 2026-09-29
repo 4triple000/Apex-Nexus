@@ -140,19 +140,23 @@ export function ApexLogo({
         ...style,
       }}
     >
-      <img
-        src="/apex-logo.png"
-        alt="Apex"
-        draggable={false}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          display: "block",
-          animation: imgAnimation,
-          userSelect: "none",
-        }}
-      />
+      {/* Apex mark: a white diamond on the brand gradient (the old PNG asset never shipped) */}
+      <svg
+        viewBox="0 0 64 64"
+        role="img"
+        aria-label="Apex"
+        style={{ width: "100%", height: "100%", display: "block", animation: imgAnimation }}
+      >
+        <defs>
+          <linearGradient id="apex-logo-bg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#6C5CE7" />
+            <stop offset="0.55" stopColor="#A29BFE" />
+            <stop offset="1" stopColor="#FD79A8" />
+          </linearGradient>
+        </defs>
+        <rect width="64" height="64" fill="url(#apex-logo-bg)" />
+        <path d="M32 14 L50 32 L32 50 L14 32 Z" fill="#FFFFFF" fillOpacity="0.95" />
+      </svg>
     </div>
   );
 
