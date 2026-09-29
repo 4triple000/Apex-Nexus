@@ -1,4 +1,5 @@
 import { useLocation, Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   MessageSquare, Bot, Network, Camera, Mic, Brain,
   Swords, PenLine, Archive, User, Terminal, Settings,
@@ -17,11 +18,12 @@ const NAV_ITEMS = [
   { href: "/profile",        icon: Archive,       label: "Memory"         },
   { href: "/avatar",         icon: User,          label: "Identity"       },
   { href: "/nexus-builder",  icon: Hammer,        label: "Nexus Builder"  },
-  { href: "/dev-cockpit",    icon: Terminal,      label: "Dev Cockpit"    },
+  { href: "/dev-cockpit",    icon: Terminal,      label: "Dev Cockpit",   ownerOnly: true },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
+  const isOwner = !!useAuth().user?.isOwner;
 
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
@@ -71,7 +73,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 flex flex-col gap-0.5" style={{ paddingLeft: 8, paddingRight: 8 }}>
-        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+        {NAV_ITEMS.filter((item) => !("ownerOnly" in item) || isOwner).map(({ href, icon: Icon, label }) => {
           const active = isActive(href);
           return (
             <Link key={href} href={href}>

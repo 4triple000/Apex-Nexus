@@ -11,7 +11,7 @@
  * ║  full cycle control via REST API.                           ║
  * ╚══════════════════════════════════════════════════════════════╝
  */
-import { Router }          from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import type { Server as IO } from "socket.io";
 import { randomUUID }       from "node:crypto";
 import {
@@ -20,6 +20,7 @@ import {
 import path                 from "node:path";
 import { openai }           from "@workspace/integrations-openai-ai-server";
 import { logger }           from "../../lib/logger";
+import { requireOwner }     from "../../shared/middleware/requireAuth";
 import {
   analyzeMemory, detectPatterns,
   type DetectedPattern,
@@ -29,7 +30,6 @@ import {
 
 const WORKSPACE      = path.join(process.cwd(), "..", "..");
 const SNAPSHOTS_DIR  = path.join(WORKSPACE, ".apex-builder", "snapshots");
-const DEV_KEY        = process.env["APEX_BUILDER_KEY"] ?? "apex-dev-2024";
 const MAX_EVENTS     = 2000;      // ring buffer size
 const CYCLE_INTERVAL = 10 * 60_000; // default: 10 minutes
 
@@ -691,15 +691,14 @@ Score guide: 0.9+=safe+beneficial, 0.7-0.9=safe, 0.5-0.7=risky, <0.5=reject`,
     });
 
     // Control — start
-    r.post("/autonomous/start", (req, res) => {
-      const { key, intervalMs, autoApply } = req.body as {
-        key?: string; intervalMs?: number; autoApply?: boolean;
+    // Auto-applying AI code changes to the server is owner-only
+    const ownerIfAutoApply = (req: Request, res: Response, next: NextFunction) =>
+      (req.body as { autoApply?: boolean } | undefined)?.autoApply ? requireOwner(req, res, next) : next();
+
+    r.post("/autonomous/start", ownerIfAutoApply, (req, res) => {
+      const { intervalMs, autoApply } = req.body as {
+        intervalMs?: number; autoApply?: boolean;
       };
-      const requiresKey = autoApply;
-      if (requiresKey && key !== DEV_KEY) {
-        res.status(403).json({ error: "Developer key required to enable autoApply" });
-        return;
-      }
       this.start({ intervalMs, autoApply });
       res.json({ ok: true, status: this.status });
     });
@@ -711,15 +710,11 @@ Score guide: 0.9+=safe+beneficial, 0.7-0.9=safe, 0.5-0.7=risky, <0.5=reject`,
     });
 
     // Control — trigger a manual cycle
-    r.post("/autonomous/cycle", async (req, res) => {
-      const { key } = req.body as { key?: string };
-      if (key && key !== DEV_KEY) {
-        res.status(403).json({ error: "Invalid developer key" });
-        return;
-      }
-      // autoApply only if dev key supplied
+    r.post("/autonomous/cycle", ownerIfAutoApply, async (req, res) => {
+      const { autoApply } = (req.body ?? {}) as { autoApply?: boolean };
+      // Changes are only auto-applied when the owner asks for it
       const prevAutoApply = this.autoApply;
-      if (!key) this.autoApply = false;
+      if (!autoApply) this.autoApply = false;
       try {
         const record = await this.triggerCycle();
         res.json({ record });
@@ -729,12 +724,7 @@ Score guide: 0.9+=safe+beneficial, 0.7-0.9=safe, 0.5-0.7=risky, <0.5=reject`,
     });
 
     // Apply a queued suggestion (manual dev action)
-    r.post("/autonomous/apply/:id", async (req, res) => {
-      const { key } = req.body as { key?: string };
-      if (key !== DEV_KEY) {
-        res.status(403).json({ error: "Invalid developer key" });
-        return;
-      }
+    r.post("/autonomous/apply/:id", requireOwner, async (req, res) => {
       const sugg = this.suggestions.find((s) => s.id === req.params["id"]);
       if (!sugg) {
         res.status(404).json({ error: "Suggestion not found" });

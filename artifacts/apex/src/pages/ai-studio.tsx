@@ -12,6 +12,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { ChatPanel } from "@/components/ai-studio/ChatPanel";
 import { PreviewPane } from "@/components/ai-studio/PreviewPane";
 import { FileExplorer, type ProjectFile } from "@/components/ai-studio/FileExplorer";
@@ -88,6 +89,7 @@ const DEPLOY_STAGES = [
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AiStudioPage() {
+  const [, setLocation] = useLocation();
   const sessionId = useSession();
   const { toast } = useToast();
 
@@ -371,13 +373,14 @@ export default function AiStudioPage() {
         style={{ background: "rgba(15,17,21,0.98)", borderColor: "rgba(255,255,255,0.06)" }}
       >
         {/* Back */}
-        <a
-          href={`${BASE}/studio`}
+        <button
+          onClick={() => (window.history.length > 1 ? window.history.back() : setLocation("/"))}
           className="text-white/30 hover:text-white/70 transition-colors text-lg leading-none flex-shrink-0"
-          title="Classic Studio"
+          title="Back"
+          aria-label="Back"
         >
           ←
-        </a>
+        </button>
 
         {/* Logo */}
         <div

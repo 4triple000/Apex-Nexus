@@ -9,14 +9,16 @@ function api(path: string) { return `${BASE}/api${path}`; }
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
   const r = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...((opts?.headers) || {}) },
     ...opts,
+    headers: { "Content-Type": "application/json", ...((opts?.headers) || {}) },
   });
   if (!r.ok) {
     const body = await r.json().catch(() => ({})) as { error?: string };
     throw new Error(body.error ?? "Request failed");
   }
-  return r.json() as Promise<T>;
+  // Auth routes reply as { ok, data }; unwrap to the payload
+  const body = await r.json() as { ok?: boolean; data?: T } | T;
+  return (body && typeof body === "object" && "ok" in body && "data" in body ? body.data : body) as T;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -29,6 +31,8 @@ export interface AuthUser {
   bio: string | null;
   subscriptionTier: string;
   subscriptionStatus: string;
+  /** True for the app owner account(s); unlocks owner-only tools like the Dev Cockpit */
+  isOwner?: boolean;
 }
 
 interface AuthContextValue {
@@ -59,9 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const sessionId = localStorage.getItem(SESSION_KEY);
     if (sessionId) {
-      req<{ user: AuthUser }>(api("/auth/me"), {
+      req<{ user?: AuthUser }>(api("/auth/me"), {
         headers: { "x-session-id": sessionId },
       }).then(({ user }) => {
+        if (!user) throw new Error("Not signed in");
         setUser(user);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
       }).catch(() => {

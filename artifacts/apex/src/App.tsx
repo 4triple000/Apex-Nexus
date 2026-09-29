@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -43,7 +43,6 @@ const GameEnginePage = lazy(() => import("@/pages/game-engine"));
 const GameEcosystemPage = lazy(() => import("@/pages/game-ecosystem"));
 const ApexDevOSPage = lazy(() => import("@/pages/apex-dev-os"));
 const ApexAvatarPage = lazy(() => import("@/pages/apex-avatar"));
-const ApexBuilderPage = lazy(() => import("@/pages/apex-builder"));
 const NexusBuilderPage = lazy(() => import("@/pages/nexus-builder"));
 const DomainSettingsPage = lazy(() => import("@/pages/domain-settings"));
 const DevCockpitPage = lazy(() => import("@/pages/dev-cockpit"));
@@ -81,6 +80,14 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return <FTUEGate>{children}</FTUEGate>;
 }
 
+// Owner-only screens: everyone else sees "Not Found", as if the page didn't exist.
+// The server enforces the same rule on the data these screens use.
+function OwnerOnly({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <FullScreenLoader />;
+  return user?.isOwner ? <>{children}</> : <NotFound />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -110,8 +117,9 @@ function Router() {
       <Route path="/apex-avatar">
         <ProtectedLayout><ApexAvatarPage /></ProtectedLayout>
       </Route>
+      {/* Apex Builder was merged into AI Studio */}
       <Route path="/apex-builder">
-        <ApexBuilderPage />
+        <Redirect to="/ai-studio" replace />
       </Route>
       <Route path="/nexus-builder">
         <NexusBuilderPage />
@@ -120,7 +128,7 @@ function Router() {
         <DomainSettingsPage />
       </Route>
       <Route path="/dev-cockpit">
-        <DevCockpitPage />
+        <OwnerOnly><DevCockpitPage /></OwnerOnly>
       </Route>
       <Route path="/runtime">
         <RuntimePage />

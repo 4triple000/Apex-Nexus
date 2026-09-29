@@ -5,6 +5,7 @@
  * ║                                                             ║
  * ║  Endpoints:                                                 ║
  * ║    POST /api/builder/plan       — AI generates feature plan ║
+ * ║    Everything except /plan is owner-only (OWNER_EMAILS).    ║
  * ║    POST /api/builder/apply      — apply code changes (dev)  ║
  * ║    POST /api/builder/snapshot   — save snapshot (dev)       ║
  * ║    GET  /api/builder/snapshots  — list snapshots (dev)      ║
@@ -18,16 +19,23 @@ import {
 } from "fs";
 import path from "path";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { requireOwner } from "../shared/middleware/requireAuth";
 
 const router = Router();
 
 // ── Workspace paths ──────────────────────────────────────────────────────────
 // API server runs from artifacts/api-server — navigate up to workspace root
-const WORKSPACE    = path.join(process.cwd(), "..", "..");
+const WORKSPACE    = path.resolve(process.cwd(), "..", "..");
 const SNAPSHOTS_DIR = path.join(WORKSPACE, ".apex-builder", "snapshots");
 
-// ── Dev key ──────────────────────────────────────────────────────────────────
-const DEV_KEY = process.env["APEX_BUILDER_KEY"] ?? "apex-dev-2024";
+// Resolve a workspace-relative path, refusing anything that escapes the workspace
+function workspacePath(relPath: string): string {
+  const full = path.resolve(WORKSPACE, relPath);
+  if (full !== WORKSPACE && !full.startsWith(WORKSPACE + path.sep)) {
+    throw new Error(`Path is outside the workspace: ${relPath}`);
+  }
+  return full;
+}
 
 function ensureSnapshotsDir() {
   if (!existsSync(SNAPSHOTS_DIR)) mkdirSync(SNAPSHOTS_DIR, { recursive: true });
@@ -109,19 +117,14 @@ CRITICAL RULES FOR CODE GENERATION:
 
 // ── POST /api/builder/apply ───────────────────────────────────────────────────
 // Writes generated code to the actual Apex codebase. DEV ONLY.
-router.post("/builder/apply", async (req, res) => {
-  const { key, plan } = req.body as {
-    key: string;
+router.post("/builder/apply", requireOwner, async (req, res) => {
+  const { plan } = req.body as {
     plan: {
       feature: string;
       files: Array<{ path: string; action: "create" | "modify"; code: string; insertAfter?: string }>;
     };
   };
 
-  if (key !== DEV_KEY) {
-    res.status(403).json({ error: "Invalid developer key" });
-    return;
-  }
 
   if (!plan?.files?.length) {
     res.status(400).json({ error: "No files to apply" });
@@ -136,7 +139,7 @@ router.post("/builder/apply", async (req, res) => {
 
     for (const file of plan.files) {
       try {
-        const fullPath = path.join(WORKSPACE, file.path);
+        const fullPath = workspacePath(file.path);
         mkdirSync(path.dirname(fullPath), { recursive: true });
 
         if (file.action === "create") {
@@ -160,17 +163,12 @@ router.post("/builder/apply", async (req, res) => {
 });
 
 // ── POST /api/builder/snapshot ────────────────────────────────────────────────
-router.post("/builder/snapshot", async (req, res) => {
-  const { key, label, files } = req.body as {
-    key: string;
+router.post("/builder/snapshot", requireOwner, async (req, res) => {
+  const { label, files } = req.body as {
     label?: string;
     files: Array<{ path: string }>;
   };
 
-  if (key !== DEV_KEY) {
-    res.status(403).json({ error: "Invalid developer key" });
-    return;
-  }
 
   try {
     const id = await createSnapshot(label ?? "Manual snapshot", files);
@@ -181,13 +179,8 @@ router.post("/builder/snapshot", async (req, res) => {
 });
 
 // ── GET /api/builder/snapshots ────────────────────────────────────────────────
-router.get("/builder/snapshots", (req, res) => {
-  const { key } = req.query as { key?: string };
-
-  if (key !== DEV_KEY) {
-    res.status(403).json({ error: "Invalid developer key" });
-    return;
-  }
+router.get("/builder/snapshots", requireOwner, (req, res) => {
+  
 
   try {
     ensureSnapshotsDir();
@@ -212,13 +205,10 @@ router.get("/builder/snapshots", (req, res) => {
 });
 
 // ── POST /api/builder/rollback ────────────────────────────────────────────────
-router.post("/builder/rollback", (req, res) => {
-  const { key, snapshotId } = req.body as { key: string; snapshotId: string };
+router.post("/builder/rollback", requireOwner, (req, res) => {
+  const { snapshotId } = req.body as { snapshotId: string };
+  if (!/^[\w-]+$/.test(snapshotId ?? "")) { res.status(400).json({ error: "Invalid snapshot id" }); return; }
 
-  if (key !== DEV_KEY) {
-    res.status(403).json({ error: "Invalid developer key" });
-    return;
-  }
 
   try {
     const snapshotDir = path.join(SNAPSHOTS_DIR, snapshotId);
@@ -239,7 +229,7 @@ router.post("/builder/rollback", (req, res) => {
       try {
         const contentPath = path.join(snapshotDir, file.snapshotFile);
         const content     = readFileSync(contentPath, "utf-8");
-        const targetPath  = path.join(WORKSPACE, file.path);
+        const targetPath  = workspacePath(file.path);
         mkdirSync(path.dirname(targetPath), { recursive: true });
         writeFileSync(targetPath, content, "utf-8");
         results.push({ path: file.path, status: "restored" });
@@ -256,9 +246,8 @@ router.post("/builder/rollback", (req, res) => {
 
 // ── GET /api/builder/tree ─────────────────────────────────────────────────────
 // Returns the file tree for apex/src or api-server/src
-router.get("/builder/tree", (req, res) => {
-  const { key, root } = req.query as { key?: string; root?: string };
-  if (key !== DEV_KEY) { res.status(403).json({ error: "Invalid key" }); return; }
+router.get("/builder/tree", requireOwner, (req, res) => {
+  const { root } = req.query as { root?: string };
 
   const roots: Record<string, string> = {
     apex:   path.join(WORKSPACE, "artifacts/apex/src"),
@@ -293,13 +282,12 @@ router.get("/builder/tree", (req, res) => {
 });
 
 // ── GET /api/builder/read ─────────────────────────────────────────────────────
-router.get("/builder/read", (req, res) => {
-  const { key, filePath } = req.query as { key?: string; filePath?: string };
-  if (key !== DEV_KEY) { res.status(403).json({ error: "Invalid key" }); return; }
+router.get("/builder/read", requireOwner, (req, res) => {
+  const { filePath } = req.query as { filePath?: string };
   if (!filePath) { res.status(400).json({ error: "filePath required" }); return; }
 
   try {
-    const full = path.join(WORKSPACE, filePath);
+    const full = workspacePath(filePath);
     if (!existsSync(full)) { res.status(404).json({ error: "File not found" }); return; }
     const content = readFileSync(full, "utf-8");
     res.json({ content, path: filePath });
@@ -308,13 +296,12 @@ router.get("/builder/read", (req, res) => {
 
 // ── POST /api/builder/write ───────────────────────────────────────────────────
 // Direct file write — used by the code editor save button
-router.post("/builder/write", (req, res) => {
-  const { key, filePath, content } = req.body as { key: string; filePath: string; content: string };
-  if (key !== DEV_KEY) { res.status(403).json({ error: "Invalid key" }); return; }
+router.post("/builder/write", requireOwner, (req, res) => {
+  const { filePath, content } = req.body as { filePath: string; content: string };
   if (!filePath || content === undefined) { res.status(400).json({ error: "filePath + content required" }); return; }
 
   try {
-    const full = path.join(WORKSPACE, filePath);
+    const full = workspacePath(filePath);
     // Auto-snapshot before direct write
     createSnapshot(`Manual edit: ${path.basename(filePath)}`, [{ path: filePath }]).catch(() => {});
     mkdirSync(path.dirname(full), { recursive: true });
@@ -338,7 +325,7 @@ async function createSnapshot(
   const snapshotFiles: Array<{ path: string; snapshotFile: string }> = [];
 
   for (const file of files) {
-    const fullPath = path.join(WORKSPACE, file.path);
+    const fullPath = workspacePath(file.path);
     if (existsSync(fullPath)) {
       const snapshotFile = `file_${snapshotFiles.length}.bak`;
       writeFileSync(path.join(dir, snapshotFile), readFileSync(fullPath, "utf-8"));

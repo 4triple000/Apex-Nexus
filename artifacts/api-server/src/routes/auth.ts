@@ -13,6 +13,7 @@ import { issueTokenPair, verifyRefreshToken } from "../shared/lib/jwt";
 import { authLimiter } from "../shared/middleware/rateLimiter";
 import { success, badRequest, unauthorized, serverError } from "../shared/utils/response";
 import { logger }     from "../lib/logger";
+import { isOwnerEmail } from "../shared/lib/owner";
 
 const router = Router();
 
@@ -48,7 +49,7 @@ function randomUsername(): string {
 
 function sanitize(user: typeof usersTable.$inferSelect) {
   const { passwordHash: _, sessionId: __, stripeCustomerId: ___, stripeSubscriptionId: ____, googleId: _____, ...safe } = user;
-  return safe;
+  return { ...safe, isOwner: isOwnerEmail(user.email) };
 }
 
 function tierOf(user: typeof usersTable.$inferSelect): "free" | "pro" | "creator_pro" | "enterprise" {

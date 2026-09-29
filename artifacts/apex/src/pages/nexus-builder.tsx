@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SIDEBAR_ITEMS = [
   { href: "/",               icon: MessageSquare, label: "AI Chat"        },
@@ -23,7 +24,7 @@ const SIDEBAR_ITEMS = [
   { href: "/profile",        icon: Archive,       label: "Memory"         },
   { href: "/avatar",         icon: User,          label: "Identity"       },
   { href: "/nexus-builder",  icon: Hammer,        label: "Nexus Builder"  },
-  { href: "/dev-cockpit",    icon: Terminal,      label: "Dev Cockpit"    },
+  { href: "/dev-cockpit",    icon: Terminal,      label: "Dev Cockpit",   ownerOnly: true },
 ];
 
 const MOCK_FILES = [
@@ -41,6 +42,7 @@ type BuildStatus = "idle" | "building" | "done";
 
 export default function NexusBuilderPage() {
   const [location] = useLocation();
+  const isOwner = !!useAuth().user?.isOwner;
   const [prompt, setPrompt] = useState("");
   const [buildStatus, setBuildStatus] = useState<BuildStatus>("idle");
   const [aiInput, setAiInput] = useState("");
@@ -80,7 +82,7 @@ export default function NexusBuilderPage() {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3 flex flex-col gap-0.5 px-2">
-          {SIDEBAR_ITEMS.map(({ href, icon: Icon, label }) => {
+          {SIDEBAR_ITEMS.filter((item) => !("ownerOnly" in item) || isOwner).map(({ href, icon: Icon, label }) => {
             const active = isActive(href);
             return (
               <Link key={href} href={href}>

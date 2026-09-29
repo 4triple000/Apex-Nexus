@@ -9,6 +9,7 @@ import { OAuth2Client } from "google-auth-library";
 import { db, usersTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { issueTokenPair } from "../shared/lib/jwt";
+import { isOwnerEmail } from "../shared/lib/owner";
 
 const router = Router();
 
@@ -34,8 +35,8 @@ function randomUsername(): string {
 }
 
 function sanitize(u: typeof usersTable.$inferSelect) {
-  const { passwordHash: _, ...safe } = u;
-  return safe;
+  const { passwordHash: _, sessionId: __, stripeCustomerId: ___, stripeSubscriptionId: ____, googleId: _____, ...safe } = u;
+  return { ...safe, isOwner: isOwnerEmail(u.email) };
 }
 
 // ── GET /auth/google — redirect to Google consent page ────────────────────────

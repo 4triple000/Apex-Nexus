@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useApexState } from "@/contexts/ApexStateContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ComingSoonFeature {
   icon: string;
@@ -8,12 +9,12 @@ interface ComingSoonFeature {
   desc: string;
   href?: string;
   locked: boolean;
+  ownerOnly?: boolean;
 }
 
 const FEATURES: ComingSoonFeature[] = [
-  { icon: "🔧", name: "Dev Cockpit",             desc: "Build & update Apex from inside Apex — file editor + AI", href: "/dev-cockpit", locked: false },
-  { icon: "⚡", name: "Apex Builder",           desc: "AI app & game creator — build anything with prompts", href: "/apex-builder",  locked: false },
-  { icon: "🎮", name: "Game Engine v4",          desc: "Multiplayer AI-powered game ecosystem",               href: "/games",         locked: false },
+  { icon: "🔧", name: "Dev Cockpit",             desc: "Build & update Apex from inside Apex — file editor + AI", href: "/dev-cockpit", locked: false, ownerOnly: true },
+  { icon: "🎮", name: "Apex Games",              desc: "Multiplayer AI-powered game ecosystem",               href: "/games",         locked: false },
   { icon: "🤖", name: "AI Arena",                desc: "Battle multiple AIs simultaneously, vote on winner",  href: "/arena",         locked: false },
   { icon: "🌐", name: "AI Studio",               desc: "Full AI model suite with advanced controls",          href: "/ai-studio",     locked: false },
   { icon: "📸", name: "Screenshot Analysis",     desc: "AI-powered image and screenshot intelligence",        href: "/screenshot",    locked: false },
@@ -40,6 +41,7 @@ export function ApexControlPanel() {
   const [, nav]                     = useLocation();
   const { voiceMode, setVoiceMode, darkMode, setDarkMode, memoryEnabled, setMemoryEnabled, wakePhrase, setWakePhrase, personality, setPersonality } = useApexState();
 
+  const isOwner = !!useAuth().user?.isOwner;
   const close = () => setOpen(false);
 
   const handleFeatureClick = (f: ComingSoonFeature) => {
@@ -248,7 +250,7 @@ export function ApexControlPanel() {
           {/* ─── Features ────────────────────────────────────────────────── */}
           <SectionTitle style={{ marginTop: 24 }}>🚀 All Features</SectionTitle>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {FEATURES.map(f => (
+            {FEATURES.filter(f => !f.ownerOnly || isOwner).map(f => (
               <button
                 key={f.name}
                 onClick={() => handleFeatureClick(f)}

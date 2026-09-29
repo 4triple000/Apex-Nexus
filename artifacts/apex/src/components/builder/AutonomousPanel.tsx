@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { authHeaders } from "@/lib/authSession";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const api  = (p: string) => `${BASE}${p}`;
@@ -80,7 +81,7 @@ const SEV_COLOR: Record<string, string> = {
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function AutonomousPanel({ devKey }: { devKey?: string }) {
+export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boolean }) {
   const [status, setStatus]         = useState<SysStatus | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [history, setHistory]       = useState<CycleRecord[]>([]);
@@ -136,9 +137,8 @@ export default function AutonomousPanel({ devKey }: { devKey?: string }) {
     try {
       const res = await fetch(api("/api/autonomous/start"), {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body:    JSON.stringify({
-          key:         autoApplyEnabled ? devKey : undefined,
           intervalMs:  cycleIntervalMin * 60_000,
           autoApply:   autoApplyEnabled,
         }),
@@ -162,8 +162,8 @@ export default function AutonomousPanel({ devKey }: { devKey?: string }) {
     try {
       const res = await fetch(api("/api/autonomous/cycle"), {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ key: devKey }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body:    JSON.stringify({ autoApply: ownerMode }),
       });
       const data = await res.json() as { record?: CycleRecord; error?: string };
       if (data.record) {
@@ -176,13 +176,12 @@ export default function AutonomousPanel({ devKey }: { devKey?: string }) {
   };
 
   const applySuggestion = async (id: string) => {
-    if (!devKey) { addLog("❌ Dev key required to apply"); return; }
+    if (!ownerMode) { addLog("❌ Only the app owner can apply changes"); return; }
     setLoading(true);
     try {
       const res = await fetch(api(`/api/autonomous/apply/${id}`), {
         method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ key: devKey }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
       });
       const data = await res.json() as { ok?: boolean; snapshotId?: string; error?: string };
       if (data.ok) addLog(`🚀 Applied! Snapshot: ${data.snapshotId}`);
@@ -472,7 +471,7 @@ export default function AutonomousPanel({ devKey }: { devKey?: string }) {
                         }}>{f.path.split("/").pop()}</span>
                       ))}
                     </div>
-                    {s.status === "pending" && devKey && (
+                    {s.status === "pending" && ownerMode && (
                       <div style={{ display: "flex", gap: 8 }}>
                         <button onClick={() => applySuggestion(s.id)} disabled={loading} style={{
                           flex: 1, padding: "8px", borderRadius: 8, border: "none",
@@ -584,7 +583,7 @@ export default function AutonomousPanel({ devKey }: { devKey?: string }) {
             </div>
 
             {/* Auto-apply toggle */}
-            {devKey && (
+            {ownerMode && (
               <div style={{
                 background: "#0f1020", border: "1px solid #1e2035",
                 borderRadius: 10, padding: 14,
