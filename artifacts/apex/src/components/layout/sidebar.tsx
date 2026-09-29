@@ -3,12 +3,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   MessageSquare, Bot, Network, Camera, Mic, Brain,
   Swords, PenLine, Archive, User, Terminal, Settings,
-  Hammer, Zap,
+  Hammer, Zap, Home, Gamepad2,
 } from "lucide-react";
+import { ApexLogo } from "@/components/ui/ApexLogo";
 
 const NAV_ITEMS = [
-  { href: "/",               icon: MessageSquare, label: "AI Chat"        },
-  { href: "/dm",             icon: Bot,           label: "DM Automation"  },
+  { href: "/",               icon: Home,          label: "Home"           },
+  { href: "/dm",             icon: MessageSquare, label: "Messages"       },
+  { href: "/ai-studio",      icon: Hammer,        label: "AI Studio"      },
+  { href: "/games",          icon: Gamepad2,      label: "Apex Games"     },
   { href: "/studio",         icon: Network,       label: "Hive Mode"      },
   { href: "/screenshot",     icon: Camera,        label: "Screenshot AI"  },
   { href: "/apex-os",        icon: Mic,           label: "Voice & Audio"  },
@@ -17,7 +20,6 @@ const NAV_ITEMS = [
   { href: "/feed",           icon: PenLine,       label: "Content Writer" },
   { href: "/profile",        icon: Archive,       label: "Memory"         },
   { href: "/avatar",         icon: User,          label: "Identity"       },
-  { href: "/ai-studio",      icon: Hammer,        label: "AI Studio"      },
   { href: "/dev-cockpit",    icon: Terminal,      label: "Dev Cockpit",   ownerOnly: true },
 ];
 
@@ -34,9 +36,12 @@ export function Sidebar() {
       style={{
         width: 224,
         height: "100dvh",
-        background: "#0D0D1A",
-        borderColor: "rgba(255,255,255,0.05)",
+        background: "linear-gradient(180deg, rgba(30,26,64,0.55), rgba(12,10,28,0.7))",
+        backdropFilter: "blur(22px) saturate(180%)",
+        WebkitBackdropFilter: "blur(22px) saturate(180%)",
+        borderColor: "rgba(255,255,255,0.1)",
         position: "sticky",
+        zIndex: 2,
         top: 0,
       }}
     >
@@ -45,24 +50,7 @@ export function Sidebar() {
         className="flex items-center gap-3 px-4 shrink-0 border-b"
         style={{ height: 56, borderColor: "rgba(255,255,255,0.05)" }}
       >
-        <div
-          className="relative flex items-center justify-center rounded-md"
-          style={{
-            width: 26, height: 26,
-            background: "linear-gradient(135deg, #7C3AED, #3B82F6)",
-            boxShadow: "0 0 12px rgba(124,58,237,0.55)",
-          }}
-        >
-          <div
-            className="absolute rounded-[5px] flex items-center justify-center"
-            style={{ inset: 1.5, background: "#0A0A15" }}
-          >
-            <span
-              className="font-bold text-sm"
-              style={{ background: "linear-gradient(135deg,#fff,rgba(255,255,255,0.7))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
-            >A</span>
-          </div>
-        </div>
+        <ApexLogo size={28} radius={9} />
         <span
           className="font-bold text-sm tracking-widest"
           style={{ background: "linear-gradient(90deg,#fff,rgba(255,255,255,0.6))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}
@@ -78,16 +66,16 @@ export function Sidebar() {
           return (
             <Link key={href} href={href}>
               <div
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all text-sm"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-full cursor-pointer transition-all text-sm"
                 style={{
-                  background: active ? "linear-gradient(90deg,rgba(124,58,237,0.18),rgba(59,130,246,0.10))" : "transparent",
-                  borderLeft: active ? "2px solid #A78BFA" : "2px solid transparent",
-                  color: active ? "#EDE9FE" : "rgba(255,255,255,0.55)",
+                  background: active ? "rgba(255,255,255,0.92)" : "transparent",
+                  boxShadow: active ? "0 6px 18px rgba(139,123,255,0.35)" : "none",
+                  color: active ? "#120F2A" : "var(--mg-ink-2)",
                 }}
               >
                 <Icon
                   size={15}
-                  style={{ color: active ? "#A78BFA" : "rgba(255,255,255,0.45)", flexShrink: 0 }}
+                  style={{ color: active ? "#120F2A" : "var(--mg-ink-3)", flexShrink: 0 }}
                 />
                 <span style={{ fontWeight: active ? 500 : 400 }}>{label}</span>
               </div>

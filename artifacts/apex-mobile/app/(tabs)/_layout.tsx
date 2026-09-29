@@ -1,14 +1,25 @@
-import { BlurView } from "expo-blur";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
-import { useColors } from "@/hooks/useColors";
+import { Glass } from "@/components/glass/Glass";
+import { MG } from "@/constants/colors";
 
+type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
+
+const TABS: { name: string; title: string; icon: React.ComponentProps<typeof Feather>["name"] }[] = [
+  { name: "index",   title: "Home",      icon: "home" },
+  { name: "builder", title: "AI Studio", icon: "code" },
+  { name: "orb",     title: "Apex Orb",  icon: "aperture" },
+  { name: "profile", title: "You",       icon: "user" },
+];
+
+/** iOS 26+: Apple's own Liquid Glass tab bar. */
 function NativeTabLayout() {
   return (
     <NativeTabs>
@@ -17,104 +28,64 @@ function NativeTabLayout() {
         <Label>Home</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="builder">
-        <Icon sf={{ default: "hammer", selected: "hammer.fill" }} />
-        <Label>Builder</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <Icon sf={{ default: "person", selected: "person.fill" }} />
-        <Label>Identity</Label>
+        <Icon sf={{ default: "sparkles", selected: "sparkles" }} />
+        <Label>AI Studio</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="orb">
         <Icon sf={{ default: "circle.hexagonpath", selected: "circle.hexagonpath.fill" }} />
         <Label>Apex Orb</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Icon sf={{ default: "person", selected: "person.fill" }} />
+        <Label>You</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
 
-function ClassicTabLayout() {
-  const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
+/** Everywhere else: a floating Midnight Glass pill. */
+function GlassTabBar({ state, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View pointerEvents="box-none" style={[styles.wrap, { paddingBottom: 16 + (Platform.OS === "web" ? 0 : insets.bottom) }]}>
+      <Glass radius={33} intensity={60} style={styles.bar}>
+        {state.routes.map((route, i) => {
+          const tab = TABS.find((t) => t.name === route.name);
+          if (!tab) return null;
+          const active = state.index === i;
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="tab"
+              accessibilityLabel={tab.title}
+              accessibilityState={{ selected: active }}
+              onPress={() => {
+                const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+                if (!active && !event.defaultPrevented) {
+                  if (Platform.OS !== "web") Haptics.selectionAsync();
+                  navigation.navigate(route.name);
+                }
+              }}
+              style={[styles.tab, active && styles.tabOn]}
+            >
+              <Feather name={tab.icon} size={22} color={active ? "#120F2A" : MG.ink2} />
+            </Pressable>
+          );
+        })}
+      </Glass>
+    </View>
+  );
+}
 
+function ClassicTabLayout() {
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: "#A78BFA",
-        tabBarInactiveTintColor: "rgba(255,255,255,0.35)",
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: isIOS ? "transparent" : "#0D0D1A",
-          borderTopWidth: 1,
-          borderTopColor: "rgba(255,255,255,0.06)",
-          elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={100}
-              tint="dark"
-              style={StyleSheet.absoluteFill}
-            />
-          ) : isWeb ? (
-            <View
-              style={[StyleSheet.absoluteFill, { backgroundColor: "#0D0D1A" }]}
-            />
-          ) : null,
-      }}
+      tabBar={(props) => <GlassTabBar {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: MG.bg } }}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={22} />
-            ) : (
-              <Feather name="home" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="builder"
-        options={{
-          title: "Builder",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="hammer" tintColor={color} size={22} />
-            ) : (
-              <Feather name="code" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Identity",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person" tintColor={color} size={22} />
-            ) : (
-              <Feather name="user" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="orb"
-        options={{
-          title: "Apex Orb",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="circle.hexagonpath" tintColor={color} size={22} />
-            ) : (
-              <Feather name="aperture" size={22} color={color} />
-            ),
-        }}
-      />
+      {TABS.map((t) => (
+        <Tabs.Screen key={t.name} name={t.name} options={{ title: t.title }} />
+      ))}
     </Tabs>
   );
 }
@@ -125,3 +96,25 @@ export default function TabLayout() {
   }
   return <ClassicTabLayout />;
 }
+
+const styles = StyleSheet.create({
+  wrap: { position: "absolute", left: 0, right: 0, bottom: 0, alignItems: "center" },
+  bar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "92%",
+    maxWidth: 420,
+    height: 66,
+    paddingHorizontal: 9,
+    backgroundColor: "rgba(26,22,56,0.55)",
+  },
+  tab: { width: 52, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
+  tabOn: {
+    backgroundColor: "rgba(255,255,255,0.92)",
+    shadowColor: MG.violet,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+});

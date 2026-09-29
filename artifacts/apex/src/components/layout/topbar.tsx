@@ -11,9 +11,10 @@ export function TopBar() {
       className="hidden lg:flex items-center gap-4 px-6 shrink-0 border-b"
       style={{
         height: 56,
-        background: "rgba(10,10,21,0.95)",
-        borderColor: "rgba(255,255,255,0.05)",
-        backdropFilter: "blur(20px)",
+        background: "rgba(14,12,32,0.45)",
+        backdropFilter: "blur(22px) saturate(180%)",
+        WebkitBackdropFilter: "blur(22px) saturate(180%)",
+        borderColor: "rgba(255,255,255,0.08)",
         position: "sticky",
         top: 0,
         zIndex: 20,

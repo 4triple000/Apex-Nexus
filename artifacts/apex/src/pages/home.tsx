@@ -272,10 +272,10 @@ export default function Home() {
     {/* ═══ DESKTOP CHAT VIEW (hidden on mobile) ═══════════════════════════ */}
     <div
       className="hidden lg:flex flex-col"
-      style={{ height: "100%", background: "#07070F", position: "relative", overflow: "hidden" }}
+      style={{ height: "100%", flex: 1, minHeight: 0, background: "transparent", position: "relative", overflow: "hidden" }}
     >
       {/* Desktop header */}
-      <div style={{ flexShrink: 0, padding: "20px 28px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ flexShrink: 0, padding: "20px 28px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: "white", letterSpacing: "-0.04em", margin: 0 }}>AI Chat</h1>
@@ -299,8 +299,8 @@ export default function Home() {
             </button>
           </div>
         </div>
-        {/* Provider row */}
-        {mode === "chat" && (
+        {/* Provider row (the home hub's model cards cover this before the first message) */}
+        {mode === "chat" && messages.length > 0 && (
           <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
             {PROVIDERS.map((p) => {
               const active = aiPreference === p.id;
@@ -319,21 +319,24 @@ export default function Home() {
       {/* Messages scroll area */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 28px 16px", display: "flex", flexDirection: "column", gap: 16, scrollBehavior: "smooth" }}>
         {messages.length === 0 && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flex: 1, gap: 32, paddingBottom: 60 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 72, height: 72, borderRadius: 24, background: "linear-gradient(135deg,#7C3AED,#3B82F6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, boxShadow: "0 8px 32px rgba(124,58,237,0.4)" }}>◆</div>
-              <div style={{ textAlign: "center" }}>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: "white", margin: "0 0 4px" }}>Good morning!</h2>
-                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: 0 }}>What can Apex help you with today?</p>
+          <div style={{ width: "100%", maxWidth: 620, margin: "0 auto", display: "flex", flexDirection: "column", gap: 18, paddingTop: 8 }}>
+            <div>
+              <div style={{ fontSize: 13, color: "var(--mg-ink-3)", fontWeight: 500 }}>
+                {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
               </div>
+              <h2 style={{ fontSize: 26, fontWeight: 700, color: "var(--mg-ink)", letterSpacing: "-0.03em", margin: "2px 0 0" }}>
+                Hey, {user?.username?.trim() || "Creator"}
+              </h2>
             </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 600 }}>
-              {["Give me a battle plan", "Analyze this screenshot", "Write a viral tweet", "Life advice"].map((chip) => (
-                <button key={chip} onClick={() => handleSend(chip)} style={{ padding: "10px 18px", borderRadius: 99, fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.75)", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer" }}>
-                  {chip}
-                </button>
-              ))}
-            </div>
+            <ModelSearch
+              onPickModel={(id) => { setMode("chat"); setAiPreference(id); }}
+              onPickMode={setMode}
+              onAsk={handleSend}
+            />
+            <ModeChips mode={mode} onChange={setMode} />
+            {mode === "chat"
+              ? <ModelCarousel value={aiPreference} onChange={setAiPreference} status={providerStatus} />
+              : <ModeCard mode={mode} status={providerStatus} />}
           </div>
         )}
         {messages.map((msg) => {
@@ -388,7 +391,7 @@ export default function Home() {
       </div>
 
       {/* Desktop input bar */}
-      <div style={{ flexShrink: 0, padding: "12px 24px 20px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(7,7,15,0.95)", backdropFilter: "blur(20px)" }}>
+      <div style={{ flexShrink: 0, padding: "12px 24px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", background: "rgba(14,12,32,0.45)", backdropFilter: "blur(22px) saturate(180%)", WebkitBackdropFilter: "blur(22px) saturate(180%)" }}>
         {privacyMode && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", borderRadius: 12, background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", marginBottom: 10 }}>
             <ShieldOff size={13} style={{ color: "#10B981" }} />

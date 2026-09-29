@@ -11,8 +11,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { Backdrop } from "@/components/glass/Glass";
 
-const BG = "#07070F";
+const BG = "transparent";
 const CARD_BG = "rgba(255,255,255,0.04)";
 const BORDER = "rgba(255,255,255,0.09)";
 const PURPLE = "#7C3AED";
@@ -62,6 +63,7 @@ export default function BuilderScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Backdrop />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
@@ -71,7 +73,7 @@ export default function BuilderScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>Nexus Builder</Text>
+            <Text style={styles.headerTitle}>AI Studio</Text>
             <Text style={styles.headerSubtitle}>Build anything with AI</Text>
           </View>
           <LinearGradient

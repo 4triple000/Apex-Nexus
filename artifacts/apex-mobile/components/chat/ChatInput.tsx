@@ -20,15 +20,15 @@ import {
 import { Feather } from "@expo/vector-icons";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const BACKGROUND      = "#0D0D0D";
-const CONTAINER_BG    = "#161B22";
-const BORDER_DEFAULT  = "#2A2A2A";
-const BORDER_FOCUSED  = "#2563EB";
-const PLACEHOLDER_CLR = "#6B7280";
+const BACKGROUND      = "transparent";
+const CONTAINER_BG    = "rgba(22,19,44,0.72)";
+const BORDER_DEFAULT  = "rgba(255,255,255,0.16)";
+const BORDER_FOCUSED  = "#8B7BFF";
+const PLACEHOLDER_CLR = "rgba(243,240,255,0.4)";
 const TEXT_COLOR      = "#FFFFFF";
-const SEND_ACTIVE     = "#2563EB";
-const SEND_INACTIVE   = "#1F2937";
-const PLUS_CLR        = "#6B7280";
+const SEND_ACTIVE     = "#8B7BFF";
+const SEND_INACTIVE   = "rgba(255,255,255,0.1)";
+const PLUS_CLR        = "rgba(243,240,255,0.5)";
 
 export interface ChatInputProps {
   value: string;
@@ -72,9 +72,11 @@ export function ChatInput({
           { borderColor: focused ? BORDER_FOCUSED : BORDER_DEFAULT },
         ]}
       >
-        {/* + Button */}
+        {/* + Button (only when there is something to attach) */}
+        {onPressPlus ? (
         <Pressable
           onPress={onPressPlus}
+          accessibilityLabel="Attach"
           style={({ pressed }) => [
             styles.plusBtn,
             pressed && { opacity: 0.6 },
@@ -83,6 +85,7 @@ export function ChatInput({
         >
           <Feather name="plus" size={18} color={PLUS_CLR} />
         </Pressable>
+        ) : <View style={{ width: 8 }} />}
 
         {/* Text input */}
         <TextInput
@@ -98,8 +101,15 @@ export function ChatInput({
           onBlur={() => setFocused(false)}
           returnKeyType="default"
           blurOnSubmit={false}
-          selectionColor="#2563EB"
-          autoFocus={Platform.OS !== "web"}
+          selectionColor="#8B7BFF"
+          onKeyPress={(e) => {
+            // Web: Enter sends, Shift+Enter adds a new line
+            const ev = e.nativeEvent as { key: string; shiftKey?: boolean };
+            if (Platform.OS === "web" && ev.key === "Enter" && !ev.shiftKey) {
+              (e as unknown as { preventDefault: () => void }).preventDefault();
+              if (canSend) animateSend();
+            }
+          }}
         />
 
         {/* Send button */}
@@ -107,6 +117,7 @@ export function ChatInput({
           <Pressable
             onPress={animateSend}
             disabled={!canSend}
+            accessibilityLabel="Send"
             style={[
               styles.sendBtn,
               { backgroundColor: canSend ? SEND_ACTIVE : SEND_INACTIVE },
@@ -165,6 +176,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 6 : 4,
     paddingBottom: Platform.OS === "ios" ? 6 : 4,
     paddingHorizontal: 4,
+    ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : {}),
   },
   sendBtn: {
     width: 34,

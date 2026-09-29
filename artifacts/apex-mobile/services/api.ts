@@ -5,7 +5,9 @@
 
 const getBaseUrl = () => {
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  return domain ? `https://${domain}` : "http://localhost:8080";
+  if (!domain) return "http://localhost:8080";
+  // A full URL (e.g. http://localhost:8080 for local testing) is used as-is
+  return /^https?:\/\//.test(domain) ? domain.replace(/\/$/, "") : `https://${domain}`;
 };
 
 // Session credential from login/register; set by AuthContext
@@ -57,8 +59,12 @@ export const authApi = {
 };
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-export interface ChatInput { message: string; conversationId?: number }
-export interface ChatResponse { content: string; conversationId: number; tokensUsed?: number }
+export type ProviderId = "auto" | "openai" | "claude" | "perplexity";
+export interface ChatInput { message: string; conversationId?: number; provider?: ProviderId }
+export interface ChatResponse { content: string; conversationId: number; provider?: string }
+
+export interface ModelAnswer { provider: string; content: string; responseTime: number; error?: string }
+export interface GroupChatResponse { mode: string; messages: ModelAnswer[]; combinedAnswer?: string }
 export interface ConversationMessage { id: number; role: "user" | "assistant"; content: string; createdAt: string }
 export interface Conversation { id: number; userId: number; title: string; createdAt: string }
 
@@ -71,6 +77,25 @@ export const chatApi = {
 
   getMessages: (conversationId: number) =>
     apexFetch<{ messages: ConversationMessage[] }>(`/mobile/conversations/${conversationId}/messages`),
+
+  /** Battle (every model answers) or Hive (models combine one answer). */
+  group: async (message: string, mode: "battle" | "hive", sessionId?: string): Promise<GroupChatResponse> => {
+    const res = await fetch(`${getBaseUrl()}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, mode, sessionId }),
+    });
+    const json = (await res.json().catch(() => null)) as (GroupChatResponse & { error?: string }) | null;
+    if (!res.ok || !json) throw new Error(json?.error ?? `Server error (${res.status})`);
+    return json;
+  },
+
+  /** Which models have keys on the server. */
+  providers: async (): Promise<Record<Exclude<ProviderId, "auto">, boolean>> => {
+    const res = await fetch(`${getBaseUrl()}/api/chat/providers`);
+    if (!res.ok) throw new Error(`Server error (${res.status})`);
+    return ((await res.json()) as { providers: Record<Exclude<ProviderId, "auto">, boolean> }).providers;
+  },
 };
 
 // ── Memory ────────────────────────────────────────────────────────────────────

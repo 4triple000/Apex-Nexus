@@ -59,12 +59,12 @@ export function Layout({ children }: { children: ReactNode }) {
       ══════════════════════════════════════════════ */}
       <div
         className="hidden lg:flex min-h-[100dvh] w-full relative"
-        style={{ background: "#07070F" }}
+        style={{ background: "var(--mg-bg)", color: "var(--mg-ink)" }}
       >
-        {/* Subtle purple gradient top-left bloom */}
-        <div aria-hidden style={{ position: "fixed", top: 0, left: 0, width: 600, height: 400, background: "radial-gradient(ellipse at 0% 0%, rgba(124,58,237,0.08) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-        {/* Bottom-right blue bloom */}
-        <div aria-hidden style={{ position: "fixed", bottom: 0, right: 0, width: 500, height: 400, background: "radial-gradient(ellipse at 100% 100%, rgba(59,130,246,0.07) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
+        {/* Midnight Glass light */}
+        <div aria-hidden className="mg-blob" style={{ width: 520, height: 520, top: -80, left: 120, background: "rgba(108,92,231,0.42)" }} />
+        <div aria-hidden className="mg-blob" style={{ width: 460, height: 460, top: "40%", right: -120, background: "rgba(0,194,255,0.22)", animationDelay: "-6s" }} />
+        <div aria-hidden className="mg-blob" style={{ width: 420, height: 420, bottom: -120, left: "30%", background: "rgba(255,79,163,0.18)", animationDelay: "-11s" }} />
 
         {/* Sidebar */}
         <Sidebar />

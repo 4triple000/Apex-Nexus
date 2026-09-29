@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
+import { Backdrop } from "@/components/glass/Glass";
 import { memoryApi, type MemoryItem } from "@/services/api";
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -68,8 +69,10 @@ export default function ProfileScreen() {
   const styles = makeStyles(colors);
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <Backdrop />
     <ScrollView
-      style={[styles.root, { backgroundColor: colors.background }]}
+      style={styles.root}
       contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad + 80 }}
       showsVerticalScrollIndicator={false}
     >
@@ -157,6 +160,7 @@ export default function ProfileScreen() {
         <Text style={[styles.signOutText, { color: colors.destructive }]}>Sign Out</Text>
       </Pressable>
     </ScrollView>
+    </View>
   );
 }
 

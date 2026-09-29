@@ -25,6 +25,7 @@ import Svg, {
   Rect,
   G,
 } from "react-native-svg";
+import { Backdrop } from "@/components/glass/Glass";
 
 const WAVE_ORB = [3, 5, 8, 13, 19, 26, 34, 38, 34, 26, 19, 13, 8, 5, 3];
 
@@ -135,6 +136,7 @@ export default function OrbScreen() {
 
   return (
     <View style={[styles.root]}>
+      <Backdrop />
 
       {/* Deep ambient glow behind orb */}
       <View style={styles.glowOuter} />
@@ -212,7 +214,7 @@ export default function OrbScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#07070E",
+    backgroundColor: "#0A0918",
     overflow: "hidden",
   },
 

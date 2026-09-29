@@ -22,6 +22,7 @@ import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { authApi } from "@/services/api";
+import { Backdrop } from "@/components/glass/Glass";
 
 type Mode = "login" | "signup";
 
@@ -79,6 +80,7 @@ export default function AuthScreen() {
 
   return (
     <View style={styles.root}>
+      <Backdrop />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
