@@ -136,11 +136,11 @@ const TOOL_OPTIONS = [
 
 // ── Upgrade feature cards ────────────────────────────────────────────────────
 const FEATURE_CARDS: { icon: string; label: string; desc: string; color: string; available: boolean; route: string | null; phase: "early_access" | "rolling_out" | "coming_soon" | null }[] = [
+  { icon: "🧬", label: "Customize your avatar", desc: "Change how your 3D avatar looks and sounds",   color: "#EC4899", available: true,  route: "/avatar",       phase: null },
   { icon: "⚔️", label: "AI Battle Arena",    desc: "Challenge AIs head-to-head in real-time battles",    color: "#EF4444", available: true,  route: "/arena",        phase: null },
   { icon: "🎨", label: "AI Studio",          desc: "Build apps and automations with visual AI tools",     color: "#A29BFE", available: true,  route: "/ai-studio",    phase: null                    },
   { icon: "🏪", label: "Marketplace",        desc: "Discover and deploy community-built AI tools",        color: "#10B981", available: true,  route: "/marketplace",  phase: null },
   { icon: "🔄", label: "Workflow Engine",    desc: "Chain AI agents into automated pipelines",            color: "#F59E0B", available: true,  route: "/workflows",    phase: null },
-  { icon: "🧬", label: "AI Avatar System",   desc: "3D avatar that reacts to your conversations",         color: "#EC4899", available: true,  route: "/apex-avatar",  phase: null },
   { icon: "🎮", label: "Multiplayer Arena",  desc: "Real-time AI-powered multiplayer battles and lobbies",color: "#6C5CE7", available: true,  route: "/multiplayer",  phase: null },
   { icon: "🌐", label: "Multi-Agent Hub",    desc: "Coordinate multiple AI specialists in one task",      color: "#228BE6", available: true,  route: "/studio",       phase: null },
 ];

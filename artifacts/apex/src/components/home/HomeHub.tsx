@@ -115,7 +115,7 @@ const TOOL_ITEMS = [
   { href: "/games",      label: "Apex Games",     sub: "Play and remix games",            emoji: "🎮", aliases: ["games", "game", "play"] },
   { href: "/dm",         label: "Messages",       sub: "Instagram and Messenger inbox",   emoji: "💬", aliases: ["messages", "dm", "instagram", "facebook", "messenger", "inbox"] },
   { href: "/screenshot", label: "Screenshot AI",  sub: "Explain anything on screen",      emoji: "📸", aliases: ["screenshot", "image", "photo"] },
-  { href: "/feed",       label: "Content Writer", sub: "Posts, captions and scripts",     emoji: "✍️", aliases: ["write", "writer", "content", "post", "caption"] },
+  { href: "/feed",       label: "Social",         sub: "Creators and what they're making", emoji: "👥", aliases: ["social", "feed", "explore", "community", "creators", "follow"] },
   { href: "/workflows",  label: "AI Coach",       sub: "Workflows and coaching",          emoji: "🔁", aliases: ["coach", "workflow", "automation"] },
 ];
 

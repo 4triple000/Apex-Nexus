@@ -24,13 +24,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Volume2, VolumeX, ShieldOff } from "lucide-react";
 import { ApexAvatar3D } from "@/components/avatar/ApexAvatar3D";
 import { useSpeechOutput } from "@/hooks/useSpeechOutput";
-import { AvatarGreetingGate } from "@/components/avatar/AvatarGreeting";
-import { ReturnBanner } from "@/components/memory/ReturnBanner";
 
 import { StreakMilestone } from "@/components/streak/StreakMilestone";
 import { useStreak } from "@/hooks/useStreak";
-import { AvatarReengagement } from "@/components/avatar/AvatarReengagement";
-import { useReengagement } from "@/hooks/useReengagement";
 import { useApexState, toneInstruction } from "@/contexts/ApexStateContext";
 
 // ── Types ───────────────────────────────────────────────────────────────────────
@@ -98,7 +94,6 @@ export default function Home() {
   const voiceTone = useVoiceToneAnalysis();
   const { systemPrompt: globalSystemPrompt, avatarBehavior, voiceStyle } = usePersonality();
   const { streak, glowIntensity, milestone, isMilestoneNew, dismissMilestone } = useStreak();
-  const { message: reengagementMsg, dismiss: dismissReengagement } = useReengagement();
 
   // ── Map voice emotion → Apex avatar emotion ──────────────────────────────────
   function voiceToApexEmotion(ve: VoiceEmotion): Emotion {
@@ -257,8 +252,6 @@ export default function Home() {
 
   return (
     <>
-    {/* ── Avatar greeting (returning users only, once per session) ─── */}
-    <AvatarGreetingGate />
     {/* ── Streak milestone celebration (fires once per milestone) ─────────── */}
     {isMilestoneNew && milestone !== null && (
       <StreakMilestone
@@ -268,16 +261,6 @@ export default function Home() {
       />
     )}
 
-    {/* ── Avatar re-engagement (behavioral, session-gated, bottom slide-up) ─ */}
-    {reengagementMsg && (
-      <AvatarReengagement
-        message={reengagementMsg}
-        onDismiss={dismissReengagement}
-      />
-    )}
-
-    {/* ── Return message banner (inactivity-based personalized message) ─── */}
-    <ReturnBanner />
 
     {/* ═══ DESKTOP CHAT VIEW (hidden on mobile) ═══════════════════════════ */}
     <div

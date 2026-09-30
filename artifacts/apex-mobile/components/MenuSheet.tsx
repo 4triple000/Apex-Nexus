@@ -22,9 +22,9 @@ const BUBBLES: { label: string; icon: FeatherName; route?: string; web?: string 
   { label: "Marketplace", icon: "shopping-bag", web: "/marketplace" },
   { label: "Workflows",   icon: "git-branch",   web: "/workflows" },
   { label: "Social",      icon: "users",        web: "/feed" },
-  { label: "Explore",     icon: "compass",      web: "/explore" },
+  { label: "AI Models",   icon: "zap",          route: "/(tabs)/models" },
   { label: "Voice",       icon: "mic",          route: "/(tabs)/orb" },
-  { label: "Avatar",      icon: "smile",        web: "/apex-avatar" },
+  { label: "Engine",      icon: "box",          route: "/(tabs)/engine" },
   { label: "Insights",    icon: "bar-chart-2",  web: "/insights" },
   { label: "Settings",    icon: "settings",     route: "/(tabs)/settings" },
 ];

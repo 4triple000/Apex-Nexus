@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Store, Workflow, Users, Compass, Mic, Smile, BarChart3, Settings, Wrench, X, Flame, type LucideIcon } from "lucide-react";
+import { Store, Workflow, Users, Sparkles, Mic, Boxes, BarChart3, Settings, Wrench, X, Flame, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { clearEarned, useDailyStreak } from "@/lib/dailyStreak";
 
@@ -13,9 +13,9 @@ const BUBBLES: { label: string; to: string; icon: LucideIcon }[] = [
   { label: "Marketplace", to: "/marketplace", icon: Store },
   { label: "Workflows",   to: "/workflows",   icon: Workflow },
   { label: "Social",      to: "/feed",        icon: Users },
-  { label: "Explore",     to: "/explore",     icon: Compass },
+  { label: "AI Models",   to: "/models",      icon: Sparkles },
   { label: "Voice",       to: "/apex-os",     icon: Mic },
-  { label: "Avatar",      to: "/apex-avatar", icon: Smile },
+  { label: "Engine",      to: "/game-engine", icon: Boxes },
   { label: "Insights",    to: "/insights",    icon: BarChart3 },
   { label: "Settings",    to: "/settings",    icon: Settings },
 ];
