@@ -42,6 +42,8 @@ const InsightsPage = lazy(() => import("@/pages/insights"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const MultiplayerPage = lazy(() => import("@/pages/multiplayer"));
 const LandingPage = lazy(() => import("@/pages/landing"));
+const PrivacyPage = lazy(() => import("@/pages/legal").then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import("@/pages/legal").then((m) => ({ default: m.TermsPage })));
 const EngineLauncherPage = lazy(() => import("@/pages/game-engine"));
 const EngineEditorPage = lazy(() => import("@/pages/game-engine-editor"));
 const GamesPage = lazy(() => import("@/pages/games"));
@@ -98,6 +100,8 @@ function Router() {
       {/* ── Public marketing pages — no auth, no FTUE ── */}
       <Route path="/landing" component={LandingPage} />
       <Route path="/login" component={LoginPage} />
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/terms" component={TermsPage} />
 
       {/* ── Full-screen protected routes — bypasses the mobile Layout ── */}
       <Route path="/workflow-builder">
