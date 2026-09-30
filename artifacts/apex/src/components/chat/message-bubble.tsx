@@ -538,7 +538,7 @@ export function HiveBubble({ content }: { content: string }) {
             powered by
           </span>
           {[
-            { label: "GPT-4", color: "#10A37F" },
+            { label: "ChatGPT", color: "#10A37F" },
             { label: "Claude", color: "#D97757" },
             { label: "Perplexity", color: "#228BE6" },
           ].map((src) => (
@@ -650,5 +650,5 @@ export const providerAccents = {
 };
 
 export const providerNames = {
-  openai: "GPT-4", claude: "Claude 3", perplexity: "Perplexity", hive: "Hive Mind", auto: "AI",
+  openai: "ChatGPT", claude: "Claude", perplexity: "Perplexity", hive: "Hive Mind", auto: "AI",
 };

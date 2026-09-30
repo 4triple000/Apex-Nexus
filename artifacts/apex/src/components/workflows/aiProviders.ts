@@ -16,7 +16,7 @@ export interface AIProvider {
 export const AI_PROVIDERS: AIProvider[] = [
   {
     id: 'openai',
-    name: 'OpenAI GPT-4',
+    name: 'OpenAI ChatGPT',
     shortName: 'OpenAI',
     icon: '🤖',
     color: '#10a37f',

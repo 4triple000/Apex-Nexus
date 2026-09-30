@@ -8,7 +8,7 @@
  * Props:
  *   prompt         — user's question (optional)
  *   response       — AI response text (truncated to ~320 chars automatically)
- *   providerName   — "GPT-4" | "Claude 3" | "Perplexity" | "Hive Mind" | "Apex AI"
+ *   providerName   — "ChatGPT" | "Claude" | "Perplexity" | "Hive Mind" | "Apex AI"
  *   providerColor  — hex accent colour for the AI badge
  *   personalityTag — "Strategist Mode" | "Casual Mode" | etc.
  *   responseTime   — in ms (optional)

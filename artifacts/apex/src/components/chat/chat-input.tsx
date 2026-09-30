@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Mic, MicOff, Send, Loader2, Radio, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { loadPrefs, speechPrefs } from "@/contexts/ApexStateContext";
 
 // ── Easing ─────────────────────────────────────────────────────────────────────
 const EASE_IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
@@ -23,8 +24,9 @@ function speakFeedback(text: string) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(text);
-  utt.volume = 0.6;
-  utt.rate = 1.1;
+  const sp = speechPrefs({ rate: 1.1, volume: 0.6 });
+  utt.volume = sp.volume;
+  utt.rate = sp.rate;
   window.speechSynthesis.speak(utt);
 }
 
@@ -198,6 +200,11 @@ export function ChatInput({ onSend, disabled, onVoiceStart, onVoiceStop }: ChatI
   };
 
   useEffect(() => { if (!handsFree) stopHfRecognition(); }, [handsFree, stopHfRecognition]);
+
+  // Hands-free turned on in Settings: start listening for the wake phrase right away
+  useEffect(() => {
+    if (loadPrefs().handsFree && typeof navigator.mediaDevices?.getUserMedia === "function") void toggleHandsFree();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const resizeTextarea = useCallback(() => {
     if (textareaRef.current) {

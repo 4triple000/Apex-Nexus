@@ -5,8 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 
 const providerNames: Record<string, string> = {
-  openai: "GPT-4",
-  claude: "Claude 3",
+  openai: "ChatGPT",
+  claude: "Claude",
   perplexity: "Perplexity",
 };
 

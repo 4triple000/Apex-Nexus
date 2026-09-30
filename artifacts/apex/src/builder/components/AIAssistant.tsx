@@ -61,7 +61,7 @@ export default function AIAssistant() {
         <div style={{ width: 28, height: 28, borderRadius: "50%", background: GRAD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>✨</div>
         <div>
           <div style={{ fontSize: 10, fontWeight: 800, color: "#E8EAED" }}>Apex AI Assistant</div>
-          <div style={{ fontSize: 8, color: GOLD }}>● GPT-4 powered</div>
+          <div style={{ fontSize: 8, color: GOLD }}>● ChatGPT powered</div>
         </div>
       </div>
 

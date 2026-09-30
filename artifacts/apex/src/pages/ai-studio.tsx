@@ -108,6 +108,8 @@ export default function AiStudioPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [buildSteps, setBuildSteps] = useState<BuildStep[]>([]);
   const [rightTab, setRightTab] = useState<RightTab>("preview");
+  // Phones show one side at a time: the chat, or the preview and tools
+  const [mobileView, setMobileView] = useState<"chat" | "work">("chat");
   const [isTitleEditing, setIsTitleEditing] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [autopilotMode, setAutopilotMode] = useState<AutopilotMode>("off");
@@ -159,6 +161,50 @@ export default function AiStudioPage() {
 
   // ── Send message (generate or edit) ──────────────────────────────────────
 
+  // ── Deep links from the Builder page: ?prompt=… builds, ?project=… reopens ──
+  const startedFromLink = useRef(false);
+  useEffect(() => {
+    if (!sessionId || startedFromLink.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const linkPrompt = params.get("prompt");
+    const linkProject = params.get("project");
+    if (!linkPrompt && !linkProject) return;
+    startedFromLink.current = true;
+    // Drop the query so a refresh doesn't build again
+    window.history.replaceState(window.history.state, "", window.location.pathname);
+    if (linkProject) {
+      fetch(apiUrl(`/studio/ai/projects/${encodeURIComponent(linkProject)}?sessionId=${encodeURIComponent(sessionId)}`))
+        .then((r) => r.json())
+        .then((json: { ok: boolean; data?: { project: { id: number; title: string; plan: AiStudioPlan | null; files: ProjectFile[]; previewHtml: string | null; chatHistory: ChatMessage[]; buildCount: number | null; editCount: number | null } } }) => {
+          const p = json.data?.project;
+          if (!json.ok || !p) { toast({ title: "Couldn't open that project", variant: "destructive" }); return; }
+          setProjectId(p.id);
+          // Older or partial projects may be missing plan fields the panels expect
+          setPlan(p.plan ? {
+            ...p.plan,
+            project_name: p.plan.project_name ?? p.title,
+            app_type: p.plan.app_type ?? "app",
+            description: p.plan.description ?? "",
+            features: p.plan.features ?? [],
+            pages: p.plan.pages ?? [],
+            tech_stack: p.plan.tech_stack ?? [],
+          } : null);
+          setFiles(p.files ?? []);
+          setPreviewHtml(p.previewHtml ?? "");
+          setProjectTitle(p.title);
+          setMessages(p.chatHistory ?? []);
+          setBuildCount(p.buildCount ?? 1);
+          setEditCount(p.editCount ?? 0);
+          setRightTab("preview");
+          setMobileView("work");
+        })
+        .catch(() => toast({ title: "Couldn't open that project", variant: "destructive" }));
+    } else if (linkPrompt) {
+      handleSendRef.current?.(linkPrompt);
+    }
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleSendRef = useRef<((m: string) => void) | null>(null);
+
   const handleSend = useCallback(async (message: string) => {
     if (isGenerating) return;
     const isEdit = !!projectId;
@@ -177,7 +223,10 @@ export default function AiStudioPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: message, sessionId }),
         });
-        if (!res.ok) throw new Error(`Generation failed: ${res.status}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => null) as { error?: string } | null;
+          throw new Error(err?.error ?? `Generation failed (${res.status})`);
+        }
         const { data } = await res.json() as {
           data: {
             projectId: number;
@@ -199,6 +248,7 @@ export default function AiStudioPage() {
         setBuildCount(1);
         setEditCount(0);
         setRightTab("preview");
+        setMobileView("work");
 
         const wfCount = data.plan.workflows?.length ?? 0;
         toast({
@@ -209,9 +259,12 @@ export default function AiStudioPage() {
         const res = await fetch(apiUrl("/studio/ai/edit"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ projectId, request: message }),
+          body: JSON.stringify({ projectId, request: message, sessionId }),
         });
-        if (!res.ok) throw new Error(`Edit failed: ${res.status}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => null) as { error?: string } | null;
+          throw new Error(err?.error ?? `Edit failed (${res.status})`);
+        }
         const { data } = await res.json() as {
           data: {
             files: ProjectFile[];
@@ -238,7 +291,7 @@ export default function AiStudioPage() {
       completeSteps(false);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Sorry, something went wrong: ${errMsg}. Please try again.`, timestamp: new Date().toISOString() },
+        { role: "assistant", content: errMsg, timestamp: new Date().toISOString() },
       ]);
       toast({ title: "Error", description: errMsg, variant: "destructive" });
     } finally {
@@ -246,6 +299,7 @@ export default function AiStudioPage() {
       setTimeout(() => setBuildSteps([]), 2200);
     }
   }, [isGenerating, projectId, sessionId, startSteps, completeSteps, toast]);
+  handleSendRef.current = handleSend;
 
   // ── Run handler ────────────────────────────────────────────────────────────
 
@@ -323,9 +377,9 @@ export default function AiStudioPage() {
     await fetch(apiUrl("/studio/ai/save"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, title: titleDraft.trim() }),
+      body: JSON.stringify({ projectId, title: titleDraft.trim(), sessionId }),
     }).catch(() => undefined);
-  }, [projectId, titleDraft]);
+  }, [projectId, titleDraft, sessionId]);
 
   const handleAutopilotFixApplied = useCallback((html: string) => {
     setPreviewHtml(html);
@@ -439,8 +493,8 @@ export default function AiStudioPage() {
         {/* Autopilot mode indicator */}
         {hasProject && (
           <button
-            onClick={() => setRightTab("autopilot")}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:brightness-110 flex-shrink-0"
+            onClick={() => { setRightTab("autopilot"); setMobileView("work"); }}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:brightness-110 flex-shrink-0"
             style={{
               background: `${autopilotColors[autopilotMode]}15`,
               color: autopilotColors[autopilotMode],
@@ -511,12 +565,30 @@ export default function AiStudioPage() {
         </div>
       </div>
 
+      {/* ── Phone switcher: Chat | Preview ──────────────────────────────────────── */}
+      <div className="lg:hidden flex gap-2 px-4 py-2 flex-shrink-0" role="tablist" aria-label="Show">
+        {([["chat", "💬 Chat"], ["work", "👁 Preview & tools"]] as const).map(([id, label]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={mobileView === id}
+            onClick={() => setMobileView(id)}
+            className="flex-1 h-9 rounded-full text-xs font-semibold transition-all"
+            style={mobileView === id
+              ? { background: "rgba(255,255,255,0.92)", color: "#120F2A" }
+              : { background: "rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.12)" }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* ── Main Content ────────────────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Chat Panel */}
         <div
-          className="flex-shrink-0 border-r overflow-hidden"
-          style={{ width: 360, borderColor: "rgba(255,255,255,0.06)" }}
+          className={`${mobileView === "chat" ? "block" : "hidden"} lg:block w-full lg:w-[360px] flex-shrink-0 lg:border-r overflow-hidden`}
+          style={{ borderColor: "rgba(255,255,255,0.06)" }}
         >
           <ChatPanel
             messages={messages}
@@ -531,7 +603,7 @@ export default function AiStudioPage() {
         </div>
 
         {/* Right: Tabbed panel */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className={`${mobileView === "work" ? "flex" : "hidden"} lg:flex flex-1 flex-col overflow-hidden`}>
           {/* Tab bar */}
           <div
             className="flex items-center gap-1 px-4 py-2 flex-shrink-0 border-b overflow-x-auto"

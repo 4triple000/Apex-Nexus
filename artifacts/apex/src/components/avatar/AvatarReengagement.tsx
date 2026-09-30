@@ -15,6 +15,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X, Zap } from "lucide-react";
 import { usePersonality } from "@/contexts/PersonalityContext";
+import { speechPrefs } from "@/contexts/ApexStateContext";
 import {
   ReengagementMessage,
   ReengagementTone,
@@ -352,9 +353,10 @@ export function AvatarReengagement({ message, onDismiss }: AvatarReengagementPro
     const vp = getVoiceParams(message.tone);
     const t  = setTimeout(() => {
       const utter    = new SpeechSynthesisUtterance(message.text);
-      utter.rate     = vp.rate;
+      const sp       = speechPrefs(vp);
+      utter.rate     = sp.rate;
       utter.pitch    = vp.pitch;
-      utter.volume   = vp.volume;
+      utter.volume   = sp.volume;
       utter.onstart  = () => setSpeaking(true);
       utter.onend    = () => setSpeaking(false);
       utter.onerror  = () => setSpeaking(false);

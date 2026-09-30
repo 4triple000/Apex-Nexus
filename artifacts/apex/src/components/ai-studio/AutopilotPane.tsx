@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { getAuthSessionId } from "@/lib/authSession";
 
 export type AutopilotMode = "off" | "suggest" | "auto_fix" | "full_auto";
 
@@ -67,7 +68,7 @@ export function AutopilotPane({ projectId, projectName, mode, onModeChange, onFi
       const res = await fetch(apiUrl("/studio/ai/autopilot/scan"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId }),
+        body: JSON.stringify({ projectId, sessionId: getAuthSessionId() }),
       });
       if (!res.ok) throw new Error("Scan failed");
       const { data } = await res.json() as {
@@ -102,7 +103,7 @@ export function AutopilotPane({ projectId, projectName, mode, onModeChange, onFi
       const res = await fetch(apiUrl("/studio/ai/autopilot/fix"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, issueId: issue.id, issue }),
+        body: JSON.stringify({ projectId, issueId: issue.id, issue, sessionId: getAuthSessionId() }),
       });
       if (!res.ok) throw new Error("Fix failed");
       const { data } = await res.json() as { data: { previewHtml: string } };

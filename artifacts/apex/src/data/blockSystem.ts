@@ -191,7 +191,7 @@ export const BLOCK_REGISTRY: Record<string, BlockDef> = {
   // ── AI Blocks ───────────────────────────────────────────────────────────────
   "ai.chatbot": {
     id: "ai.chatbot", category: "ai", name: "Chatbot", icon: "🤖",
-    description: "GPT-4 powered conversational AI with memory",
+    description: "ChatGPT powered conversational AI with memory",
     color: "#FFCC33", accent: "rgba(255,204,51,0.15)",
     inputs: ["userMessage","context"], outputs: ["response","intent"],
     tags: ["chat","ai","nlp"],

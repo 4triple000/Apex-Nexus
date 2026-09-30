@@ -97,7 +97,7 @@ const BATTLE_SCRIPT: CinemaScene[] = [
   {
     type: "battle",
     left: {
-      name:  "GPT-4",
+      name:  "ChatGPT",
       color: "#10A37F",
       icon:  "✦",
       text:  "Great leaders combine emotional intelligence with relentless execution. Bezos, Musk, Jobs — they all executed without mercy while inspiring millions.",
@@ -142,7 +142,7 @@ const WORKFLOWS_SCRIPT: CinemaScene[] = [
     steps: [
       { label: "YouTube",  color: "#FF4444", icon: "🎥" },
       { label: "Whisper",  color: "#10A37F", icon: "🎙️" },
-      { label: "GPT-4",    color: "#10A37F", icon: "✦"  },
+      { label: "ChatGPT",    color: "#10A37F", icon: "✦"  },
       { label: "Claude",   color: "#D97757", icon: "◆"  },
       { label: "DALL·E 3", color: "#A29BFE", icon: "🖼️" },
     ],
@@ -169,7 +169,7 @@ const AVATAR_VOICE_SCRIPT: CinemaScene[] = [
   },
   {
     type: "avatar",
-    text: "Hey — I remember your GPT-4 benchmarking project from last week. Want to continue? Or should I start something new based on your current streak?",
+    text: "Hey — I remember your ChatGPT benchmarking project from last week. Want to continue? Or should I start something new based on your current streak?",
     sub:  "Nova · Analytical 60% · Creative 30%",
     duration: 3000,
   },

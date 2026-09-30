@@ -25,7 +25,8 @@ function CharacterCard({
   animIdx:   number;
 }) {
   const [pressed, setPressed] = useState(false);
-  const locked = character.tier !== 'free';
+  // Every character is selectable while testing
+  const locked = false;
 
   return (
     <button
@@ -318,7 +319,6 @@ export function CharacterSwitcher() {
             fontSize: 10, color: 'rgba(255,255,255,0.38)', lineHeight: 1.55,
           }}>
             <span style={{ color: '#818CF8', fontWeight: 700 }}>Community characters</span> are built by creators and downloadable from the Marketplace.
-            Coming soon.
           </div>
         </>
       )}

@@ -39,7 +39,7 @@ export const COMPONENT_REGISTRY: Record<string, RegistryEntry> = {
   "ui.videoPlayer": { component: VideoPlayer   as ComponentType<BlockComponentProps>, label: "Video Player",  description: "Media player with controls" },
 
   // ── AI Blocks ────────────────────────────────────────────────────────────
-  "ai.chatbot":           { component: AIAssistant  as ComponentType<BlockComponentProps>, label: "AI Chatbot",     description: "GPT-4 powered assistant" },
+  "ai.chatbot":           { component: AIAssistant  as ComponentType<BlockComponentProps>, label: "AI Chatbot",     description: "ChatGPT powered assistant" },
   "ai.optionalAssistant": { component: AIAssistant  as ComponentType<BlockComponentProps>, label: "AI Assistant",   description: "Context-aware helper" },
   "ai.voiceInterface":    { component: VoiceUI      as ComponentType<BlockComponentProps>, label: "Voice Interface", description: "STT + TTS voice pipeline" },
 

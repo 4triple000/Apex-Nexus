@@ -18,7 +18,9 @@ import { usePrivacy } from "@/contexts/PrivacyContext";
 import { useCharacterSwitch } from "@/contexts/CharacterContext";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { HubHeader, ModelSearch, ModeChips, ModelCarousel, ModeCard, ModelLogo, modelById, useProviderStatus } from "@/components/home/HomeHub";
+import { HubHeader, ModelSearch, ModeChips, ModelCarousel, ModeCard, ModelLogo, modelById, useProviderStatus, UsagePill } from "@/components/home/HomeHub";
+import { recordPrompt } from "@/lib/promptLibrary";
+import { useQueryClient } from "@tanstack/react-query";
 import { Volume2, VolumeX, ShieldOff } from "lucide-react";
 import { ApexAvatar3D } from "@/components/avatar/ApexAvatar3D";
 import { useSpeechOutput } from "@/hooks/useSpeechOutput";
@@ -29,6 +31,7 @@ import { StreakMilestone } from "@/components/streak/StreakMilestone";
 import { useStreak } from "@/hooks/useStreak";
 import { AvatarReengagement } from "@/components/avatar/AvatarReengagement";
 import { useReengagement } from "@/hooks/useReengagement";
+import { useApexState, toneInstruction } from "@/contexts/ApexStateContext";
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 type Message = {
@@ -55,8 +58,8 @@ type AiPreference = "auto" | "openai" | "claude" | "perplexity";
 // ── Provider config ─────────────────────────────────────────────────────────────
 const PROVIDERS: { id: AiPreference; label: string; emoji: string; color: string; glow: string }[] = [
   { id: "auto",       label: "Auto-Route", emoji: "⚡", color: "#A29BFE", glow: "rgba(162,155,254,0.35)" },
-  { id: "openai",     label: "GPT-4",      emoji: "✦",  color: "#10A37F", glow: "rgba(16,163,127,0.35)"  },
-  { id: "claude",     label: "Claude 3",   emoji: "◆",  color: "#D97757", glow: "rgba(217,119,87,0.35)"  },
+  { id: "openai",     label: "ChatGPT",      emoji: "✦",  color: "#10A37F", glow: "rgba(16,163,127,0.35)"  },
+  { id: "claude",     label: "Claude",   emoji: "◆",  color: "#D97757", glow: "rgba(217,119,87,0.35)"  },
   { id: "perplexity", label: "Perplexity", emoji: "◎",  color: "#228BE6", glow: "rgba(34,139,230,0.35)"  },
 ];
 
@@ -81,9 +84,11 @@ export default function Home() {
 
   const sendChat  = useSendChat();
   const { user }  = useAuth();
+  const queryClient = useQueryClient();
   const providerStatus = useProviderStatus();
   const castVote  = useCastVote();
   const tts       = useSpeechOutput();
+  const apexPrefs = useApexState();
   const { privacyMode, togglePrivacyMode } = usePrivacy();
   const { activeCharacter } = useCharacterSwitch();
   const character = useCharacter();
@@ -173,6 +178,7 @@ export default function Home() {
 
   const handleSend = async (content: string) => {
     if (!content.trim() || !sessionId) return;
+    recordPrompt(content, "chat");
     avatar.setIsThinking(true);
     avatar.setEmotion("thinking");
     const contextMode = detectContextPersonality(content);
@@ -183,7 +189,7 @@ export default function Home() {
     // Use global personality system — falls back to avatar personality if no global set
     const personalityPrompt = globalSystemPrompt || buildPersonalityPrompt(avatar.activePersonality);
     const characterContext  = character.getContextForPrompt();
-    const enrichedMessage   = `${personalityPrompt}${characterContext}\n\nUser message: ${content}`;
+    const enrichedMessage   = `${personalityPrompt}${toneInstruction(apexPrefs.personality)}${characterContext}\n\nUser message: ${content}`;
     const userMsg: Message  = { id: crypto.randomUUID(), role: "user", content, timestamp: Date.now(), prompt: content };
     setMessages((prev) => [...prev, userMsg]);
     try {
@@ -237,6 +243,7 @@ export default function Home() {
       triggerGesture("concerned");
     } finally {
       avatar.setIsThinking(false);
+      queryClient.invalidateQueries({ queryKey: ["daily-usage"] });
     }
   };
 
@@ -324,9 +331,12 @@ export default function Home() {
               <div style={{ fontSize: 13, color: "var(--mg-ink-3)", fontWeight: 500 }}>
                 {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
               </div>
-              <h2 style={{ fontSize: 26, fontWeight: 700, color: "var(--mg-ink)", letterSpacing: "-0.03em", margin: "2px 0 0" }}>
-                Hey, {user?.username?.trim() || "Creator"}
-              </h2>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <h2 className="mg-display" style={{ fontSize: 26, fontWeight: 700, color: "var(--mg-ink)", margin: "2px 0 0" }}>
+                  Hey, {user?.username?.trim() || "Creator"}
+                </h2>
+                <UsagePill />
+              </div>
             </div>
             <ModelSearch
               onPickModel={(id) => { setMode("chat"); setAiPreference(id); }}
@@ -623,6 +633,7 @@ export default function Home() {
         {/* Empty state: the home hub */}
         {messages.length === 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 4, paddingBottom: 150 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -8, marginBottom: -6 }}><UsagePill /></div>
             <ModelSearch
               onPickModel={(id) => { setMode("chat"); setAiPreference(id); }}
               onPickMode={setMode}

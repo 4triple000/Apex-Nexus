@@ -28,6 +28,7 @@ import {
   applyMoodToVoiceStyle,
 } from "@/lib/voicePersonality";
 import { Emotion, getEmotionVoiceModifier } from "@/lib/emotionController";
+import { speechPrefs } from "@/contexts/ApexStateContext";
 import {
   isElevenLabsAvailable,
   speakWithElevenLabs,
@@ -191,9 +192,10 @@ export function useSpeechOutput() {
         if (!isEnabledRef.current || idx >= sentences.length) { stopInternal(); return; }
         const utter = new SpeechSynthesisUtterance(sentences[idx++]);
         if (preferred) utter.voice = preferred;
-        utter.rate   = speed;
+        const sp = speechPrefs({ rate: speed, volume });
+        utter.rate   = sp.rate;
         utter.pitch  = pitch;
-        utter.volume = volume;
+        utter.volume = sp.volume;
         utter.onboundary = (e) => { if (e.name === "word") setAmplitude(0.55 + Math.random() * 0.45); };
         utter.onend  = () => {
           if (idx < sentences.length) { pauseRef.current = setTimeout(next, pauseMs); }

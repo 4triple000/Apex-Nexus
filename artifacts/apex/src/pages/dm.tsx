@@ -7,6 +7,7 @@ import { AnalyticsPanel } from "../components/dm/AnalyticsPanel";
 import { useMetaStatus } from "../hooks/useDM";
 import { MessageSquare, BarChart2, Plus, X, ChevronLeft } from "lucide-react";
 import { SiInstagram, SiMessenger } from "react-icons/si";
+import { authHeaders } from "@/lib/authSession";
 
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SPRING = { type: "spring" as const, stiffness: 340, damping: 30 };
@@ -291,7 +292,7 @@ function AddDemoButton() {
   async function addDemo() {
     setLoading(true);
     try {
-      await fetch(`${BASE}api/dm/seed-demo`, { method: "POST" });
+      await fetch(`${BASE}/api/dm/seed-demo`, { method: "POST", headers: authHeaders() });
       setAdded(true);
       window.location.reload();
     } catch {

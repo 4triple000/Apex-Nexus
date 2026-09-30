@@ -48,7 +48,7 @@ const TEASER_PHRASES = [
 // ── Actor colors ──────────────────────────────────────────────────────────────
 const ACTOR_CONFIG: Record<string, { color: string; label: string; bg: string }> = {
   system:     { color: "#A29BFE", label: "Apex",       bg: "rgba(108,92,231,0.12)" },
-  gpt4:       { color: "#10A37F", label: "GPT-4",      bg: "rgba(16,163,127,0.10)" },
+  gpt4:       { color: "#10A37F", label: "ChatGPT",      bg: "rgba(16,163,127,0.10)" },
   claude:     { color: "#D97757", label: "Claude",     bg: "rgba(217,119,87,0.10)"  },
   perplexity: { color: "#228BE6", label: "Perplexity", bg: "rgba(34,139,230,0.10)"  },
   ai:         { color: "#FD79A8", label: "AI",         bg: "rgba(253,121,168,0.10)" },

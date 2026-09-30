@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { authHeaders } from "@/lib/authSession";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-function apiUrl(path: string) { return `${BASE}api${path}`; }
+function apiUrl(path: string) { return `${BASE}/api${path}`; }
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...options,
-    headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
+    // Messages are private: the server only returns the signed-in user's inbox
+    headers: { "Content-Type": "application/json", ...authHeaders(), ...(options?.headers ?? {}) },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

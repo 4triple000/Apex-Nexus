@@ -7,6 +7,7 @@ import { RightPanel } from "./right-panel";
 import { AvatarOverlay } from "@/components/avatar/AvatarOverlay";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ApexControlPanel } from "@/components/apex/ApexControlPanel";
+import { useStreakCheckin } from "@/lib/dailyStreak";
 
 function PageTransition({ children, location }: { children: ReactNode; location: string }) {
   return (
@@ -29,6 +30,7 @@ function PageTransition({ children, location }: { children: ReactNode; location:
 export function Layout({ children }: { children: ReactNode }) {
   const avatarStore = useAvatar();
   const [location] = useLocation();
+  useStreakCheckin();
   // Home and Chat leave room for the fixed ☰ button in their own headers; other pages start below it
 
   return (
@@ -37,12 +39,12 @@ export function Layout({ children }: { children: ReactNode }) {
           MOBILE layout — hidden on lg+ screens
       ══════════════════════════════════════════════ */}
       <div
-        className="mg-font lg:hidden min-h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
+        className="mg-font lg:hidden h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
         style={{ background: "transparent", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
       >
         <ApexControlPanel />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingBottom: 96, paddingTop: location === "/" || location.startsWith("/dm") ? 4 : 64 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingBottom: 96, paddingTop: location === "/" || location.startsWith("/dm") ? 4 : location === "/settings" ? 20 : 64 }}>
           <PageTransition location={location}>{children}</PageTransition>
         </div>
 

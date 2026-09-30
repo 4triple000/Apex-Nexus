@@ -29,6 +29,7 @@ import { usePrivacy } from "@/contexts/PrivacyContext";
 import { CharacterPanel } from "@/components/character/CharacterPanel";
 import { MemoryManager } from "@/components/character/MemoryManager";
 import { CharacterSwitcher } from "@/components/character/CharacterSwitcher";
+import { useDailyStreak } from "@/lib/dailyStreak";
 
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -134,14 +135,14 @@ const TOOL_OPTIONS = [
 ];
 
 // ── Upgrade feature cards ────────────────────────────────────────────────────
-const FEATURE_CARDS = [
-  { icon: "⚔️", label: "AI Battle Arena",    desc: "Challenge AIs head-to-head in real-time battles",    color: "#EF4444", available: true,  route: "/arena",        phase: "early_access" as const },
+const FEATURE_CARDS: { icon: string; label: string; desc: string; color: string; available: boolean; route: string | null; phase: "early_access" | "rolling_out" | "coming_soon" | null }[] = [
+  { icon: "⚔️", label: "AI Battle Arena",    desc: "Challenge AIs head-to-head in real-time battles",    color: "#EF4444", available: true,  route: "/arena",        phase: null },
   { icon: "🎨", label: "AI Studio",          desc: "Build apps and automations with visual AI tools",     color: "#A29BFE", available: true,  route: "/ai-studio",    phase: null                    },
-  { icon: "🏪", label: "Marketplace",        desc: "Discover and deploy community-built AI tools",        color: "#10B981", available: true,  route: "/marketplace",  phase: "rolling_out"  as const },
-  { icon: "🔄", label: "Workflow Engine",    desc: "Chain AI agents into automated pipelines",            color: "#F59E0B", available: true,  route: "/workflows",    phase: "coming_soon"  as const },
-  { icon: "🧬", label: "AI Avatar System",   desc: "3D avatar that reacts to your conversations",         color: "#EC4899", available: false, route: null,            phase: "early_access" as const },
-  { icon: "🎮", label: "Multiplayer Arena",  desc: "Real-time AI-powered multiplayer battles and lobbies",color: "#6C5CE7", available: false, route: null,            phase: "coming_soon"  as const },
-  { icon: "🌐", label: "Multi-Agent Hub",    desc: "Coordinate multiple AI specialists in one task",      color: "#228BE6", available: false, route: null,            phase: "coming_soon"  as const },
+  { icon: "🏪", label: "Marketplace",        desc: "Discover and deploy community-built AI tools",        color: "#10B981", available: true,  route: "/marketplace",  phase: null },
+  { icon: "🔄", label: "Workflow Engine",    desc: "Chain AI agents into automated pipelines",            color: "#F59E0B", available: true,  route: "/workflows",    phase: null },
+  { icon: "🧬", label: "AI Avatar System",   desc: "3D avatar that reacts to your conversations",         color: "#EC4899", available: true,  route: "/apex-avatar",  phase: null },
+  { icon: "🎮", label: "Multiplayer Arena",  desc: "Real-time AI-powered multiplayer battles and lobbies",color: "#6C5CE7", available: true,  route: "/multiplayer",  phase: null },
+  { icon: "🌐", label: "Multi-Agent Hub",    desc: "Coordinate multiple AI specialists in one task",      color: "#228BE6", available: true,  route: "/studio",       phase: null },
 ];
 
 // ── Glowing toggle ───────────────────────────────────────────────────────────
@@ -576,6 +577,7 @@ function MeDashboard({
   }
 
   const reputation = stats.reputation ?? 0;
+  const streak = useDailyStreak()?.streak ?? 0;
   const tier        = getTier(reputation);
   const xpProgress  = getXpProgress(reputation);
   const nextTier    = TIERS[Math.min(TIERS.indexOf(tier) + 1, TIERS.length - 1)];
@@ -799,10 +801,10 @@ function MeDashboard({
         <SectionHeader icon={<TrendingUp size={14} />} label="Your Stats" sub="Activity overview" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[
-            { icon: "💬", label: "Conversations", value: Math.max(stats.totalPlays ?? 0, 12), color: "#A29BFE",  suffix: "" },
+            { icon: "🎮", label: "Game Plays",    value: stats.totalPlays ?? 0,                 color: "#A29BFE",  suffix: "" },
             { icon: "⭐", label: "Reputation",    value: reputation,                            color: "#A29BFE", suffix: " pts" },
             { icon: "❤️", label: "Likes",          value: stats.totalLikes ?? 0,                color: "#EC4899", suffix: "" },
-            { icon: "🔥", label: "Day Streak",     value: 7,                                     color: "#F59E0B", suffix: " days" },
+            { icon: "🔥", label: "Day Streak",     value: streak,                                color: "#F59E0B", suffix: streak === 1 ? " day" : " days" },
           ].map(({ icon, label, value, color, suffix }) => (
             <div key={label} style={{
               padding: "14px 16px", borderRadius: 20,
@@ -1207,31 +1209,7 @@ function MeDashboard({
           ))}
         </div>
 
-        {/* Explore all features CTA */}
-        <button
-          onClick={() => nav("/apex-features")}
-          style={{
-            width: "100%", marginTop: 10, padding: "13px 18px",
-            borderRadius: 18, cursor: "pointer",
-            background: "linear-gradient(135deg, rgba(108,92,231,0.18) 0%, rgba(162,155,254,0.10) 100%)",
-            border: "1px solid rgba(108,92,231,0.30)",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            boxShadow: "0 4px 20px rgba(108,92,231,0.14)",
-            transition: `all 0.22s ${IOS}`,
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(108,92,231,0.55)"; e.currentTarget.style.boxShadow = "0 6px 28px rgba(108,92,231,0.26)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(108,92,231,0.30)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(108,92,231,0.14)"; }}
-        >
-          <div style={{ textAlign: "left" }}>
-            <div style={{ fontSize: 12, fontWeight: 900, color: "#A29BFE", marginBottom: 2 }}>
-              ✦ Explore All 17 Features
-            </div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>
-              Preview every upcoming feature. Notify me at launch.
-            </div>
-          </div>
-          <ChevronRight size={16} style={{ color: "#A29BFE", flexShrink: 0 }} />
-        </button>
+
       </div>
 
       {/* ── 6. Sign Out ──────────────────────────────────── */}

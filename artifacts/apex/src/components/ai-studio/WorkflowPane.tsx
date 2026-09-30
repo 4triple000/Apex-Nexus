@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { getAuthSessionId } from "@/lib/authSession";
 
 export interface WorkflowStep {
   id: string;
@@ -58,7 +59,7 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
       const res = await fetch(apiUrl("/studio/ai/workflow/run"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, workflowId: workflow.id }),
+        body: JSON.stringify({ projectId, workflowId: workflow.id, sessionId: getAuthSessionId() }),
       });
 
       const { data } = await res.json() as {

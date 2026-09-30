@@ -946,7 +946,7 @@ export default function DevCockpitPage() {
                 <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.70)" }}>AI Builder</span>
                 {selectedFile
                   ? <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginLeft: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedFile.split("/").pop()}</span>
-                  : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>GPT-4o</span>}
+                  : <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>ChatGPT</span>}
               </div>
               <AIConsole
                 currentFile={selectedFile}
@@ -1078,7 +1078,7 @@ export default function DevCockpitPage() {
           }}>
             <span style={{ fontSize: 12 }}>🤖</span>
             <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.70)" }}>AI Builder</span>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>GPT-4o</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.20)", marginLeft: "auto" }}>ChatGPT</span>
           </div>
 
           <AIConsole

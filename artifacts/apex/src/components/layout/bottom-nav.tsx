@@ -19,7 +19,7 @@ const ICONS = {
 const NAV_ITEMS: { href: string; icon: keyof typeof ICONS; label: string; match: string[] }[] = [
   { href: "/",          icon: "home",   label: "Home",      match: ["/"] },
   { href: "/dm",        icon: "chat",   label: "Chat",      match: ["/dm"] },
-  { href: "/ai-studio", icon: "studio", label: "AI Studio", match: ["/ai-studio"] },
+  { href: "/builder",   icon: "studio", label: "Builder",   match: ["/builder", "/ai-studio"] },
   { href: "/games",     icon: "games",  label: "Games",     match: ["/games", "/game-engine"] },
   { href: "/profile",   icon: "you",    label: "You",       match: ["/profile", "/avatar"] },
 ];

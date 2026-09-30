@@ -6,11 +6,12 @@ import {
   Hammer, Zap, Home, Gamepad2,
 } from "lucide-react";
 import { ApexLogo } from "@/components/ui/ApexLogo";
+import { useDailyStreak } from "@/lib/dailyStreak";
 
 const NAV_ITEMS = [
   { href: "/",               icon: Home,          label: "Home"           },
   { href: "/dm",             icon: MessageSquare, label: "Messages"       },
-  { href: "/ai-studio",      icon: Hammer,        label: "AI Studio"      },
+  { href: "/builder",        icon: Hammer,        label: "Builder"        },
   { href: "/games",          icon: Gamepad2,      label: "Apex Games"     },
   { href: "/studio",         icon: Network,       label: "Hive Mode"      },
   { href: "/screenshot",     icon: Camera,        label: "Screenshot AI"  },
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const [location] = useLocation();
   const isOwner = !!useAuth().user?.isOwner;
+  const streak = useDailyStreak()?.streak ?? 0;
 
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
@@ -91,9 +93,9 @@ export function Sidebar() {
           style={{ background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.2)" }}
         >
           <span style={{ fontSize: 12 }}>🔥</span>
-          <span className="text-xs font-medium" style={{ color: "#FED7AA" }}>Daily Streak — 23 Days</span>
+          <span className="text-xs font-medium" style={{ color: "#FED7AA" }}>Daily Streak — {streak} {streak === 1 ? "Day" : "Days"}</span>
         </div>
-        <Link href="/profile">
+        <Link href="/settings">
           <div
             className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer"
             style={{ color: "rgba(255,255,255,0.55)" }}

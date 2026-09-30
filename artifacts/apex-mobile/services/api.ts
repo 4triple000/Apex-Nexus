@@ -17,6 +17,32 @@ export function setAuthSession(sessionId: string | null): void {
   authSessionId = sessionId;
 }
 
+// ── 7-day streak ──────────────────────────────────────────────────────────────
+export interface StreakState {
+  streak: number;
+  best: number;
+  cycleDay: number;
+  checkedInToday: boolean;
+  rewards: { bonus: { day: number; messages: number; earned: boolean }; avatar: { day: number; earned: boolean } };
+  earned: "bonus" | "avatar" | null;
+}
+
+export const streakApi = {
+  signedIn: () => !!authSessionId,
+  get: (today: string) => apexFetch<StreakState>(`/streak?today=${today}`),
+  checkin: (today: string) => apexFetch<StreakState>("/streak/checkin", { method: "POST", body: JSON.stringify({ today }) }),
+};
+
+// ── Prompt library sync ───────────────────────────────────────────────────────
+export interface SyncedPrompt { text: string; kind: "chat" | "build"; at: number }
+
+export const promptsApi = {
+  get: () => apexFetch<{ history: SyncedPrompt[]; saved: SyncedPrompt[] }>("/prompts"),
+  put: (history: SyncedPrompt[], saved: SyncedPrompt[]) =>
+    apexFetch<{ saved: boolean }>("/prompts", { method: "PUT", body: JSON.stringify({ history, saved }) }),
+  signedIn: () => !!authSessionId,
+};
+
 async function apexFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getBaseUrl()}/api${path}`;
   const res = await fetch(url, {
@@ -60,7 +86,7 @@ export const authApi = {
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
 export type ProviderId = "auto" | "openai" | "claude" | "perplexity";
-export interface ChatInput { message: string; conversationId?: number; provider?: ProviderId }
+export interface ChatInput { message: string; conversationId?: number; provider?: ProviderId; tone?: string; memory?: boolean }
 export interface ChatResponse { content: string; conversationId: number; provider?: string }
 
 export interface ModelAnswer { provider: string; content: string; responseTime: number; error?: string }
@@ -114,7 +140,9 @@ export interface DmConversation {
 
 export const messagesApi = {
   conversations: async (): Promise<DmConversation[]> => {
-    const res = await fetch(`${getBaseUrl()}/api/dm/conversations`);
+    const res = await fetch(`${getBaseUrl()}/api/dm/conversations`, {
+      headers: authSessionId ? { "x-apex-auth": authSessionId } : {},
+    });
     if (!res.ok) throw new Error(`Server error (${res.status})`);
     return ((await res.json()) as { conversations: DmConversation[] }).conversations ?? [];
   },
@@ -146,3 +174,60 @@ export const gamesApi = {
 
 /** The Apex website, where games are played. */
 export const WEB_APP_URL = (process.env.EXPO_PUBLIC_WEB_URL ?? "https://apex-nexus-apex.vercel.app").replace(/\/$/, "");
+
+// ── Daily usage ───────────────────────────────────────────────────────────────
+export interface DailyUsage { requestsUsed: number; requestsLimit: number; tier: string; resetAt: string }
+
+export const usageApi = {
+  today: async (sessionId: string): Promise<DailyUsage> => {
+    const res = await fetch(`${getBaseUrl()}/api/usage?sessionId=${encodeURIComponent(sessionId)}`);
+    if (!res.ok) throw new Error(`Server error (${res.status})`);
+    return (await res.json()) as DailyUsage;
+  },
+};
+
+// ── Builder (AI Studio) ───────────────────────────────────────────────────────
+export interface StudioProject { id: number; title: string; appType?: string | null; updatedAt: string }
+export interface StudioBuild {
+  projectId: number;
+  plan: { project_name: string; description?: string };
+  files: { path: string }[];
+  previewHtml: string;
+  summary: string;
+}
+
+async function studioFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${getBaseUrl()}/api${path}`, { ...init, headers: { "Content-Type": "application/json", ...init?.headers } });
+  const json = (await res.json().catch(() => null)) as { ok: boolean; data?: T; error?: string } | null;
+  if (!res.ok || !json?.ok) throw new Error(json?.error ?? `Server error (${res.status})`);
+  return json.data as T;
+}
+
+export const studioApi = {
+  generate: (prompt: string, sessionId: string) =>
+    studioFetch<StudioBuild>("/studio/ai/generate", { method: "POST", body: JSON.stringify({ prompt, sessionId }) }),
+  edit: (projectId: number, request: string, sessionId: string) =>
+    studioFetch<{ summary: string; changedFiles: string[]; previewHtml: string }>("/studio/ai/edit", { method: "POST", body: JSON.stringify({ projectId, request, sessionId }) }),
+  project: async (id: number, sessionId: string): Promise<StudioBuild> => {
+    const { project } = await studioFetch<{ project: { id: number; title: string; plan: StudioBuild["plan"] | null; files: { path: string }[]; previewHtml: string | null } }>(
+      `/studio/ai/projects/${id}?sessionId=${encodeURIComponent(sessionId)}`,
+    );
+    return { projectId: project.id, plan: project.plan ?? { project_name: project.title }, files: project.files ?? [], previewHtml: project.previewHtml ?? "", summary: "" };
+  },
+  projects: (sessionId: string) =>
+    studioFetch<{ projects: StudioProject[] }>(`/studio/ai/projects?sessionId=${encodeURIComponent(sessionId)}`).then((d) => d.projects),
+};
+
+// ── Screenshot analysis ───────────────────────────────────────────────────────
+export const screenshotApi = {
+  analyze: async (imageBase64: string): Promise<{ analysis: string; suggestions: string[] }> => {
+    const res = await fetch(`${getBaseUrl()}/api/chat/analyze-screenshot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64 }),
+    });
+    const json = (await res.json().catch(() => null)) as { analysis?: string; suggestions?: string[]; error?: string } | null;
+    if (!res.ok || !json) throw new Error(json?.error ?? `Server error (${res.status})`);
+    return { analysis: json.analysis ?? "", suggestions: json.suggestions ?? [] };
+  },
+};

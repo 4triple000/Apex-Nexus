@@ -1,270 +1,260 @@
+/**
+ * Builder — describe something and Apex builds it (AI Studio on the server).
+ * Shows the result, lets you ask for changes, and lists your projects and prompts.
+ */
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from "react-native";
+import { View, Text, TextInput, ScrollView, Pressable, StyleSheet, Platform, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Backdrop } from "@/components/glass/Glass";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-const BG = "transparent";
-const CARD_BG = "rgba(255,255,255,0.04)";
-const BORDER = "rgba(255,255,255,0.09)";
-const PURPLE = "#7C3AED";
-const PURPLE_LIGHT = "#A78BFA";
-const BLUE = "#3B82F6";
+import { Backdrop, Glass } from "@/components/glass/Glass";
+import { UsagePill } from "@/components/glass/UsagePill";
+import { PreviewFrame } from "@/components/PreviewFrame";
+import { MG, MGFont } from "@/constants/colors";
+import { useAuth } from "@/context/AuthContext";
+import { recordPrompt, usePromptLibrary } from "@/lib/promptLibrary";
+import { studioApi, type StudioBuild } from "@/services/api";
 
-const TEMPLATE_TAGS = ["📱 App", "🌐 Web", "🤖 Bot", "🎮 Game"];
-
-const RECENT_PROJECTS = [
-  { name: "E-commerce App",  stack: "React, TypeScript", status: "Live",     icon: "zap"    as const, color: "#4ADE80" },
-  { name: "AI Chatbot",      stack: "Node.js, Python",   status: "Building", icon: "cpu"    as const, color: "#60A5FA" },
-  { name: "Portfolio Site",  stack: "Next.js",           status: "Draft",    icon: "globe"  as const, color: "rgba(255,255,255,0.3)" },
+const TYPES: { id: string; label: string; icon: React.ComponentProps<typeof Feather>["name"]; prefix: string }[] = [
+  { id: "app",        label: "App",        icon: "smartphone", prefix: "A mobile-friendly app: " },
+  { id: "website",    label: "Website",    icon: "globe",      prefix: "A website: " },
+  { id: "game",       label: "Game",       icon: "play",       prefix: "A browser game: " },
+  { id: "bot",        label: "Bot",        icon: "cpu",        prefix: "A chatbot: " },
+  { id: "automation", label: "Automation", icon: "git-branch", prefix: "An automation workflow: " },
 ];
 
-type BuildStep = { label: string; done: boolean };
+const IDEAS = ["A habit tracker with streaks", "A landing page for my brand", "A space shooter with power-ups"];
+
+function timeAgo(iso: string) {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${Math.max(mins, 1)}m ago`;
+  if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
+  return `${Math.round(mins / 1440)}d ago`;
+}
 
 export default function BuilderScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const library = usePromptLibrary("build");
   const [prompt, setPrompt] = useState("");
-  const [building, setBuilding] = useState(false);
-  const [buildSteps, setBuildSteps] = useState<BuildStep[]>([]);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [type, setType] = useState("app");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<StudioBuild | null>(null);
+  const [change, setChange] = useState("");
+  const [changeNote, setChangeNote] = useState<string | null>(null);
 
-  const handleBuild = () => {
-    if (!prompt.trim()) return;
-    const steps: BuildStep[] = [
-      { label: "Analyzing your prompt",    done: false },
-      { label: "Generating file structure", done: false },
-      { label: "Writing components",        done: false },
-      { label: "Installing dependencies",   done: false },
-      { label: "Preview ready",             done: false },
-    ];
-    setBuilding(true);
-    setBuildSteps(steps);
+  const projects = useQuery({
+    queryKey: ["studio-projects", user?.sessionId],
+    enabled: !!user?.sessionId,
+    queryFn: () => studioApi.projects(user!.sessionId),
+  });
 
-    steps.forEach((_, i) => {
-      setTimeout(() => {
-        setBuildSteps((prev) =>
-          prev.map((s, idx) => (idx === i ? { ...s, done: true } : s))
-        );
-        if (i === steps.length - 1) {
-          setTimeout(() => setBuilding(false), 800);
-        }
-      }, (i + 1) * 900);
-    });
+  const build = async (text = prompt) => {
+    const t = text.trim();
+    if (!t || busy || !user) return;
+    setBusy(true); setError(null); setResult(null); setChangeNote(null);
+    recordPrompt(t, "build");
+    try {
+      const prefix = TYPES.find((x) => x.id === type)?.prefix ?? "";
+      const r = await studioApi.generate(prefix + t, user.sessionId);
+      setResult(r);
+      setPrompt("");
+      queryClient.invalidateQueries({ queryKey: ["studio-projects"] });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The build didn't finish. Try again.");
+    } finally {
+      setBusy(false);
+    }
   };
 
+  const applyChange = async () => {
+    if (!result || !change.trim() || busy) return;
+    setBusy(true); setError(null);
+    try {
+      const r = await studioApi.edit(result.projectId, change.trim(), user!.sessionId);
+      setChangeNote(r.summary || `${r.changedFiles.length} files updated`);
+      if (r.previewHtml) setResult((prev) => (prev ? { ...prev, previewHtml: r.previewHtml } : prev));
+      setChange("");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That change didn't go through. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openProject = async (id: number) => {
+    if (!user || busy) return;
+    setBusy(true); setError(null); setChangeNote(null);
+    try {
+      setResult(await studioApi.project(id, user.sessionId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open that project.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const promptRows = [
+    ...library.saved.slice(0, 3).map((p) => ({ ...p, saved: true })),
+    ...library.history.filter((p) => !library.isSaved(p.text)).slice(0, 3).map((p) => ({ ...p, saved: false })),
+  ];
+
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 16 : insets.top }]}>
+    <View style={{ flex: 1, backgroundColor: MG.bg }}>
       <Backdrop />
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: Platform.OS === "web" ? 16 : insets.top + 6, paddingHorizontal: 16, paddingBottom: 130, gap: 16 }}
       >
-        {/* Header */}
-        <View style={styles.header}>
+        <View style={s.headRow}>
           <View>
-            <Text style={styles.headerTitle}>AI Studio</Text>
-            <Text style={styles.headerSubtitle}>Build anything with AI</Text>
+            <Text style={s.title}>Builder</Text>
+            <Text style={s.sub}>Describe it. Apex builds it.</Text>
           </View>
-          <LinearGradient
-            colors={[PURPLE, BLUE]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.orbBadge}
-          >
-            <Feather name="zap" size={14} color="white" />
-          </LinearGradient>
+          <UsagePill />
         </View>
 
-        {/* Build Card */}
-        <View style={styles.buildCard}>
-          <View style={styles.buildCardHeader}>
-            <Feather name="cpu" size={14} color={PURPLE_LIGHT} />
-            <Text style={styles.buildCardLabel}>DESCRIBE YOUR PROJECT</Text>
-          </View>
-
+        <Glass radius={28} style={s.card}>
+          <LinearGradient pointerEvents="none" colors={["rgba(139,123,255,0.4)", "rgba(0,194,255,0.12)"]} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }} style={StyleSheet.absoluteFill} />
           <TextInput
-            style={styles.promptInput}
             value={prompt}
             onChangeText={setPrompt}
-            placeholder="A social app for dog lovers with real-time chat..."
-            placeholderTextColor="rgba(255,255,255,0.25)"
+            placeholder="A social app for dog lovers with real-time chat…"
+            placeholderTextColor={MG.ink3}
             multiline
-            numberOfLines={3}
-            textAlignVertical="top"
+            style={s.input}
+            accessibilityLabel="Describe what you want to build"
           />
-
-          {/* Template tags */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.tagScroll}
-            contentContainerStyle={styles.tagContainer}
-          >
-            {TEMPLATE_TAGS.map((tag) => (
-              <TouchableOpacity
-                key={tag}
-                onPress={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                style={[
-                  styles.tag,
-                  selectedTag === tag && styles.tagSelected,
-                ]}
-              >
-                <Text style={[styles.tagText, selectedTag === tag && styles.tagTextSelected]}>
-                  {tag}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {TYPES.map((t) => {
+              const on = t.id === type;
+              return (
+                <Pressable key={t.id} onPress={() => setType(t.id)} accessibilityRole="radio" accessibilityState={{ checked: on }} style={[s.chip, on && s.chipOn]}>
+                  <Feather name={t.icon} size={13} color={on ? "#120F2A" : MG.ink2} />
+                  <Text style={[s.chipText, on && { color: "#120F2A" }]}>{t.label}</Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
-
-          <TouchableOpacity onPress={handleBuild} activeOpacity={0.8}>
-            <LinearGradient
-              colors={[PURPLE, BLUE]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.buildButton}
-            >
-              <Feather name="zap" size={16} color="white" />
-              <Text style={styles.buildButtonText}>Build with Apex AI</Text>
+          <Pressable onPress={() => build()} disabled={!prompt.trim() || busy} style={({ pressed }) => [{ opacity: !prompt.trim() || busy ? 0.55 : 1 }, pressed && { transform: [{ scale: 0.98 }] }]}>
+            <LinearGradient colors={["#7C6CFF", "#3BA8FF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.buildBtn}>
+              {busy && !result ? <ActivityIndicator color="#fff" /> : <Feather name="zap" size={16} color="#fff" />}
+              <Text style={s.buildText}>{busy && !result ? "Building…" : "Build with Apex"}</Text>
             </LinearGradient>
-          </TouchableOpacity>
-        </View>
+          </Pressable>
+        </Glass>
 
-        {/* Build progress */}
-        {(building || buildSteps.length > 0) && (
-          <View style={[styles.progressCard, { overflow: "hidden" }]}>
-            {/* Progress bar strip at top */}
-            <View style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, backgroundColor: "rgba(255,255,255,0.08)" }}>
-              <View style={{ height: "100%", width: building ? "45%" : "100%", backgroundColor: undefined }}>
-                <LinearGradient colors={[PURPLE, BLUE]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ flex: 1 }} />
+        {error ? <Text style={s.error}>{error}</Text> : null}
+
+        {result ? (
+          <Glass radius={24} style={{ padding: 16, gap: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={s.projIcon}><Feather name="check" size={18} color="#86EFAC" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.resultTitle}>{result.plan.project_name}</Text>
+                <Text style={s.small}>{result.files.length} files built</Text>
               </View>
             </View>
-            <View style={[styles.progressHeader, { marginTop: 12 }]}>
-              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(124,58,237,0.2)", borderWidth: 1, borderColor: "rgba(124,58,237,0.3)", alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ fontSize: 14 }}>✨</Text>
-              </View>
-              <View>
-                <Text style={styles.progressTitle}>
-                  {building ? "AI is building..." : "Build complete!"}
-                </Text>
-                <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>Generating components</Text>
-              </View>
+            {result.summary ? <Text style={s.body}>{result.summary}</Text> : null}
+            {result.previewHtml ? <PreviewFrame html={result.previewHtml} /> : null}
+            {changeNote ? <Text style={[s.body, { color: "#86EFAC" }]}>✓ {changeNote}</Text> : null}
+            <View style={s.changeRow}>
+              <TextInput value={change} onChangeText={setChange} placeholder="Ask for a change…" placeholderTextColor={MG.ink3} style={s.changeInput} onSubmitEditing={applyChange} />
+              <Pressable onPress={applyChange} disabled={!change.trim() || busy} accessibilityLabel="Apply change" style={[s.send, (!change.trim() || busy) && { opacity: 0.5 }]}>
+                {busy ? <ActivityIndicator color="#120F2A" size="small" /> : <Feather name="arrow-up" size={16} color="#120F2A" />}
+              </Pressable>
             </View>
-            {buildSteps.map((step, i) => (
-              <View key={step.label} style={styles.stepRow}>
-                <View style={[
-                  styles.stepDot,
-                  step.done
-                    ? { backgroundColor: "#4ADE80", borderColor: "rgba(74,222,128,0.3)" }
-                    : { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)" },
-                ]}>
-                  {step.done && <Feather name="check" size={9} color="white" />}
+          </Glass>
+        ) : null}
+
+        {!prompt.trim() && !result ? (
+          <View style={{ gap: 8 }}>
+            <Text style={s.label}>Try an idea</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {IDEAS.map((i) => (
+                <Pressable key={i} onPress={() => setPrompt(i)} style={s.idea}><Text style={s.ideaText}>{i}</Text></Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        {promptRows.length > 0 ? (
+          <View style={{ gap: 8 }}>
+            <Text style={s.label}>Your prompts</Text>
+            <Glass radius={22}>
+              {promptRows.map((p, i) => (
+                <View key={p.text} style={[s.promptRow, i > 0 && s.divider]}>
+                  <Feather name={p.saved ? "star" : "clock"} size={14} color={p.saved ? "#FFD479" : MG.ink3} />
+                  <Pressable onPress={() => setPrompt(p.text)} style={{ flex: 1 }}>
+                    <Text style={s.promptText} numberOfLines={1}>{p.text}</Text>
+                  </Pressable>
+                  <Pressable onPress={() => library.toggleSaved(p.text)} hitSlop={8} accessibilityLabel={p.saved ? "Remove from saved" : "Save prompt"}>
+                    <Feather name="star" size={15} color={p.saved ? "#FFD479" : MG.ink3} />
+                  </Pressable>
                 </View>
-                <Text style={[
-                  styles.stepLabel,
-                  { color: step.done ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)" },
-                ]}>
-                  {step.label}
-                </Text>
-              </View>
-            ))}
+              ))}
+            </Glass>
           </View>
-        )}
+        ) : null}
 
-        {/* Recent Projects */}
-        <View style={styles.section}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <Text style={styles.sectionTitle}>Recent Projects</Text>
-            <TouchableOpacity style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: "rgba(124,58,237,0.5)", backgroundColor: "rgba(124,58,237,0.1)" }}>
-              <Text style={{ fontSize: 12, color: PURPLE_LIGHT }}>New +</Text>
-            </TouchableOpacity>
-          </View>
-          {RECENT_PROJECTS.map((project) => (
-            <TouchableOpacity key={project.name} style={styles.projectCard} activeOpacity={0.7}>
-              <View style={[styles.projectIcon, { borderColor: "rgba(124,58,237,0.2)", backgroundColor: "rgba(124,58,237,0.1)" }]}>
-                <Feather name={project.icon} size={16} color={PURPLE_LIGHT} />
-              </View>
-              <View style={styles.projectInfo}>
-                <Text style={styles.projectName}>{project.name}</Text>
-                <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{project.stack}</Text>
-              </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, backgroundColor: `${project.color}15`, borderWidth: 1, borderColor: `${project.color}30` }}>
-                <View style={[styles.statusDot, { backgroundColor: project.color }]} />
-                <Text style={{ fontSize: 11, color: project.color, fontWeight: "500" }}>{project.status}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Actions row */}
-        <View style={styles.actionsRow}>
-          {[
-            { icon: "layers" as const,   label: "Templates" },
-            { icon: "github" as const,   label: "Import" },
-            { icon: "share-2" as const,  label: "Deploy" },
-          ].map(({ icon, label }) => (
-            <TouchableOpacity key={label} style={styles.actionCard} activeOpacity={0.7}>
-              <Feather name={icon} size={18} color={PURPLE_LIGHT} />
-              <Text style={styles.actionLabel}>{label}</Text>
-            </TouchableOpacity>
-          ))}
+        <View style={{ gap: 8 }}>
+          <Text style={s.label}>Your projects</Text>
+          {projects.isError ? (
+            <Text style={s.small}>Couldn't load your projects.</Text>
+          ) : (projects.data?.length ?? 0) === 0 && !projects.isLoading ? (
+            <Glass radius={22} style={{ padding: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Feather name="folder" size={20} color={MG.ink2} />
+              <Text style={s.body}>Nothing built yet. Your first build shows up here.</Text>
+            </Glass>
+          ) : (
+            (projects.data ?? []).slice(0, 10).map((p) => (
+              <Pressable key={p.id} onPress={() => openProject(p.id)} accessibilityLabel={`Open ${p.title}`}>
+              <Glass radius={22} style={s.projRow}>
+                <View style={s.projIcon}><Feather name="zap" size={17} color="#C9C2FF" /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.projTitle} numberOfLines={1}>{p.title}</Text>
+                  <Text style={s.small}>{p.appType ? `${p.appType} · ` : ""}{timeAgo(p.updatedAt)}</Text>
+                </View>
+                <Feather name="chevron-right" size={16} color={MG.ink3} />
+              </Glass>
+              </Pressable>
+            ))
+          )}
         </View>
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: BG },
-  scroll:      { flex: 1 },
-  header:      { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 20 },
-  headerTitle: { fontSize: 24, fontWeight: "700", color: "white", letterSpacing: -0.5 },
-  headerSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.45)", marginTop: 2 },
-  orbBadge:    { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-
-  buildCard:       { marginHorizontal: 16, marginBottom: 16, borderRadius: 20, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER, padding: 16 },
-  buildCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
-  buildCardLabel:  { fontSize: 10, fontWeight: "700", letterSpacing: 1.2, color: "rgba(255,255,255,0.4)", textTransform: "uppercase" },
-  promptInput:     { backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 14, borderWidth: 1, borderColor: "rgba(124,58,237,0.35)", padding: 14, fontSize: 14, color: "white", minHeight: 80, marginBottom: 12 },
-  tagScroll:       { marginBottom: 14 },
-  tagContainer:    { gap: 8, paddingRight: 4 },
-  tag:             { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  tagSelected:     { backgroundColor: "rgba(124,58,237,0.18)", borderColor: "rgba(124,58,237,0.45)" },
-  tagText:         { fontSize: 12, color: "rgba(255,255,255,0.6)" },
-  tagTextSelected: { color: "#EDE9FE", fontWeight: "600" },
-  buildButton:     { borderRadius: 14, paddingVertical: 14, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  buildButtonText: { fontSize: 15, fontWeight: "700", color: "white" },
-
-  progressCard:   { marginHorizontal: 16, marginBottom: 16, borderRadius: 20, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER, padding: 16 },
-  progressHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 },
-  dot:            { width: 8, height: 8, borderRadius: 4 },
-  progressTitle:  { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.8)" },
-  stepRow:        { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
-  stepDot:        { width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  stepLabel:      { fontSize: 13 },
-
-  section:      { marginHorizontal: 16, marginBottom: 16 },
-  sectionTitle: { fontSize: 10, fontWeight: "700", letterSpacing: 1.2, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", marginBottom: 10 },
-
-  projectCard:      { flexDirection: "row", alignItems: "center", backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER, borderRadius: 16, padding: 14, marginBottom: 8 },
-  projectIcon:      { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center", marginRight: 12 },
-  projectInfo:      { flex: 1 },
-  projectName:      { fontSize: 14, fontWeight: "600", color: "white", marginBottom: 4 },
-  projectStatusRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  statusDot:        { width: 5, height: 5, borderRadius: 3 },
-  projectStatus:    { fontSize: 11, fontWeight: "600" },
-
-  actionsRow:  { flexDirection: "row", gap: 10, marginHorizontal: 16, marginBottom: 8 },
-  actionCard:  { flex: 1, backgroundColor: CARD_BG, borderWidth: 1, borderColor: BORDER, borderRadius: 16, paddingVertical: 16, alignItems: "center", justifyContent: "center", gap: 8 },
-  actionLabel: { fontSize: 11, fontWeight: "600", color: "rgba(255,255,255,0.65)" },
+const s = StyleSheet.create({
+  headRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },
+  title: { color: MG.ink, fontSize: 28, fontFamily: MGFont.display, letterSpacing: -0.5 },
+  sub: { color: MG.ink2, fontSize: 13.5, fontFamily: MGFont.medium, marginTop: 2 },
+  card: { padding: 16, gap: 12 },
+  input: { minHeight: 84, color: MG.ink, fontSize: 15, fontFamily: MGFont.body, backgroundColor: "rgba(10,9,24,0.35)", borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,0.14)", padding: 12, textAlignVertical: "top" },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, height: 34, paddingHorizontal: 13, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
+  chipOn: { backgroundColor: "rgba(255,255,255,0.92)", borderColor: "transparent" },
+  chipText: { color: MG.ink2, fontSize: 13, fontFamily: MGFont.semi },
+  buildBtn: { height: 48, borderRadius: 24, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  buildText: { color: "#fff", fontSize: 15, fontFamily: MGFont.bold },
+  error: { color: "#FCA5A5", fontSize: 13, fontFamily: MGFont.medium },
+  resultTitle: { color: MG.ink, fontSize: 17, fontFamily: MGFont.display },
+  body: { color: MG.ink2, fontSize: 13.5, fontFamily: MGFont.body, lineHeight: 19, flex: 1 },
+  small: { color: MG.ink3, fontSize: 12, fontFamily: MGFont.body },
+  changeRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  changeInput: { flex: 1, height: 42, borderRadius: 21, paddingHorizontal: 14, color: MG.ink, fontFamily: MGFont.body, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)" },
+  send: { width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.92)", alignItems: "center", justifyContent: "center" },
+  label: { color: MG.ink3, fontSize: 11, fontFamily: MGFont.bold, letterSpacing: 1.1, textTransform: "uppercase" },
+  idea: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
+  ideaText: { color: MG.ink2, fontSize: 12.5, fontFamily: MGFont.medium },
+  promptRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 12, paddingVertical: 11 },
+  divider: { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)" },
+  promptText: { color: MG.ink, fontSize: 13.5, fontFamily: MGFont.body },
+  projRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12 },
+  projIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: "rgba(139,123,255,0.22)", alignItems: "center", justifyContent: "center" },
+  projTitle: { color: MG.ink, fontSize: 14.5, fontFamily: MGFont.semi },
 });

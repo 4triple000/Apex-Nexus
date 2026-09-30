@@ -15,6 +15,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { X } from "lucide-react";
 import { usePersonality } from "@/contexts/PersonalityContext";
 import { useAvatarGreeting } from "@/hooks/useAvatarGreeting";
+import { speechPrefs } from "@/contexts/ApexStateContext";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -233,9 +234,10 @@ export function AvatarGreeting({ text: textOverride, voice = true }: AvatarGreet
     // Small delay so text animation starts first
     const t = setTimeout(() => {
       const utter = new SpeechSynthesisUtterance(greetingText);
-      utter.rate   = 0.92;
+      const sp = speechPrefs({ rate: 0.92, volume: 0.85 });
+      utter.rate   = sp.rate;
       utter.pitch  = 1.05;
-      utter.volume = 0.85;
+      utter.volume = sp.volume;
 
       utter.onstart = () => setSpeaking(true);
       utter.onend   = () => setSpeaking(false);

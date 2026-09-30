@@ -51,12 +51,15 @@ export const EYE_COLORS = [
   { label: 'Grey', value: '#5a6a7a' },
 ];
 
-export const OUTFITS = [
+export interface Outfit { label: string; value: string; main: string; accent: string; collar: string; /** Earned with a full 7-day streak */ reward?: boolean }
+
+export const OUTFITS: Outfit[] = [
   { label: 'Hoodie', value: 'hoodie', main: '#1e1e1e', accent: '#2d2d2d', collar: '#333' },
   { label: 'Suit', value: 'suit', main: '#1a2436', accent: '#253450', collar: '#f0f0f0' },
   { label: 'Tee', value: 'tee', main: '#1e3a5f', accent: '#2555a0', collar: '#1e3a5f' },
   { label: 'Jersey', value: 'jersey', main: '#7b0000', accent: '#b01010', collar: '#7b0000' },
   { label: 'Bomber', value: 'bomber', main: '#1a3014', accent: '#28501e', collar: '#c8a040' },
+  { label: 'Midnight', value: 'midnight', main: '#1c1640', accent: '#7a6bff', collar: '#ffcf8a', reward: true },
 ];
 
 export const BODY_TYPES = [

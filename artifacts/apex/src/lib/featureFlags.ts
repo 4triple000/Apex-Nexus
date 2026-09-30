@@ -76,7 +76,11 @@ function getActivePhase(): LaunchPhase {
  * Folds cumulative access: a feature enabled in phase_1 stays enabled in phase_2+.
  * Unknown feature IDs default to OPEN (new features don't get accidentally locked).
  */
+export const ALL_FEATURES_UNLOCKED = true;
+
 export function isFeatureEnabled(featureId: string): boolean {
+  // Testing: every feature is unlocked. Delete this line to bring back phased launch gating.
+  if (ALL_FEATURES_UNLOCKED) return true;
   const phase      = getActivePhase();
   const phaseIndex = PHASE_ORDER.indexOf(phase);
 
@@ -166,7 +170,7 @@ export const FEATURES: Record<string, FeatureConfig> = {
     name:         'AI Battle Arena',
     tagline:      'Early Access',
     hype:         'Battle Arena is almost ready',
-    description:  'Pit GPT-4, Claude, and Perplexity against each other in real-time head-to-head battles. Vote on the best response and shape your personal AI rankings.',
+    description:  'Pit ChatGPT, Claude, and Perplexity against each other in real-time head-to-head battles. Vote on the best response and shape your personal AI rankings.',
     icon:         '⚔️',
     gradient:     ['#EF4444', '#DC2626'],
     borderColors: ['#EF4444', '#F97316', '#A855F7'],

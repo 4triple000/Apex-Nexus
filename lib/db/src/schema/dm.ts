@@ -6,6 +6,8 @@ import { z } from "zod/v4";
 
 export const dmContactsTable = pgTable("dm_contacts", {
   id: serial("id").primaryKey(),
+  // Owner. Contacts and conversations are private to the user who has them.
+  userId: integer("user_id"),
   username: text("username").notNull(),
   displayName: text("display_name"),
   avatarUrl: text("avatar_url"),
@@ -23,6 +25,7 @@ export const dmContactsTable = pgTable("dm_contacts", {
 
 export const dmConversationsTable = pgTable("dm_conversations", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id"),
   contactId: integer("contact_id").notNull(),
   platform: text("platform").notNull().default("demo"),
   externalThreadId: text("external_thread_id"),

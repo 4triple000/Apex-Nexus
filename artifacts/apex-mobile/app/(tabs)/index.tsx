@@ -14,7 +14,6 @@ import {
   FlatList,
   ScrollView,
   Pressable,
-  Modal,
   StyleSheet,
   Platform,
   useWindowDimensions,
@@ -25,7 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 
 import { Backdrop, Glass } from "@/components/glass/Glass";
@@ -36,7 +35,12 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { MG, MGFont } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
-import { chatApi } from "@/services/api";
+import { chatApi, screenshotApi } from "@/services/api";
+import { MenuSheet } from "@/components/MenuSheet";
+import { getPrefs } from "@/lib/prefs";
+import { recordPrompt, usePromptLibrary } from "@/lib/promptLibrary";
+import { UsagePill } from "@/components/glass/UsagePill";
+import * as ImagePicker from "expo-image-picker";
 
 type ChatMode = "chat" | "battle" | "hive";
 
@@ -98,13 +102,17 @@ function Search({
   const [focused, setFocused] = useState(false);
   const query = q.trim().toLowerCase();
 
+  const library = usePromptLibrary("chat");
   const results = useMemo(() => {
     const hit = (label: string, aliases: string[]) =>
       !query || label.toLowerCase().includes(query) || aliases.some((a) => a.includes(query) || query.includes(a));
     const models = MODELS.filter((m) => hit(m.name, m.aliases));
     const modes = query ? MODES.filter((m) => hit(m.label, [m.id])) : [];
-    return { models, modes };
-  }, [query]);
+    const match = (t: string) => !query || t.toLowerCase().includes(query);
+    const saved = library.saved.filter((p) => match(p.text)).slice(0, 3);
+    const recent = library.history.filter((p) => match(p.text) && !library.isSaved(p.text)).slice(0, 3);
+    return { models, modes, saved, recent };
+  }, [query, library.saved, library.history, library.isSaved]);
 
   const done = () => { setQ(""); setFocused(false); };
 
@@ -130,6 +138,18 @@ function Search({
       </Glass>
       {focused && (results.models.length > 0 || results.modes.length > 0 || query) ? (
         <View style={s.dropdown}>
+          {[...results.saved.map((p) => ({ ...p, saved: true })), ...results.recent.map((p) => ({ ...p, saved: false }))].map((p) => (
+            <Pressable key={`p-${p.text}`} style={s.result} onPress={() => { onAsk(p.text); done(); }}>
+              <View style={s.resultIcon}><Feather name={p.saved ? "star" : "clock"} size={15} color={p.saved ? "#FFD479" : MG.ink2} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.resultTitle} numberOfLines={1}>{p.text}</Text>
+                <Text style={s.resultSub}>{p.saved ? "Saved prompt" : "Recent"} · tap to send</Text>
+              </View>
+              <Pressable onPress={() => library.toggleSaved(p.text)} hitSlop={8} accessibilityLabel={p.saved ? "Remove from saved" : "Save prompt"}>
+                <Feather name="star" size={15} color={p.saved ? "#FFD479" : MG.ink3} />
+              </Pressable>
+            </Pressable>
+          ))}
           {results.models.map((m) => (
             <Pressable key={m.id} style={s.result} onPress={() => { onPickModel(m.id); done(); }}>
               <View style={s.resultIcon}><ModelLogo id={m.id} size={18} /></View>
@@ -165,9 +185,9 @@ function Search({
 
 // ── Chips ──────────────────────────────────────────────────────────────────────
 
-function ModeChips({ mode, onChange }: { mode: ChatMode; onChange: (m: ChatMode) => void }) {
+function ModeChips({ mode, onChange, onScreenshot }: { mode: ChatMode; onChange: (m: ChatMode) => void; onScreenshot: () => void }) {
   return (
-    <View style={s.chips}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
       {MODES.map((m) => {
         const on = m.id === mode;
         return (
@@ -182,7 +202,11 @@ function ModeChips({ mode, onChange }: { mode: ChatMode; onChange: (m: ChatMode)
           </Pressable>
         );
       })}
-    </View>
+      <Pressable onPress={() => { tap(); onScreenshot(); }} accessibilityLabel="Analyze a screenshot" style={[s.chip, { flexDirection: "row", alignItems: "center", gap: 6 }]}>
+        <Feather name="image" size={14} color={MG.ink2} />
+        <Text style={s.chipText}>Screenshot</Text>
+      </Pressable>
+    </ScrollView>
   );
 }
 
@@ -307,37 +331,6 @@ function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Partial<R
   );
 }
 
-// ── Menu sheet ─────────────────────────────────────────────────────────────────
-
-function MenuSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const router = useRouter();
-  const { logout } = useAuth();
-  const items: { icon: React.ComponentProps<typeof Feather>["name"]; label: string; onPress: () => void }[] = [
-    { icon: "home",           label: "Home",       onPress: () => router.navigate("/(tabs)") },
-    { icon: "message-circle", label: "Chat",       onPress: () => router.navigate("/(tabs)/messages") },
-    { icon: "star",           label: "AI Studio",  onPress: () => router.navigate("/(tabs)/builder") },
-    { icon: "play-circle",    label: "Games",      onPress: () => router.navigate("/(tabs)/games") },
-    { icon: "aperture",       label: "Apex Orb",   onPress: () => router.navigate("/(tabs)/orb") },
-    { icon: "user",           label: "You",        onPress: () => router.navigate("/(tabs)/profile") },
-    { icon: "log-out",        label: "Sign out",   onPress: () => { logout(); } },
-  ];
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={s.menuBackdrop} onPress={onClose}>
-        <Glass radius={28} intensity={70} style={s.menu}>
-          <Text style={s.menuTitle}>Apex</Text>
-          {items.map((it) => (
-            <Pressable key={it.label} style={s.menuItem} onPress={() => { onClose(); it.onPress(); }}>
-              <Feather name={it.icon} size={18} color={MG.ink2} />
-              <Text style={s.menuLabel}>{it.label}</Text>
-            </Pressable>
-          ))}
-        </Glass>
-      </Pressable>
-    </Modal>
-  );
-}
-
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -345,6 +338,7 @@ export default function HomeScreen() {
   const { width } = useWindowDimensions();
   const router = useRouter();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const cardWidth = Math.min(width, 520) - 32;
 
   const [mode, setMode] = useState<ChatMode>("chat");
@@ -369,10 +363,12 @@ export default function HomeScreen() {
     if (!text || sending) return;
     setDraft("");
     push({ role: "user", text });
+    recordPrompt(text, "chat");
     setSending(true);
     try {
       if (mode === "chat") {
-        const r = await chatApi.send({ message: text, conversationId, provider: model });
+        const prefs = getPrefs();
+        const r = await chatApi.send({ message: text, conversationId, provider: model, tone: prefs.personality, memory: prefs.memoryEnabled });
         setConversationId(r.conversationId);
         push({ role: "ai", text: r.content });
       } else {
@@ -389,8 +385,26 @@ export default function HomeScreen() {
       push({ role: "ai", text: e instanceof Error ? e.message : "Something went wrong. Try again." });
     } finally {
       setSending(false);
+      queryClient.invalidateQueries({ queryKey: ["daily-usage"] });
     }
-  }, [mode, model, conversationId, sending, user?.sessionId]);
+  }, [mode, model, conversationId, sending, user?.sessionId, queryClient]);
+
+  // Screenshot chip: pick an image, get a read on it and three reply ideas
+  const analyzeScreenshot = useCallback(async () => {
+    const pick = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], base64: true, quality: 0.6 });
+    if (pick.canceled || !pick.assets[0]?.base64) return;
+    push({ role: "user", text: "📸 Analyze this screenshot" });
+    setSending(true);
+    try {
+      const r = await screenshotApi.analyze(pick.assets[0].base64);
+      const ideas = r.suggestions.map((x, i) => `${i + 1}. ${x}`).join("\n");
+      push({ role: "ai", text: `${r.analysis}${ideas ? `\n\nReply ideas:\n${ideas}` : ""}` });
+    } catch (e) {
+      push({ role: "ai", text: e instanceof Error ? e.message : "Couldn't analyze that image." });
+    } finally {
+      setSending(false);
+    }
+  }, []);
 
   useEffect(() => {
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
@@ -433,12 +447,13 @@ export default function HomeScreen() {
           {messages.length === 0 ? (
             <View style={{ gap: 16, alignItems: "center" }}>
               <View style={{ width: cardWidth, gap: 16, zIndex: 20 }}>
+                <View style={{ marginTop: -10, marginBottom: -6 }}><UsagePill /></View>
                 <Search
                   onPickModel={(id) => { setMode("chat"); setModel(id); }}
                   onPickMode={setMode}
                   onAsk={send}
                 />
-                <ModeChips mode={mode} onChange={setMode} />
+                <ModeChips mode={mode} onChange={setMode} onScreenshot={analyzeScreenshot} />
               </View>
               {mode === "chat"
                 ? <ModelCarousel value={model} onChange={setModel} status={status} width={cardWidth} />
@@ -528,9 +543,4 @@ const s = StyleSheet.create({
   stackTile: { width: 62, height: 62, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(24,20,48,0.9)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
   connectedCount: { color: MG.ink3, fontSize: 12, fontFamily: MGFont.semi },
 
-  menuBackdrop: { flex: 1, backgroundColor: "rgba(5,4,14,0.55)", padding: 16, paddingTop: 70 },
-  menu: { padding: 10, width: 240 },
-  menuTitle: { color: MG.ink3, fontSize: 11, letterSpacing: 1.2, textTransform: "uppercase", fontFamily: MGFont.bold, padding: 10 },
-  menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 14 },
-  menuLabel: { color: MG.ink, fontSize: 15, fontFamily: MGFont.medium },
 });
