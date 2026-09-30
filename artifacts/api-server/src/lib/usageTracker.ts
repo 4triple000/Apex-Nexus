@@ -20,7 +20,7 @@ export async function getOrCreateUsage(sessionId: string) {
     if (new Date(usage.resetAt) <= now) {
       const [updated] = await db
         .update(usageTable)
-        .set({ requestsUsed: 0, resetAt: getNextResetDate(), updatedAt: now })
+        .set({ requestsUsed: 0, bonusRequests: 0, resetAt: getNextResetDate(), updatedAt: now })
         .where(eq(usageTable.sessionId, sessionId))
         .returning();
       return updated!;
@@ -44,7 +44,7 @@ export async function getOrCreateUsage(sessionId: string) {
 
 export async function incrementUsage(sessionId: string) {
   const usage = await getOrCreateUsage(sessionId);
-  const limit = getTierLimit(usage.tier);
+  const limit = getTierLimit(usage.tier) + usage.bonusRequests;
 
   if (usage.requestsUsed >= limit) {
     return { exceeded: true, usage };
@@ -57,4 +57,13 @@ export async function incrementUsage(sessionId: string) {
     .returning();
 
   return { exceeded: false, usage: updated! };
+}
+
+/** Adds bonus messages to today's allowance (cleared at the next daily reset). */
+export async function grantBonusRequests(sessionId: string, amount: number) {
+  const usage = await getOrCreateUsage(sessionId);
+  await db
+    .update(usageTable)
+    .set({ bonusRequests: usage.bonusRequests + amount, updatedAt: new Date() })
+    .where(eq(usageTable.sessionId, sessionId));
 }

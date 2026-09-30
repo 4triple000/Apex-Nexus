@@ -10,11 +10,12 @@ router.get("/usage", async (req, res): Promise<void> => {
   const sessionId = parsed.success ? (parsed.data.sessionId ?? "anonymous") : "anonymous";
 
   const usage = await getOrCreateUsage(sessionId);
-  const limit = getTierLimit(usage.tier);
+  const limit = getTierLimit(usage.tier) + usage.bonusRequests;
 
   res.json({
     requestsUsed: usage.requestsUsed,
     requestsLimit: limit,
+    bonusRequests: usage.bonusRequests,
     tier: usage.tier,
     resetAt: usage.resetAt.toISOString(),
   });

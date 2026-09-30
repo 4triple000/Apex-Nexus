@@ -147,19 +147,29 @@ router.post("/mobile/auth/login", async (req, res): Promise<void> => {
 
 // Regex extraction removed — replaced by AI-powered extraction via extractMemoryFromMessage
 
+const TONES = {
+  friend: "Talk like a warm, casual friend.",
+  assistant: "Be a clear, helpful assistant.",
+  formal: "Use a polite, formal, professional tone.",
+  creative: "Be playful, imaginative and creative.",
+} as const;
+
 // ── POST /mobile/chat ──────────────────────────────────────────────────────────
 router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const schema = z.object({
     message: z.string().min(1).max(4000),
     conversationId: z.number().int().positive().optional(),
     provider: z.enum(["auto", "openai", "claude", "perplexity"]).optional(),
+    // From the app's Settings page
+    tone: z.enum(["friend", "assistant", "formal", "creative"]).optional(),
+    memory: z.boolean().optional(),
   });
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body"); return; }
 
   const userId = currentUserId(req);
-  const { message, conversationId: existingConvId, provider } = parsed.data;
+  const { message, conversationId: existingConvId, provider, tone, memory } = parsed.data;
   if (existingConvId && !(await ownsConversation(userId, existingConvId))) {
     notFound(res, "Conversation not found");
     return;
@@ -195,12 +205,13 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
     }));
 
     // 3. Build structured memory system prompt (AI-extracted, grouped by category)
-    const memorySection = await buildMemorySystemPrompt(userId);
+    const memorySection = memory === false ? "" : await buildMemorySystemPrompt(userId);
 
     // 4. Compose system prompt
     const systemPrompt =
       `You are Apex, a personalized AI assistant. You are intelligent, warm, and deeply attuned to the user's context. ` +
       `Be direct, helpful, and conversational. Keep responses focused and clear.` +
+      (tone ? ` ${TONES[tone]}` : "") +
       memorySection;
 
     // 5. Ask the chosen model

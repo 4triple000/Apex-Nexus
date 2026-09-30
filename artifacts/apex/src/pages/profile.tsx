@@ -29,7 +29,7 @@ import { usePrivacy } from "@/contexts/PrivacyContext";
 import { CharacterPanel } from "@/components/character/CharacterPanel";
 import { MemoryManager } from "@/components/character/MemoryManager";
 import { CharacterSwitcher } from "@/components/character/CharacterSwitcher";
-import { useStreak } from "@/hooks/useStreak";
+import { useDailyStreak } from "@/lib/dailyStreak";
 
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -577,7 +577,7 @@ function MeDashboard({
   }
 
   const reputation = stats.reputation ?? 0;
-  const { streak } = useStreak();
+  const streak = useDailyStreak()?.streak ?? 0;
   const tier        = getTier(reputation);
   const xpProgress  = getXpProgress(reputation);
   const nextTier    = TIERS[Math.min(TIERS.indexOf(tier) + 1, TIERS.length - 1)];

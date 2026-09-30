@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Search, Bell, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-function planLabel(tier?: string, isOwner?: boolean) {
+export function planLabel(tier?: string, isOwner?: boolean) {
   if (isOwner) return "Owner";
   if (!tier || tier === "free") return "Free plan";
   return `${tier[0].toUpperCase()}${tier.slice(1).replace(/_/g, " ")} plan`;

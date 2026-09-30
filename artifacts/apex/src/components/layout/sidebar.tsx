@@ -6,7 +6,7 @@ import {
   Hammer, Zap, Home, Gamepad2,
 } from "lucide-react";
 import { ApexLogo } from "@/components/ui/ApexLogo";
-import { useStreak } from "@/hooks/useStreak";
+import { useDailyStreak } from "@/lib/dailyStreak";
 
 const NAV_ITEMS = [
   { href: "/",               icon: Home,          label: "Home"           },
@@ -27,7 +27,7 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const [location] = useLocation();
   const isOwner = !!useAuth().user?.isOwner;
-  const { streak } = useStreak();
+  const streak = useDailyStreak()?.streak ?? 0;
 
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
@@ -95,7 +95,7 @@ export function Sidebar() {
           <span style={{ fontSize: 12 }}>🔥</span>
           <span className="text-xs font-medium" style={{ color: "#FED7AA" }}>Daily Streak — {streak} {streak === 1 ? "Day" : "Days"}</span>
         </div>
-        <Link href="/profile">
+        <Link href="/settings">
           <div
             className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer"
             style={{ color: "rgba(255,255,255,0.55)" }}

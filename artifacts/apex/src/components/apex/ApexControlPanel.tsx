@@ -1,422 +1,179 @@
-import { useState } from "react";
+/**
+ * The ☰ menu: Control Center style bubbles for the screens that aren't in the tab bar,
+ * and the 7-day streak that lights up by itself when the user opens and uses the app.
+ */
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { useApexState } from "@/contexts/ApexStateContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { Store, Workflow, Users, Compass, Mic, Smile, BarChart3, Settings, Wrench, X, Flame, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { clearEarned, useDailyStreak } from "@/lib/dailyStreak";
 
-interface ComingSoonFeature {
-  icon: string;
-  name: string;
-  desc: string;
-  href?: string;
-  locked: boolean;
-  ownerOnly?: boolean;
-}
-
-const FEATURES: ComingSoonFeature[] = [
-  { icon: "🔧", name: "Dev Cockpit",             desc: "Build & update Apex from inside Apex — file editor + AI", href: "/dev-cockpit", locked: false, ownerOnly: true },
-  { icon: "🎮", name: "Apex Games",              desc: "Multiplayer AI-powered game ecosystem",               href: "/games",         locked: false },
-  { icon: "🤖", name: "AI Arena",                desc: "Battle multiple AIs simultaneously, vote on winner",  href: "/arena",         locked: false },
-  { icon: "🌐", name: "AI Studio",               desc: "Full AI model suite with advanced controls",          href: "/ai-studio",     locked: false },
-  { icon: "📸", name: "Screenshot Analysis",     desc: "AI-powered image and screenshot intelligence",        href: "/screenshot",    locked: false },
-  { icon: "🌍", name: "Domain Settings",         desc: "Connect your custom domain and set up email",         href: "/domain-settings", locked: false },
-  { icon: "🎭", name: "Avatar System",           desc: "3D living AI avatar with emotion engine",             href: "/apex-avatar",   locked: false },
-  { icon: "🛒", name: "Marketplace",             desc: "Buy and sell AI creations and game assets",           href: "/marketplace",   locked: false },
-  { icon: "🎙️", name: "Real-Time Voice Agent",   desc: "Live voice conversation with Apex AI",               locked: true },
-  { icon: "🦾", name: "Autonomous Assistants",   desc: "AI agents that act on your behalf 24/7",             locked: true },
-  { icon: "🌐", name: "Multi-Platform Automation", desc: "Control any app from one Apex command",            locked: true },
-  { icon: "🤝", name: "Multiplayer AI Co-bots",  desc: "Collaborate with AI and friends in real time",       locked: true },
-];
-
-const PERSONALITY_OPTIONS = [
-  { id: "friend",     label: "Friend",    emoji: "👋" },
-  { id: "assistant",  label: "Assistant", emoji: "🤖" },
-  { id: "formal",     label: "Formal",    emoji: "👔" },
-  { id: "creative",   label: "Creative",  emoji: "🎨" },
+const BUBBLES: { label: string; to: string; icon: LucideIcon }[] = [
+  { label: "Marketplace", to: "/marketplace", icon: Store },
+  { label: "Workflows",   to: "/workflows",   icon: Workflow },
+  { label: "Social",      to: "/feed",        icon: Users },
+  { label: "Explore",     to: "/explore",     icon: Compass },
+  { label: "Voice",       to: "/apex-os",     icon: Mic },
+  { label: "Avatar",      to: "/apex-avatar", icon: Smile },
+  { label: "Insights",    to: "/insights",    icon: BarChart3 },
+  { label: "Settings",    to: "/settings",    icon: Settings },
 ];
 
 export function ApexControlPanel() {
-  const [open, setOpen]             = useState(false);
-  const [previewFeature, setPreviewFeature] = useState<ComingSoonFeature | null>(null);
-  const [, nav]                     = useLocation();
-  const { voiceMode, setVoiceMode, darkMode, setDarkMode, memoryEnabled, setMemoryEnabled, wakePhrase, setWakePhrase, personality, setPersonality } = useApexState();
-
+  const [open, setOpen] = useState(false);
+  const [location, nav] = useLocation();
   const isOwner = !!useAuth().user?.isOwner;
   const close = () => setOpen(false);
+  const go = (to: string) => { close(); nav(to); };
 
-  const handleFeatureClick = (f: ComingSoonFeature) => {
-    if (f.locked) {
-      setPreviewFeature(f);
-    } else if (f.href) {
-      close();
-      nav(f.href);
-    }
-  };
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
     <>
-      {/* ── Hamburger Button ───────────────────────────────────────────────── */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        aria-label="Apex Control Panel"
-        style={{
-          position: "fixed",
-          top: 14,
-          left: 16,
-          zIndex: 55,
-          width: 42,
-          height: 42,
-          borderRadius: "50%",
-          background: open
-            ? "linear-gradient(135deg, rgba(139,123,255,0.45), rgba(162,155,254,0.2))"
-            : "linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.045))",
-          border: `1px solid ${open ? "rgba(139,123,255,0.55)" : "rgba(255,255,255,0.16)"}`,
-          backdropFilter: "blur(22px) saturate(180%)",
-          WebkitBackdropFilter: "blur(22px) saturate(180%)",
-          cursor: "pointer",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 5,
-          padding: 0,
-          transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
-          boxShadow: open
-            ? "0 0 20px rgba(139,123,255,0.45)"
-            : "inset 0 1px 0 rgba(255,255,255,0.32), 0 8px 24px rgba(0,0,0,0.3)",
-        }}
+      {/* ☰ button (Settings has its own back button instead) */}
+      {location !== "/settings" && <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
+        className="mg-cc mg-focus"
+        style={{ position: "fixed", top: 14, left: 16, zIndex: 55, width: 42, height: 42, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: 0, cursor: "pointer" }}
       >
-        {/* Strawberry-menu lines */}
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            style={{
-              height: 2,
-              borderRadius: 2,
-              background: open ? "#A29BFE" : "rgba(255,255,255,0.7)",
-              transition: "all 0.25s ease",
-              width: i === 1 ? 14 : 18,
-              transform: open
-                ? i === 0 ? "rotate(45deg) translateY(7px)"
-                : i === 1 ? "scaleX(0) opacity(0)"
-                : "rotate(-45deg) translateY(-7px)"
-                : "none",
-            }}
-          />
+        {[18, 12, 18].map((w, i) => (
+          <span key={i} style={{ width: w, height: 2.2, borderRadius: 2, background: "#fff" }} />
         ))}
-      </button>
+      </button>}
 
-      {/* ── Backdrop ───────────────────────────────────────────────────────── */}
-      {open && (
-        <div
-          onClick={close}
-          style={{
-            position: "fixed", inset: 0, zIndex: 49,
-            background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-            animation: "panelFadeIn 0.2s ease",
-          }}
-        />
-      )}
-
-      {/* ── Panel ──────────────────────────────────────────────────────────── */}
+      {/* Dim */}
       <div
+        onClick={close}
+        aria-hidden
+        style={{ position: "fixed", inset: 0, zIndex: 58, background: "rgba(8,7,20,0.45)", opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity .25s" }}
+      />
+
+      {/* Sheet */}
+      <aside
+        aria-label="Menu"
+        aria-hidden={!open}
+        className="mg-font"
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          bottom: 0,
-          width: "min(340px, 88vw)",
-          zIndex: 60,
-          background: "linear-gradient(165deg, rgba(18,15,32,0.98) 0%, rgba(12,10,24,0.99) 100%)",
-          backdropFilter: "blur(40px) saturate(200%)",
-          WebkitBackdropFilter: "blur(40px) saturate(200%)",
-          borderRight: "1px solid rgba(108,92,231,0.2)",
-          boxShadow: "0 0 80px rgba(108,92,231,0.15), 8px 0 40px rgba(0,0,0,0.6)",
-          overflowY: "auto",
-          transform: open ? "translateX(0)" : "translateX(-110%)",
-          transition: "transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)",
-          willChange: "transform",
-          pointerEvents: open ? "auto" : "none",
+          position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 60,
+          width: "min(320px, 82vw)", padding: "22px 16px 20px",
+          display: "flex", flexDirection: "column", gap: 18, overflowY: "auto",
+          background: "linear-gradient(180deg, rgba(38,34,78,0.74), rgba(22,19,48,0.84))",
+          backdropFilter: "blur(28px) saturate(170%)", WebkitBackdropFilter: "blur(28px) saturate(170%)",
+          borderRight: "1.5px solid rgba(255,255,255,0.16)", boxShadow: "24px 0 50px rgba(0,0,0,0.35)",
+          transform: open ? "translateX(0)" : "translateX(-105%)",
+          transition: "transform .34s cubic-bezier(.25,.46,.45,.94)",
+          visibility: open ? "visible" : "hidden",
         }}
       >
-        {/* Header */}
-        <div style={{
-          padding: "20px 20px 16px",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          background: "linear-gradient(180deg, rgba(108,92,231,0.1) 0%, transparent 100%)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 14,
-              background: "linear-gradient(135deg, #6C5CE7, #A29BFE)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 0 20px rgba(108,92,231,0.5)",
-              fontSize: 18,
-            }}>⚡</div>
-            <div>
-              <div style={{ color: "white", fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em" }}>Apex Nexus</div>
-              <div style={{ color: "rgba(162,155,254,0.7)", fontSize: 11, fontWeight: 600 }}>CONTROL PANEL</div>
-            </div>
-            <button
-              onClick={close}
-              style={{
-                marginLeft: "auto", width: 30, height: 30,
-                borderRadius: "50%", border: "1px solid rgba(255,255,255,0.1)",
-                background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)",
-                fontSize: 14, cursor: "pointer", display: "flex",
-                alignItems: "center", justifyContent: "center",
-              }}
-            >×</button>
-          </div>
-        </div>
-
-        <div style={{ padding: "0 20px 100px" }}>
-
-          {/* ─── System Controls ─────────────────────────────────────────── */}
-          <SectionTitle>⚙️ System Controls</SectionTitle>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <ToggleRow label="Dark Mode" emoji="🌙" value={darkMode} onChange={setDarkMode} />
-            <ToggleRow label="Voice Mode" emoji="🎙️" value={voiceMode} onChange={setVoiceMode} note={voiceMode ? "Active" : "Simulated"} />
-            <ToggleRow label="Memory" emoji="🧠" value={memoryEnabled} onChange={setMemoryEnabled} note={memoryEnabled ? "Learning" : "Off"} />
-          </div>
-
-          {/* Wake Phrase */}
-          <div style={{ marginTop: 12 }}>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-              Wake Phrase
-            </div>
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              background: "rgba(255,255,255,0.05)", borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.08)", padding: "8px 12px",
-            }}>
-              <span style={{ fontSize: 14 }}>🎤</span>
-              <input
-                value={wakePhrase}
-                onChange={e => setWakePhrase(e.target.value)}
-                style={{
-                  flex: 1, background: "transparent", border: "none",
-                  color: "white", fontSize: 13, fontWeight: 600, outline: "none",
-                }}
-                placeholder="Hey Apex"
-              />
-              <span style={{ color: "rgba(108,92,231,0.7)", fontSize: 10, fontWeight: 700 }}>CUSTOM</span>
-            </div>
-          </div>
-
-          {/* Personality */}
-          <div style={{ marginTop: 14 }}>
-            <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-              Apex Tone
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-              {PERSONALITY_OPTIONS.map(opt => (
-                <button
-                  key={opt.id}
-                  onClick={() => setPersonality(opt.id)}
-                  style={{
-                    padding: "8px 10px", borderRadius: 12,
-                    background: personality === opt.id ? "rgba(108,92,231,0.25)" : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${personality === opt.id ? "rgba(108,92,231,0.5)" : "rgba(255,255,255,0.06)"}`,
-                    color: personality === opt.id ? "#A29BFE" : "rgba(255,255,255,0.5)",
-                    fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    display: "flex", alignItems: "center", gap: 6,
-                    transition: "all 0.2s",
-                  }}
-                >
-                  <span>{opt.emoji}</span>{opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Privacy */}
-          <button
-            onClick={() => { close(); nav("/profile"); }}
-            style={{
-              width: "100%", marginTop: 12, padding: "10px 14px",
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 12, color: "rgba(255,255,255,0.5)", fontSize: 12,
-              fontWeight: 600, cursor: "pointer", textAlign: "left",
-              display: "flex", alignItems: "center", gap: 10,
-            }}
-          >
-            🔒 Privacy & Notifications →
-          </button>
-
-          {/* ─── Features ────────────────────────────────────────────────── */}
-          <SectionTitle style={{ marginTop: 24 }}>🚀 All Features</SectionTitle>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {FEATURES.filter(f => !f.ownerOnly || isOwner).map(f => (
-              <button
-                key={f.name}
-                onClick={() => handleFeatureClick(f)}
-                style={{
-                  textAlign: "left", padding: "12px 14px",
-                  background: f.locked ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.04)",
-                  border: `1px solid ${f.locked ? "rgba(255,255,255,0.05)" : "rgba(108,92,231,0.15)"}`,
-                  borderRadius: 14, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 12,
-                  transition: "all 0.2s",
-                  opacity: f.locked ? 0.65 : 1,
-                }}
-              >
-                <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{f.icon}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    color: f.locked ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.85)",
-                    fontWeight: 700, fontSize: 13,
-                  }}>
-                    {f.name}
-                  </div>
-                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 2, lineHeight: 1.4 }}>
-                    {f.desc}
-                  </div>
-                </div>
-                {f.locked ? (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, color: "#A29BFE",
-                    background: "rgba(108,92,231,0.2)", border: "1px solid rgba(108,92,231,0.3)",
-                    borderRadius: 6, padding: "2px 7px", flexShrink: 0,
-                  }}>SOON</span>
-                ) : (
-                  <span style={{ color: "rgba(108,92,231,0.6)", fontSize: 14, flexShrink: 0 }}>→</span>
-                )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 4 }}>
+          <span className="mg-display" style={{ fontSize: 22, fontWeight: 700, color: "var(--mg-ink)" }}>Apex</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            {isOwner && (
+              <button onClick={() => go("/dev-cockpit")} aria-label="Dev Cockpit" title="Dev Cockpit" className="mg-cc mg-focus" style={{ width: 38, height: 38, color: "#FFCF8A", borderColor: "rgba(255,207,138,0.7)" }}>
+                <Wrench size={16} strokeWidth={2.2} />
               </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Locked Feature Modal ────────────────────────────────────────────── */}
-      {previewFeature && (
-        <>
-          <div
-            onClick={() => setPreviewFeature(null)}
-            style={{
-              position: "fixed", inset: 0, zIndex: 70,
-              background: "rgba(0,0,0,0.8)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
-              animation: "panelFadeIn 0.2s ease",
-            }}
-          />
-          <div
-            style={{
-              position: "fixed",
-              top: "50%", left: "50%",
-              transform: "translate(-50%, -50%)",
-              zIndex: 71,
-              width: "min(320px, 88vw)",
-              background: "linear-gradient(135deg, rgba(20,18,35,0.98), rgba(15,12,28,0.99))",
-              border: "1px solid rgba(108,92,231,0.3)",
-              borderRadius: 24,
-              padding: 28,
-              textAlign: "center",
-              boxShadow: "0 0 80px rgba(108,92,231,0.3), 0 32px 80px rgba(0,0,0,0.7)",
-              animation: "scaleInModal 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-            }}
-          >
-            <div style={{ fontSize: 40, marginBottom: 12, animation: "featureGlow 2s ease-in-out infinite" }}>
-              {previewFeature.icon}
-            </div>
-            <div style={{ color: "white", fontWeight: 800, fontSize: 18, marginBottom: 8 }}>
-              {previewFeature.name}
-            </div>
-            <div style={{
-              color: "rgba(162,155,254,0.8)", fontSize: 13, lineHeight: 1.6, marginBottom: 20,
-            }}>
-              This feature is forming in Apex Nexus…
-            </div>
-            <div style={{
-              background: "rgba(108,92,231,0.1)", border: "1px solid rgba(108,92,231,0.2)",
-              borderRadius: 14, padding: "12px 16px", marginBottom: 20,
-              color: "rgba(255,255,255,0.5)", fontSize: 12, lineHeight: 1.6,
-            }}>
-              {previewFeature.desc}
-            </div>
-            <button
-              onClick={() => setPreviewFeature(null)}
-              style={{
-                width: "100%", padding: "12px",
-                background: "linear-gradient(135deg, #6C5CE7, #A29BFE)",
-                border: "none", borderRadius: 14, color: "white",
-                fontWeight: 700, fontSize: 14, cursor: "pointer",
-                boxShadow: "0 0 24px rgba(108,92,231,0.5)",
-              }}
-            >
-              Notify Me When Ready
+            )}
+            <button onClick={close} aria-label="Close menu" className="mg-cc mg-focus" style={{ width: 38, height: 38 }}>
+              <X size={16} strokeWidth={2.2} />
             </button>
           </div>
-        </>
-      )}
+        </div>
 
-      <style>{`
-        @keyframes panelFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scaleInModal {
-          from { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
-          to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-        }
-        @keyframes featureGlow {
-          0%, 100% { filter: drop-shadow(0 0 8px rgba(108,92,231,0.6)); }
-          50%       { filter: drop-shadow(0 0 20px rgba(162,155,254,0.9)); }
-        }
-      `}</style>
+        <nav style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 8px", justifyItems: "center" }}>
+          {BUBBLES.map(({ label, to, icon: Icon }) => {
+            const here = location === to || location.startsWith(`${to}/`);
+            return (
+              <button key={to} onClick={() => go(to)} aria-current={here ? "page" : undefined} className="mg-bubble mg-focus" style={{ display: "grid", justifyItems: "center", gap: 7, background: "none", border: 0, padding: 0, cursor: "pointer" }}>
+                <span className={`mg-cc${here ? " on" : ""}`} style={{ width: 66, height: 66 }}>
+                  <Icon size={26} strokeWidth={2.2} />
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--mg-ink-2)" }}>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <StreakCard />
+      </aside>
     </>
   );
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
+/** Seven circles. Nothing to tap: today's lights up by itself after the first interaction of the day. */
+function StreakCard() {
+  const s = useDailyStreak();
+  const qc = useQueryClient();
+  const [lighting, setLighting] = useState(false);
+  const prevDay = useRef<number | null>(null);
 
-function SectionTitle({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const lit = s?.cycleDay ?? 0;
+  useEffect(() => {
+    const prev = prevDay.current;
+    prevDay.current = lit;
+    if (prev === null || lit <= prev) return;
+    setLighting(true);
+    const t = setTimeout(() => setLighting(false), 1200);
+    return () => clearTimeout(t);
+  }, [lit]);
+
+  useEffect(() => {
+    if (s?.earned === "bonus") void qc.invalidateQueries({ queryKey: ["daily-usage"] });
+  }, [s?.earned, qc]);
+
+  if (!s) {
+    return (
+      <div className="mg-cc-card" style={{ marginTop: "auto", padding: 14, fontSize: 13, color: "var(--mg-ink-2)" }}>
+        Sign in to start a 7-day streak.
+      </div>
+    );
+  }
+
+  const left = 7 - lit;
   return (
-    <div style={{
-      color: "rgba(255,255,255,0.35)", fontSize: 11, fontWeight: 700,
-      textTransform: "uppercase", letterSpacing: "0.1em",
-      margin: "20px 0 10px", ...style,
-    }}>
-      {children}
-    </div>
+    <section aria-label="7-day streak" className="mg-cc-card" style={{ marginTop: "auto", padding: 14, display: "grid", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <span className="mg-display" style={{ fontSize: 15, fontWeight: 700, color: "var(--mg-ink)" }}>{s.streak}-day streak</span>
+        <span style={{ fontSize: 11.5, color: "var(--mg-ink-3)" }}>
+          {left === 0 ? "Week complete" : s.checkedInToday ? `${left} to go` : "Use Apex today to keep it"}
+        </span>
+      </div>
+      <div role="img" aria-label={`${lit} of 7 days this week`} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 6 }}>
+        {Array.from({ length: 7 }, (_, i) => {
+          const on = i < lit;
+          return (
+            <span key={i} className={`mg-cc${on ? " on" : ""}${on && lighting && i === lit - 1 ? " mg-light" : ""}`} style={{ aspectRatio: "1", width: "100%", cursor: "default", color: on ? "#FF8A4C" : "var(--mg-ink-3)", fontSize: 11, fontWeight: 700 }}>
+              {on ? <Flame size={14} fill="currentColor" strokeWidth={0} /> : i + 1}
+            </span>
+          );
+        })}
+      </div>
+      <span style={{ fontSize: 10.5, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, color: "var(--mg-ink-3)" }}>Rewards</span>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+        <Reward got={s.rewards.bonus.earned} title={`Day ${s.rewards.bonus.day}`} text={`+${s.rewards.bonus.messages} messages today`} />
+        <Reward got={s.rewards.avatar.earned} title={`Day ${s.rewards.avatar.day}`} text="Midnight avatar outfit" />
+      </div>
+      {s.earned && (
+        <div role="status" onClick={clearEarned} style={{ fontSize: 12.5, fontWeight: 600, color: "#2a1300", background: "#fff", borderRadius: 14, padding: "8px 10px", cursor: "pointer" }}>
+          {s.earned === "bonus" ? `Day ${s.rewards.bonus.day} reward: +${s.rewards.bonus.messages} messages added for today` : "Day 7 reward: the Midnight outfit is in Avatar → Outfit"}
+        </div>
+      )}
+    </section>
   );
 }
 
-function ToggleRow({
-  label, emoji, value, onChange, note,
-}: {
-  label: string; emoji: string; value: boolean;
-  onChange: (v: boolean) => void; note?: string;
-}) {
+function Reward({ got, title, text }: { got: boolean; title: string; text: string }) {
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 10,
-      padding: "10px 12px", borderRadius: 12,
-      background: "rgba(255,255,255,0.04)",
-      border: "1px solid rgba(255,255,255,0.06)",
-      cursor: "pointer",
-    }}
-      onClick={() => onChange(!value)}
-    >
-      <span style={{ fontSize: 15 }}>{emoji}</span>
-      <span style={{ flex: 1, color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 600 }}>{label}</span>
-      {note && <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 11 }}>{note}</span>}
-      {/* Toggle */}
-      <div style={{
-        width: 36, height: 20, borderRadius: 99, position: "relative",
-        background: value ? "linear-gradient(90deg, #6C5CE7, #A29BFE)" : "rgba(255,255,255,0.1)",
-        transition: "background 0.25s",
-        boxShadow: value ? "0 0 10px rgba(108,92,231,0.4)" : "none",
-      }}>
-        <div style={{
-          position: "absolute", top: 2,
-          left: value ? 18 : 2,
-          width: 16, height: 16, borderRadius: "50%",
-          background: "white",
-          transition: "left 0.25s cubic-bezier(0.34,1.56,0.64,1)",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
-        }} />
-      </div>
+    <div style={{ borderRadius: 16, padding: "8px 10px", fontSize: 11, lineHeight: 1.3, background: got ? "#fff" : "rgba(255,255,255,0.08)", border: `1.5px solid ${got ? "#fff" : "rgba(255,255,255,0.2)"}`, color: got ? "#5b4a3a" : "var(--mg-ink-3)" }}>
+      <b style={{ display: "block", fontSize: 11.5, color: got ? "#2a1300" : "var(--mg-ink-2)" }}>{title}{got ? " ✓" : ""}</b>
+      {text}
     </div>
   );
 }

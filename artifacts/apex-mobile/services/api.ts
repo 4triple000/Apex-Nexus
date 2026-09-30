@@ -17,6 +17,22 @@ export function setAuthSession(sessionId: string | null): void {
   authSessionId = sessionId;
 }
 
+// ── 7-day streak ──────────────────────────────────────────────────────────────
+export interface StreakState {
+  streak: number;
+  best: number;
+  cycleDay: number;
+  checkedInToday: boolean;
+  rewards: { bonus: { day: number; messages: number; earned: boolean }; avatar: { day: number; earned: boolean } };
+  earned: "bonus" | "avatar" | null;
+}
+
+export const streakApi = {
+  signedIn: () => !!authSessionId,
+  get: (today: string) => apexFetch<StreakState>(`/streak?today=${today}`),
+  checkin: (today: string) => apexFetch<StreakState>("/streak/checkin", { method: "POST", body: JSON.stringify({ today }) }),
+};
+
 // ── Prompt library sync ───────────────────────────────────────────────────────
 export interface SyncedPrompt { text: string; kind: "chat" | "build"; at: number }
 
@@ -70,7 +86,7 @@ export const authApi = {
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
 export type ProviderId = "auto" | "openai" | "claude" | "perplexity";
-export interface ChatInput { message: string; conversationId?: number; provider?: ProviderId }
+export interface ChatInput { message: string; conversationId?: number; provider?: ProviderId; tone?: string; memory?: boolean }
 export interface ChatResponse { content: string; conversationId: number; provider?: string }
 
 export interface ModelAnswer { provider: string; content: string; responseTime: number; error?: string }

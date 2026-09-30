@@ -7,6 +7,7 @@ import * as Haptics from "expo-haptics";
 import { Glass } from "@/components/glass/Glass";
 import { TabIcon, type TabIconName } from "@/components/glass/TabIcons";
 import { MG } from "@/constants/colors";
+import { checkInToday } from "@/lib/streak";
 
 type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
@@ -56,6 +57,8 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
 
 export default function TabLayout() {
   return (
+    // Watches touches (without taking them) so the first one each day counts toward the streak
+    <View style={{ flex: 1 }} onStartShouldSetResponderCapture={() => { checkInToday(); return false; }}>
     <Tabs
       tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: MG.bg } }}
@@ -64,7 +67,9 @@ export default function TabLayout() {
         <Tabs.Screen key={t.name} name={t.name} options={{ title: t.title }} />
       ))}
       <Tabs.Screen name="orb" options={{ title: "Apex Orb", href: null }} />
+      <Tabs.Screen name="settings" options={{ title: "Settings", href: null }} />
     </Tabs>
+    </View>
   );
 }
 

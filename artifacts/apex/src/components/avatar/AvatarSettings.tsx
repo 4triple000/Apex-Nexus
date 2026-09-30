@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { AvatarStore } from '@/hooks/useAvatarStore';
 import { SKIN_TONES, HAIR_STYLES, HAIR_COLORS, EYE_COLORS, OUTFITS, BODY_TYPES } from './AvatarFace';
+import { hasStreakAvatarLook } from '@/lib/dailyStreak';
+import { ALL_FEATURES_UNLOCKED } from '@/lib/featureFlags';
 import { Personality, buildPersonalityPrompt, DEFAULT_PERSONALITIES } from '@/lib/personalityEngine';
 import { LazyAvatar3DScene as Avatar3DScene } from '@/components/avatar3d/LazyAvatar3DScene';
 import { cn } from '@/lib/utils';
@@ -162,10 +164,10 @@ function BodyTypeCard({
 
 // ── Outfit mini illustration ─────────────────────────────────────
 function OutfitCard({
-  outfit, label, selected, accent, onClick,
+  outfit, label, selected, accent, onClick, disabled,
 }: {
   outfit: typeof OUTFITS[number]; label: string;
-  selected: boolean; accent: string; onClick: () => void;
+  selected: boolean; accent: string; onClick: () => void; disabled?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -267,8 +269,11 @@ function OutfitCard({
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
+      title={disabled ? 'Keep a 7-day streak to unlock' : undefined}
       className="flex flex-col items-center gap-1 p-1 rounded-xl transition-all"
       style={{
+        opacity: disabled ? 0.45 : 1,
         border: selected ? `1.5px solid ${accent}` : '1.5px solid rgba(255,255,255,0.08)',
         boxShadow: selected ? `0 0 10px ${accent}44` : 'none',
       }}
@@ -504,16 +509,20 @@ export function AvatarSettings({ store, onClose }: AvatarSettingsProps) {
               {/* Outfit */}
               <CreatorSection label="Outfit" accent={accent}>
                 <div className="grid grid-cols-3 gap-2">
-                  {OUTFITS.map((o) => (
-                    <OutfitCard
-                      key={o.value}
-                      outfit={o}
-                      label={o.label}
-                      selected={store.appearance.outfit === o.value}
-                      accent={accent}
-                      onClick={() => store.setAppearance({ outfit: o.value })}
-                    />
-                  ))}
+                  {OUTFITS.map((o) => {
+                    const locked = !!o.reward && !ALL_FEATURES_UNLOCKED && !hasStreakAvatarLook();
+                    return (
+                      <OutfitCard
+                        key={o.value}
+                        outfit={o}
+                        label={locked ? 'Day 7 reward' : o.label}
+                        selected={store.appearance.outfit === o.value}
+                        accent={accent}
+                        disabled={locked}
+                        onClick={() => store.setAppearance({ outfit: o.value })}
+                      />
+                    );
+                  })}
                 </div>
               </CreatorSection>
             </div>

@@ -31,6 +31,7 @@ import { StreakMilestone } from "@/components/streak/StreakMilestone";
 import { useStreak } from "@/hooks/useStreak";
 import { AvatarReengagement } from "@/components/avatar/AvatarReengagement";
 import { useReengagement } from "@/hooks/useReengagement";
+import { useApexState, toneInstruction } from "@/contexts/ApexStateContext";
 
 // ── Types ───────────────────────────────────────────────────────────────────────
 type Message = {
@@ -87,6 +88,7 @@ export default function Home() {
   const providerStatus = useProviderStatus();
   const castVote  = useCastVote();
   const tts       = useSpeechOutput();
+  const apexPrefs = useApexState();
   const { privacyMode, togglePrivacyMode } = usePrivacy();
   const { activeCharacter } = useCharacterSwitch();
   const character = useCharacter();
@@ -187,7 +189,7 @@ export default function Home() {
     // Use global personality system — falls back to avatar personality if no global set
     const personalityPrompt = globalSystemPrompt || buildPersonalityPrompt(avatar.activePersonality);
     const characterContext  = character.getContextForPrompt();
-    const enrichedMessage   = `${personalityPrompt}${characterContext}\n\nUser message: ${content}`;
+    const enrichedMessage   = `${personalityPrompt}${toneInstruction(apexPrefs.personality)}${characterContext}\n\nUser message: ${content}`;
     const userMsg: Message  = { id: crypto.randomUUID(), role: "user", content, timestamp: Date.now(), prompt: content };
     setMessages((prev) => [...prev, userMsg]);
     try {

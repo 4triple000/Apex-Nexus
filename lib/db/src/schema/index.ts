@@ -38,4 +38,4 @@ export * from "./platforms";
 export * from "./game_feed";
 export * from "./devos";
 export * from "./domains";
-export * from "./deployments";
+export * from "./deployments";export * from "./streaks";

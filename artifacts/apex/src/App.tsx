@@ -38,6 +38,7 @@ const ExplorePage = lazy(() => import("@/pages/explore"));
 const PricingPage = lazy(() => import("@/pages/pricing"));
 const CreatorDashboardPage = lazy(() => import("@/pages/creator-dashboard"));
 const InsightsPage = lazy(() => import("@/pages/insights"));
+const SettingsPage = lazy(() => import("@/pages/settings"));
 const MultiplayerPage = lazy(() => import("@/pages/multiplayer"));
 const LandingPage = lazy(() => import("@/pages/landing"));
 const GameEnginePage = lazy(() => import("@/pages/game-engine"));
@@ -165,6 +166,7 @@ function Router() {
               <Route path="/pricing" component={PricingPage} />
               <Route path="/creator-dashboard" component={CreatorDashboardPage} />
               <Route path="/insights" component={InsightsPage} />
+              <Route path="/settings" component={SettingsPage} />
               <Route path="/multiplayer" component={MultiplayerPage} />
               <Route path="/apex-features"><Redirect to="/" replace /></Route>
               <Route component={NotFound} />

@@ -14,7 +14,6 @@ import {
   FlatList,
   ScrollView,
   Pressable,
-  Modal,
   StyleSheet,
   Platform,
   useWindowDimensions,
@@ -37,6 +36,8 @@ import { MG, MGFont } from "@/constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
 import { chatApi, screenshotApi } from "@/services/api";
+import { MenuSheet } from "@/components/MenuSheet";
+import { getPrefs } from "@/lib/prefs";
 import { recordPrompt, usePromptLibrary } from "@/lib/promptLibrary";
 import { UsagePill } from "@/components/glass/UsagePill";
 import * as ImagePicker from "expo-image-picker";
@@ -330,37 +331,6 @@ function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Partial<R
   );
 }
 
-// ── Menu sheet ─────────────────────────────────────────────────────────────────
-
-function MenuSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const router = useRouter();
-  const { logout } = useAuth();
-  const items: { icon: React.ComponentProps<typeof Feather>["name"]; label: string; onPress: () => void }[] = [
-    { icon: "home",           label: "Home",       onPress: () => router.navigate("/(tabs)") },
-    { icon: "message-circle", label: "Chat",       onPress: () => router.navigate("/(tabs)/messages") },
-    { icon: "star",           label: "Builder",    onPress: () => router.navigate("/(tabs)/builder") },
-    { icon: "play-circle",    label: "Games",      onPress: () => router.navigate("/(tabs)/games") },
-    { icon: "aperture",       label: "Apex Orb",   onPress: () => router.navigate("/(tabs)/orb") },
-    { icon: "user",           label: "You",        onPress: () => router.navigate("/(tabs)/profile") },
-    { icon: "log-out",        label: "Sign out",   onPress: () => { logout(); } },
-  ];
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={s.menuBackdrop} onPress={onClose}>
-        <Glass radius={28} intensity={70} style={s.menu}>
-          <Text style={s.menuTitle}>Apex</Text>
-          {items.map((it) => (
-            <Pressable key={it.label} style={s.menuItem} onPress={() => { onClose(); it.onPress(); }}>
-              <Feather name={it.icon} size={18} color={MG.ink2} />
-              <Text style={s.menuLabel}>{it.label}</Text>
-            </Pressable>
-          ))}
-        </Glass>
-      </Pressable>
-    </Modal>
-  );
-}
-
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -397,7 +367,8 @@ export default function HomeScreen() {
     setSending(true);
     try {
       if (mode === "chat") {
-        const r = await chatApi.send({ message: text, conversationId, provider: model });
+        const prefs = getPrefs();
+        const r = await chatApi.send({ message: text, conversationId, provider: model, tone: prefs.personality, memory: prefs.memoryEnabled });
         setConversationId(r.conversationId);
         push({ role: "ai", text: r.content });
       } else {
@@ -572,9 +543,4 @@ const s = StyleSheet.create({
   stackTile: { width: 62, height: 62, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(24,20,48,0.9)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
   connectedCount: { color: MG.ink3, fontSize: 12, fontFamily: MGFont.semi },
 
-  menuBackdrop: { flex: 1, backgroundColor: "rgba(5,4,14,0.55)", padding: 16, paddingTop: 70 },
-  menu: { padding: 10, width: 240 },
-  menuTitle: { color: MG.ink3, fontSize: 11, letterSpacing: 1.2, textTransform: "uppercase", fontFamily: MGFont.bold, padding: 10 },
-  menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 14 },
-  menuLabel: { color: MG.ink, fontSize: 15, fontFamily: MGFont.medium },
 });
