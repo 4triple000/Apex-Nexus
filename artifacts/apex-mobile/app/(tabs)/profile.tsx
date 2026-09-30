@@ -15,11 +15,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { Backdrop } from "@/components/glass/Glass";
-import { memoryApi, type MemoryItem } from "@/services/api";
+import { memoryApi, WEB_APP_URL, type MemoryItem } from "@/services/api";
 
 const CATEGORY_EMOJI: Record<string, string> = {
   goal: "🎯",
@@ -94,6 +95,23 @@ export default function ProfileScreen() {
           <Text style={[styles.tierText, { color: colors.primary }]}>Free</Text>
         </View>
       </View>
+
+      {/* Avatar customizer (opens on the website, where the 3D editor lives) */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Customize your avatar"
+        onPress={() => void WebBrowser.openBrowserAsync(`${WEB_APP_URL}/avatar`)}
+        style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.8 : 1 }]}
+      >
+        <View style={[styles.avatarCircle, { backgroundColor: "rgba(236,72,153,0.25)" }]}>
+          <Text style={styles.avatarEmoji}>🧬</Text>
+        </View>
+        <View style={styles.userInfo}>
+          <Text style={[styles.username, { color: colors.foreground }]}>Customize your avatar</Text>
+          <Text style={[styles.email, { color: colors.mutedForeground }]}>Change how your 3D avatar looks and sounds</Text>
+        </View>
+        <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+      </Pressable>
 
       {/* Stats row */}
       <View style={styles.statsRow}>

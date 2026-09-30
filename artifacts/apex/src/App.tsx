@@ -32,9 +32,8 @@ const DMPage = lazy(() => import("@/pages/dm").then((m) => ({ default: m.DMPage 
 const StudioPage = lazy(() => import("@/pages/studio"));
 const StudioProjectPage = lazy(() => import("@/pages/studio").then((m) => ({ default: m.StudioProjectPage })));
 const MarketplacePage = lazy(() => import("@/pages/marketplace"));
-const FeedPage = lazy(() => import("@/pages/feed"));
+const SocialPage = lazy(() => import("@/pages/social"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
-const ExplorePage = lazy(() => import("@/pages/explore"));
 const PricingPage = lazy(() => import("@/pages/pricing"));
 const CreatorDashboardPage = lazy(() => import("@/pages/creator-dashboard"));
 const InsightsPage = lazy(() => import("@/pages/insights"));
@@ -158,10 +157,10 @@ function Router() {
               <Route path="/dm" component={DMPage} />
               <Route path="/studio" component={StudioPage} />
               <Route path="/marketplace" component={MarketplacePage} />
-              <Route path="/feed" component={FeedPage} />
+              <Route path="/feed" component={SocialPage} />
               <Route path="/profile" component={ProfilePage} />
               <Route path="/profile/:userId" component={ProfilePage} />
-              <Route path="/explore" component={ExplorePage} />
+              <Route path="/explore"><Redirect to="/feed" replace /></Route>
               <Route path="/pricing" component={PricingPage} />
               <Route path="/creator-dashboard" component={CreatorDashboardPage} />
               <Route path="/insights" component={InsightsPage} />

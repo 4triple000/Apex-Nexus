@@ -2,7 +2,7 @@ import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   MessageSquare, Bot, Network, Camera, Mic, Brain,
-  Swords, PenLine, Archive, User, Terminal, Settings,
+  Swords, Users, Archive, User, Terminal, Settings,
   Hammer, Zap, Home, Gamepad2,
 } from "lucide-react";
 import { ApexLogo } from "@/components/ui/ApexLogo";
@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   { href: "/apex-os",        icon: Mic,           label: "Voice & Audio"  },
   { href: "/workflows",      icon: Brain,         label: "AI Coach"       },
   { href: "/arena",          icon: Swords,        label: "Battle Mode"    },
-  { href: "/feed",           icon: PenLine,       label: "Content Writer" },
+  { href: "/feed",           icon: Users,         label: "Social"         },
   { href: "/profile",        icon: Archive,       label: "Memory"         },
   { href: "/avatar",         icon: User,          label: "Identity"       },
   { href: "/dev-cockpit",    icon: Terminal,      label: "Dev Cockpit",   ownerOnly: true },
