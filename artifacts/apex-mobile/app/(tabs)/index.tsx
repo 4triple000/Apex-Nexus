@@ -234,15 +234,32 @@ function ModelCarousel({
 }) {
   const listRef = useRef<FlatList<(typeof MODELS)[number]>>(null);
   const index = Math.max(0, MODELS.findIndex((m) => m.id === value));
+  // The dot follows the card under your finger while swiping, before the model is picked
+  const [live, setLive] = useState(index);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   useEffect(() => {
+    setLive(index);
     listRef.current?.scrollToOffset({ offset: index * width, animated: true });
   }, [index, width]);
 
-  const onSettle = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = Math.round(e.nativeEvent.contentOffset.x / width);
-    const m = MODELS[Math.min(Math.max(i, 0), MODELS.length - 1)];
-    if (m.id !== value) { tap(); onChange(m.id); }
+  useEffect(() => () => clearTimeout(settleTimer.current), []);
+
+  const pick = (x: number) => {
+    const i = Math.min(Math.max(Math.round(x / width), 0), MODELS.length - 1);
+    const m = MODELS[i];
+    if (m.id !== valueRef.current) { tap(); onChange(m.id); }
+  };
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    setLive(Math.min(Math.max(Math.round(x / width), 0), MODELS.length - 1));
+    // Browsers finish the snap after the finger lifts and send no "done" event,
+    // so pick the model once scrolling has been still for a moment
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => pick(x), 140);
   };
 
   const go = (d: number) => onChange(MODELS[(index + d + MODELS.length) % MODELS.length].id);
@@ -257,9 +274,9 @@ function ModelCarousel({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={onSettle}
-          // Web has no momentum events; settle on scroll end instead
-          onScrollEndDrag={Platform.OS === "web" ? onSettle : undefined}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={(e) => { clearTimeout(settleTimer.current); pick(e.nativeEvent.contentOffset.x); }}
           getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
           initialScrollIndex={index}
           renderItem={({ item }) => (
@@ -293,7 +310,7 @@ function ModelCarousel({
       </Glass>
       <View style={s.dots}>
         {MODELS.map((m, i) => (
-          <View key={m.id} style={[s.dot, i === index && s.dotOn]} />
+          <View key={m.id} style={[s.dot, i === live && s.dotOn]} />
         ))}
       </View>
     </View>
@@ -406,7 +423,9 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // Follow new chat messages; the home screen itself opens at the top
   useEffect(() => {
+    if (messages.length === 0) return;
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
   }, [messages.length, sending]);
 
@@ -519,8 +538,9 @@ const s = StyleSheet.create({
   chipTextOn: { color: "#120F2A" },
 
   slide: { minHeight: 236, padding: 22, justifyContent: "flex-end", gap: 6 },
+  // In the normal flow so a long name or tagline on a small phone pushes it up instead of overlapping
   logoTile: {
-    position: "absolute", top: 26, left: "50%", marginLeft: -46,
+    alignSelf: "center", marginBottom: 12,
     width: 92, height: 92, borderRadius: 28, alignItems: "center", justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.1)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
     shadowOpacity: 0.6, shadowRadius: 24, shadowOffset: { width: 0, height: 12 },
