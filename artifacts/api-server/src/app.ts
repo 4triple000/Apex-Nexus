@@ -44,7 +44,8 @@ app.use(
   }),
 );
 app.use(cors());
-app.use(express.json());
+// Game projects can carry a full 3D level, so allow bodies up to 2 MB
+app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);

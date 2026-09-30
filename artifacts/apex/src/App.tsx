@@ -41,8 +41,10 @@ const InsightsPage = lazy(() => import("@/pages/insights"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const MultiplayerPage = lazy(() => import("@/pages/multiplayer"));
 const LandingPage = lazy(() => import("@/pages/landing"));
-const GameEnginePage = lazy(() => import("@/pages/game-engine"));
-const GameEcosystemPage = lazy(() => import("@/pages/game-ecosystem"));
+const EngineLauncherPage = lazy(() => import("@/pages/game-engine"));
+const EngineEditorPage = lazy(() => import("@/pages/game-engine-editor"));
+const GamesPage = lazy(() => import("@/pages/games"));
+const ModelsPage = lazy(() => import("@/pages/models"));
 const ApexDevOSPage = lazy(() => import("@/pages/apex-dev-os"));
 const ApexAvatarPage = lazy(() => import("@/pages/apex-avatar"));
 const DomainSettingsPage = lazy(() => import("@/pages/domain-settings"));
@@ -106,11 +108,8 @@ function Router() {
       <Route path="/arena">
         <ProtectedLayout><ArenaPage /></ProtectedLayout>
       </Route>
-      <Route path="/game-engine">
-        <ProtectedLayout><GameEnginePage /></ProtectedLayout>
-      </Route>
-      <Route path="/games">
-        <ProtectedLayout><GameEcosystemPage /></ProtectedLayout>
+      <Route path="/game-engine/:id">
+        {(params) => <ProtectedLayout><EngineEditorPage id={Number(params.id)} /></ProtectedLayout>}
       </Route>
       <Route path="/apex-dev-os">
         <ApexDevOSPage />
@@ -167,6 +166,9 @@ function Router() {
               <Route path="/creator-dashboard" component={CreatorDashboardPage} />
               <Route path="/insights" component={InsightsPage} />
               <Route path="/settings" component={SettingsPage} />
+              <Route path="/games" component={GamesPage} />
+              <Route path="/models" component={ModelsPage} />
+              <Route path="/game-engine" component={EngineLauncherPage} />
               <Route path="/multiplayer" component={MultiplayerPage} />
               <Route path="/apex-features"><Redirect to="/" replace /></Route>
               <Route component={NotFound} />

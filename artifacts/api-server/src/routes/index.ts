@@ -7,6 +7,7 @@ import chatRouter from "./chat";
 import usageRouter from "./usage";
 import promptsRouter from "./prompts";
 import streakRouter from "./streak";
+import modelsRouter from "./models";
 import votesRouter from "./votes";
 import workflowsRouter from "./workflows";
 import dmRouter from "./dm";
@@ -29,6 +30,7 @@ import billingRouter from "../modules/billing/router";
 import mobileRouter from "../modules/mobile/router";
 import workflowGeneratorRouter from "../modules/workflow-generator/router";
 import aiStudioRouter from "../modules/ai-studio/router";
+import gameProjectsRouter from "../modules/game-projects/router";
 import apexAiOsRouter from "../modules/ai-os/index";
 import agentsRouter from "../modules/agents/router";
 import deploymentRouter from "../modules/deployment/router";
@@ -67,6 +69,7 @@ router.use(chatRouter);
 router.use(usageRouter);
 router.use(promptsRouter);
 router.use(streakRouter);
+router.use(modelsRouter);
 router.use(votesRouter);
 router.use(workflowsRouter);
 router.use(dmRouter);
@@ -97,6 +100,7 @@ router.use(mobileRouter);
 router.use(workflowGeneratorRouter);
 // AI Studio:        POST /api/studio/ai/generate, /api/studio/ai/edit, /api/studio/ai/save, GET /api/studio/ai/projects
 router.use(aiStudioRouter);
+router.use(gameProjectsRouter);
 // ── Unified Backend Layer (registered before ai-os to take precedence on /projects) ──
 // Users Hub:   GET  /api/users/me, PUT /api/users/me, GET /api/users/me/usage,
 //              GET  /api/users/me/projects, GET /api/users/me/deployments, GET /api/users/:id

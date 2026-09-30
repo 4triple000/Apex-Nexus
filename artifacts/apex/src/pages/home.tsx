@@ -18,7 +18,7 @@ import { usePrivacy } from "@/contexts/PrivacyContext";
 import { useCharacterSwitch } from "@/contexts/CharacterContext";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { HubHeader, ModelSearch, ModeChips, ModelCarousel, ModeCard, ModelLogo, modelById, useProviderStatus, UsagePill } from "@/components/home/HomeHub";
+import { HubHeader, ModelSearch, ModeChips, ModelCarousel, ModeCard, ModelLogo, modelById, useProviderStatus, UsagePill, MODELS, type ModelId } from "@/components/home/HomeHub";
 import { recordPrompt } from "@/lib/promptLibrary";
 import { useQueryClient } from "@tanstack/react-query";
 import { Volume2, VolumeX, ShieldOff } from "lucide-react";
@@ -53,15 +53,18 @@ type Message = {
 };
 
 type ChatMode     = "chat" | "battle" | "hive";
-type AiPreference = "auto" | "openai" | "claude" | "perplexity";
+type AiPreference = ModelId;
 
-// ── Provider config ─────────────────────────────────────────────────────────────
-const PROVIDERS: { id: AiPreference; label: string; emoji: string; color: string; glow: string }[] = [
-  { id: "auto",       label: "Auto-Route", emoji: "⚡", color: "#A29BFE", glow: "rgba(162,155,254,0.35)" },
-  { id: "openai",     label: "ChatGPT",      emoji: "✦",  color: "#10A37F", glow: "rgba(16,163,127,0.35)"  },
-  { id: "claude",     label: "Claude",   emoji: "◆",  color: "#D97757", glow: "rgba(217,119,87,0.35)"  },
-  { id: "perplexity", label: "Perplexity", emoji: "◎",  color: "#228BE6", glow: "rgba(34,139,230,0.35)"  },
-];
+// ── Provider config (the chat models, from the Home hub's list) ─────────────────
+const PROVIDERS: { id: AiPreference; label: string; color: string; glow: string }[] = MODELS.map((m) => ({
+  id: m.id, label: m.id === "auto" ? "Auto-Route" : m.name, color: m.color, glow: `${m.color}59`,
+}));
+
+/** Home can open with a model picked, e.g. /?model=gemini from the Models page */
+function modelFromUrl(): AiPreference {
+  const q = new URLSearchParams(window.location.search).get("model");
+  return MODELS.some((m) => m.id === q) ? (q as AiPreference) : "auto";
+}
 
 // ── Mode config ─────────────────────────────────────────────────────────────────
 const MODES: { id: ChatMode; label: string; desc: string }[] = [
@@ -79,7 +82,7 @@ export default function Home() {
   const [, nav]      = useLocation();
   const [messages, setMessages]         = useState<Message[]>([]);
   const [mode, setMode]                 = useState<ChatMode>("chat");
-  const [aiPreference, setAiPreference] = useState<AiPreference>("auto");
+  const [aiPreference, setAiPreference] = useState<AiPreference>(modelFromUrl);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const sendChat  = useSendChat();
@@ -313,7 +316,7 @@ export default function Home() {
               const active = aiPreference === p.id;
               return (
                 <button key={p.id} data-testid={`button-provider-${p.id}`} onClick={() => setAiPreference(p.id)} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 99, fontSize: 11, fontWeight: 700, color: active ? "white" : "rgba(255,255,255,0.4)", background: active ? `linear-gradient(135deg,${p.color}33,${p.color}18)` : "rgba(255,255,255,0.04)", border: active ? `1px solid ${p.color}55` : "1px solid rgba(255,255,255,0.07)", boxShadow: active ? `0 0 14px ${p.glow}` : "none", cursor: "pointer" }}>
-                  <span style={{ fontSize: 12 }}>{p.emoji}</span>
+                  <ModelLogo id={p.id} size={13} />
                   {p.label}
                   {active && <span style={{ width: 5, height: 5, borderRadius: "50%", background: p.color, boxShadow: `0 0 8px ${p.glow}` }} />}
                 </button>

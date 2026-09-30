@@ -23,6 +23,9 @@ const TABS: { name: string; title: string; icon: TabIconName }[] = [
 /** Floating Midnight Glass tab bar (same on iOS, Android and web). */
 function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  // The Engine screens live under Games; AI Models opens from Home
+  const current = state.routes[state.index]?.name;
+  const activeName = current === "engine" || current === "engine-project" ? "games" : current === "models" ? "index" : current;
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { paddingBottom: 16 + (Platform.OS === "web" ? 0 : insets.bottom) }]}>
       <Glass radius={32} intensity={50} style={styles.bar}>
@@ -30,7 +33,7 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
           const i = state.routes.findIndex((r) => r.name === tab.name);
           if (i < 0) return null;
           const route = state.routes[i];
-          const active = state.index === i;
+          const active = tab.name === activeName;
           return (
             <Pressable
               key={route.key}
@@ -39,7 +42,7 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
               accessibilityState={{ selected: active }}
               onPress={() => {
                 const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
-                if (!active && !event.defaultPrevented) {
+                if (current !== route.name && !event.defaultPrevented) {
                   if (Platform.OS !== "web") Haptics.selectionAsync();
                   navigation.navigate(route.name);
                 }
@@ -68,6 +71,9 @@ export default function TabLayout() {
       ))}
       <Tabs.Screen name="orb" options={{ title: "Apex Orb", href: null }} />
       <Tabs.Screen name="settings" options={{ title: "Settings", href: null }} />
+      <Tabs.Screen name="engine" options={{ title: "Apex Engine", href: null }} />
+      <Tabs.Screen name="engine-project" options={{ title: "Game", href: null }} />
+      <Tabs.Screen name="models" options={{ title: "AI Models", href: null }} />
     </Tabs>
     </View>
   );

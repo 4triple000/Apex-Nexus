@@ -3,7 +3,7 @@
  */
 import { z } from "zod";
 
-export const AiProvider = z.enum(["openai", "claude", "perplexity"]);
+export const AiProvider = z.enum(["openai", "claude", "perplexity", "gemini", "grok", "deepseek", "mistral", "llama"]);
 export type AiProvider = z.infer<typeof AiProvider>;
 
 // ── Health ────────────────────────────────────────────────────────────────────

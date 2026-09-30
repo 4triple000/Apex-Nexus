@@ -3,14 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles, Star, Clock, ScanText } from "lucide-react";
 import { RiOpenaiFill } from "react-icons/ri";
-import { SiClaude, SiPerplexity } from "react-icons/si";
+import { SiClaude, SiPerplexity, SiGooglegemini, SiX, SiDeepseek, SiMistralai, SiMeta } from "react-icons/si";
 import { ApexLogo } from "@/components/ui/ApexLogo";
 import { usePromptLibrary } from "@/lib/promptLibrary";
 import { useDailyUsage } from "@/hooks/useDailyUsage";
 
 // ── Models ─────────────────────────────────────────────────────────────────────
 
-export type ModelId = "auto" | "openai" | "claude" | "perplexity";
+export type ModelId = "auto" | "openai" | "claude" | "perplexity" | "gemini" | "grok" | "deepseek" | "mistral" | "llama";
 export type ChatMode = "chat" | "battle" | "hive";
 
 type Model = {
@@ -32,6 +32,11 @@ export const MODELS: Model[] = [
   { id: "openai",     name: "ChatGPT",    maker: "OpenAI",     tagline: "Fast, all-round everyday answers",        color: "#10A37F", aliases: ["gpt", "chatgpt", "openai", "chat gpt"],   Logo: RiOpenaiFill },
   { id: "claude",     name: "Claude",     maker: "Anthropic",  tagline: "Deep reasoning, writing and code",        color: "#D97757", aliases: ["claude", "anthropic", "opus", "sonnet"], Logo: SiClaude },
   { id: "perplexity", name: "Perplexity", maker: "Perplexity", tagline: "Live web research with sources",          color: "#20B8CD", aliases: ["perplexity", "sonar", "search", "web"],  Logo: SiPerplexity },
+  { id: "gemini",     name: "Gemini",     maker: "Google",     tagline: "Huge context: reads long docs, images and video", color: "#4E86F7", aliases: ["gemini", "google", "bard"], Logo: SiGooglegemini },
+  { id: "grok",       name: "Grok",       maker: "xAI",        tagline: "Bold, witty answers with a real-time feel", color: "#E7E7E7", aliases: ["grok", "xai", "x", "elon"], Logo: SiX },
+  { id: "deepseek",   name: "DeepSeek",   maker: "DeepSeek",   tagline: "Strong reasoning and code at a low cost",   color: "#4D6BFE", aliases: ["deepseek", "deep seek", "r1"], Logo: SiDeepseek },
+  { id: "mistral",    name: "Mistral",    maker: "Mistral AI", tagline: "Fast and great in many languages",          color: "#FF7000", aliases: ["mistral", "le chat"], Logo: SiMistralai },
+  { id: "llama",      name: "Llama",      maker: "Meta · via Groq", tagline: "Open model with lightning-fast replies", color: "#0866FF", aliases: ["llama", "meta", "groq"], Logo: SiMeta },
 ];
 
 export function modelById(id: ModelId): Model {
@@ -51,14 +56,14 @@ export function useProviderStatus(): Partial<Record<ModelId, boolean>> | undefin
     queryFn: async () => {
       const res = await fetch(`${base}/api/chat/providers`);
       if (!res.ok) throw new Error("status check failed");
-      return (await res.json()) as { providers: Record<"openai" | "claude" | "perplexity", boolean> };
+      return (await res.json()) as { providers: Partial<Record<Exclude<ModelId, "auto">, boolean>> };
     },
     staleTime: 60_000,
     retry: 1,
   });
   if (!data) return undefined;
   const p = data.providers;
-  return { ...p, auto: p.openai || p.claude || p.perplexity };
+  return { ...p, auto: Object.values(p).some(Boolean) };
 }
 
 // ── Greeting header ────────────────────────────────────────────────────────────
@@ -346,6 +351,10 @@ export function ModelCarousel({
   const trackRef = useRef<HTMLDivElement>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const index = Math.max(0, MODELS.findIndex((m) => m.id === value));
+  // The dot follows the card under your finger while swiping, before the model is picked
+  const [live, setLive] = useState(index);
+  useEffect(() => setLive(index), [index]);
+  const [, nav] = useLocation();
 
   // Keep the visible card in sync when the model is picked elsewhere (search, arrows)
   useEffect(() => {
@@ -357,6 +366,8 @@ export function ModelCarousel({
 
   // A swipe selects the card it settles on
   const onScroll = () => {
+    const t = trackRef.current;
+    if (t) setLive(Math.min(Math.max(Math.round(t.scrollLeft / Math.max(t.clientWidth, 1)), 0), MODELS.length - 1));
     if (settleTimer.current) clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(() => {
       const el = trackRef.current;
@@ -399,9 +410,12 @@ export function ModelCarousel({
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 6 }} aria-hidden>
         {MODELS.map((m, i) => (
-          <span key={m.id} style={{ height: 6, width: i === index ? 20 : 6, borderRadius: 3, background: "var(--mg-ink)", opacity: i === index ? 0.9 : 0.28, transition: "width 0.3s, opacity 0.3s" }} />
+          <span key={m.id} style={{ height: 6, width: i === live ? 20 : 6, borderRadius: 3, background: "var(--mg-ink)", opacity: i === live ? 0.9 : 0.28, transition: "width 0.3s, opacity 0.3s" }} />
         ))}
       </div>
+      <button onClick={() => nav("/models")} className="mg-focus" style={{ alignSelf: "center", background: "none", border: 0, color: "var(--mg-violet)", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 4 }}>
+        See all AI models: images, voices, video, 3D →
+      </button>
     </div>
   );
 }
@@ -412,17 +426,24 @@ export function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Pa
   const [, nav] = useLocation();
   const models = MODELS.filter((m) => m.id !== "auto");
   const connected = status ? models.filter((m) => status[m.id]).length : undefined;
+  // Connected models first; five logos fit on a phone, the rest show as "+N"
+  const shown = [...models].sort((a, b) => Number(!!status?.[b.id]) - Number(!!status?.[a.id])).slice(0, 5);
   const copy = mode === "battle"
     ? { title: "Battle", body: "Every connected model answers the same message. Compare them side by side and vote for the best.", accent: "#FF6B6B" }
     : { title: "Hive", body: "Every connected model answers, then Apex blends the best parts into one answer.", accent: "#8B7BFF" };
   return (
     <div className="mg-glass" style={{ borderRadius: 30, padding: 22, minHeight: 236, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 16, background: `radial-gradient(120% 90% at 50% 0%, ${copy.accent}38 0%, transparent 62%), linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))` }}>
       <div style={{ display: "flex", justifyContent: "center", paddingTop: 6 }}>
-        {models.map((m, i) => (
+        {shown.map((m, i) => (
           <span key={m.id} style={{ width: 64, height: 64, borderRadius: 22, display: "grid", placeItems: "center", marginLeft: i ? -12 : 0, background: "rgba(24,20,48,0.85)", border: "1px solid rgba(255,255,255,0.2)", boxShadow: `0 10px 26px ${m.color}44`, opacity: status && !status[m.id] ? 0.45 : 1 }}>
             <m.Logo size={32} color={m.id === "openai" ? "#FFFFFF" : m.color} />
           </span>
         ))}
+        {models.length > shown.length && (
+          <span style={{ width: 64, height: 64, borderRadius: 22, display: "grid", placeItems: "center", marginLeft: -12, background: "rgba(24,20,48,0.85)", border: "1px solid rgba(255,255,255,0.2)", fontWeight: 700, fontSize: 15, color: "var(--mg-ink-2)" }}>
+            +{models.length - shown.length}
+          </span>
+        )}
       </div>
       <div style={{ display: "grid", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>

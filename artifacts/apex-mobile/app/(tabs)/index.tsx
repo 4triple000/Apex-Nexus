@@ -49,6 +49,11 @@ const MODELS: { id: ModelId; name: string; maker: string; tagline: string; alias
   { id: "openai",     name: "ChatGPT",    maker: "OpenAI",     tagline: "Fast, all-round everyday answers",      aliases: ["gpt", "chatgpt", "openai"] },
   { id: "claude",     name: "Claude",     maker: "Anthropic",  tagline: "Deep reasoning, writing and code",      aliases: ["claude", "anthropic", "opus", "sonnet"] },
   { id: "perplexity", name: "Perplexity", maker: "Perplexity", tagline: "Live web research with sources",        aliases: ["perplexity", "sonar", "search", "web"] },
+  { id: "gemini",     name: "Gemini",     maker: "Google",     tagline: "Huge context: reads long docs, images and video", aliases: ["gemini", "google", "bard"] },
+  { id: "grok",       name: "Grok",       maker: "xAI",        tagline: "Bold, witty answers with a real-time feel", aliases: ["grok", "xai", "x"] },
+  { id: "deepseek",   name: "DeepSeek",   maker: "DeepSeek",   tagline: "Strong reasoning and code at a low cost",   aliases: ["deepseek", "deep seek", "r1"] },
+  { id: "mistral",    name: "Mistral",    maker: "Mistral AI", tagline: "Fast and great in many languages",          aliases: ["mistral", "le chat"] },
+  { id: "llama",      name: "Llama",      maker: "Meta · via Groq", tagline: "Open model with lightning-fast replies", aliases: ["llama", "meta", "groq"] },
 ];
 
 const MODES: { id: ChatMode; label: string; sub: string }[] = [
@@ -234,15 +239,32 @@ function ModelCarousel({
 }) {
   const listRef = useRef<FlatList<(typeof MODELS)[number]>>(null);
   const index = Math.max(0, MODELS.findIndex((m) => m.id === value));
+  // The dot follows the card under your finger while swiping, before the model is picked
+  const [live, setLive] = useState(index);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   useEffect(() => {
+    setLive(index);
     listRef.current?.scrollToOffset({ offset: index * width, animated: true });
   }, [index, width]);
 
-  const onSettle = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = Math.round(e.nativeEvent.contentOffset.x / width);
-    const m = MODELS[Math.min(Math.max(i, 0), MODELS.length - 1)];
-    if (m.id !== value) { tap(); onChange(m.id); }
+  useEffect(() => () => clearTimeout(settleTimer.current), []);
+
+  const pick = (x: number) => {
+    const i = Math.min(Math.max(Math.round(x / width), 0), MODELS.length - 1);
+    const m = MODELS[i];
+    if (m.id !== valueRef.current) { tap(); onChange(m.id); }
+  };
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = e.nativeEvent.contentOffset.x;
+    setLive(Math.min(Math.max(Math.round(x / width), 0), MODELS.length - 1));
+    // Browsers finish the snap after the finger lifts and send no "done" event,
+    // so pick the model once scrolling has been still for a moment
+    clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => pick(x), 140);
   };
 
   const go = (d: number) => onChange(MODELS[(index + d + MODELS.length) % MODELS.length].id);
@@ -257,9 +279,9 @@ function ModelCarousel({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={onSettle}
-          // Web has no momentum events; settle on scroll end instead
-          onScrollEndDrag={Platform.OS === "web" ? onSettle : undefined}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          onMomentumScrollEnd={(e) => { clearTimeout(settleTimer.current); pick(e.nativeEvent.contentOffset.x); }}
           getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
           initialScrollIndex={index}
           renderItem={({ item }) => (
@@ -293,7 +315,7 @@ function ModelCarousel({
       </Glass>
       <View style={s.dots}>
         {MODELS.map((m, i) => (
-          <View key={m.id} style={[s.dot, i === index && s.dotOn]} />
+          <View key={m.id} style={[s.dot, i === live && s.dotOn]} />
         ))}
       </View>
     </View>
@@ -301,8 +323,10 @@ function ModelCarousel({
 }
 
 function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Partial<Record<ModelId, boolean>> | undefined }) {
-  const models: ModelId[] = ["openai", "claude", "perplexity"];
+  const models = MODELS.map((m) => m.id).filter((id) => id !== "auto");
   const connected = status ? models.filter((m) => status[m]).length : undefined;
+  // Connected models first; five logos fit, the rest show as "+N"
+  const shown = [...models].sort((a, b) => Number(!!status?.[b]) - Number(!!status?.[a])).slice(0, 5);
   const body = mode === "battle"
     ? "Every connected model answers the same message, so you can compare them side by side."
     : "Every connected model answers, then Apex blends the best parts into one answer.";
@@ -316,15 +340,18 @@ function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Partial<R
         style={StyleSheet.absoluteFill}
       />
       <View style={s.logoStack}>
-        {models.map((m, i) => (
+        {shown.map((m, i) => (
           <View key={m} style={[s.stackTile, { marginLeft: i ? -12 : 0, opacity: status && !status[m] ? 0.45 : 1 }]}>
             <ModelLogo id={m} size={30} />
           </View>
         ))}
+        {models.length > shown.length ? (
+          <View style={[s.stackTile, { marginLeft: -12 }]}><Text style={s.connectedCount}>+{models.length - shown.length}</Text></View>
+        ) : null}
       </View>
       <View style={s.slideRow}>
         <Text style={s.slideTitle}>{mode === "battle" ? "Battle" : "Hive"}</Text>
-        {connected !== undefined ? <Text style={s.connectedCount}>{connected} of 3 connected</Text> : null}
+        {connected !== undefined ? <Text style={s.connectedCount}>{connected} of {models.length} connected</Text> : null}
       </View>
       <Text style={s.slideSub}>{body}</Text>
     </Glass>
@@ -352,7 +379,7 @@ export default function HomeScreen() {
 
   const { data: providers } = useQuery({ queryKey: ["providers"], queryFn: chatApi.providers, staleTime: 60_000, retry: 1 });
   const status = providers
-    ? { ...providers, auto: providers.openai || providers.claude || providers.perplexity }
+    ? { ...providers, auto: Object.values(providers).some(Boolean) }
     : undefined;
 
   const push = (m: Omit<ChatMessageData, "id">) =>
@@ -406,7 +433,9 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // Follow new chat messages; the home screen itself opens at the top
   useEffect(() => {
+    if (messages.length === 0) return;
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
   }, [messages.length, sending]);
 
@@ -458,6 +487,9 @@ export default function HomeScreen() {
               {mode === "chat"
                 ? <ModelCarousel value={model} onChange={setModel} status={status} width={cardWidth} />
                 : <View style={{ width: cardWidth }}><ModeCard mode={mode} status={status} /></View>}
+              <Pressable accessibilityRole="link" onPress={() => router.navigate("/(tabs)/models")} style={{ padding: 4 }}>
+                <Text style={s.allModels}>See all AI models: images, voices, video, 3D →</Text>
+              </Pressable>
             </View>
           ) : (
             <View style={{ gap: 4 }}>
@@ -519,8 +551,9 @@ const s = StyleSheet.create({
   chipTextOn: { color: "#120F2A" },
 
   slide: { minHeight: 236, padding: 22, justifyContent: "flex-end", gap: 6 },
+  // In the normal flow so a long name or tagline on a small phone pushes it up instead of overlapping
   logoTile: {
-    position: "absolute", top: 26, left: "50%", marginLeft: -46,
+    alignSelf: "center", marginBottom: 12,
     width: 92, height: 92, borderRadius: 28, alignItems: "center", justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.1)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
     shadowOpacity: 0.6, shadowRadius: 24, shadowOffset: { width: 0, height: 12 },
@@ -535,6 +568,7 @@ const s = StyleSheet.create({
   arrow: { position: "absolute", top: "42%" },
   arrowInner: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
   dots: { flexDirection: "row", justifyContent: "center", gap: 6 },
+  allModels: { color: MG.violet, fontSize: 13, fontFamily: MGFont.bold, textAlign: "center" },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: MG.ink, opacity: 0.28 },
   dotOn: { width: 20, opacity: 0.9 },
 

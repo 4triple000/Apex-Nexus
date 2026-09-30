@@ -17,6 +17,69 @@ export function setAuthSession(sessionId: string | null): void {
   authSessionId = sessionId;
 }
 
+// ── AI model directory ────────────────────────────────────────────────────────
+export type ModelCategory = "chat" | "game" | "image" | "audio" | "video" | "editing";
+export interface CatalogModel {
+  id: string; name: string; maker: string; category: ModelCategory; tagline: string;
+  bestFor: string[]; color: string; chat?: boolean; connected: boolean;
+}
+export const modelsApi = {
+  list: () => apexFetch<{ categories: Record<ModelCategory, string>; models: CatalogModel[] }>("/models"),
+};
+
+// ── Apex Engine projects (plan on the phone, build on the computer) ─────────
+export type EngineTarget = "apex" | "mobile" | "pc";
+export type EngineKind = "apex" | "unity" | "unreal";
+export type EngineTemplate = "fps" | "topdown" | "platformer" | "sports" | "openworld" | "survival";
+export type CameraStyle = "First person" | "Third person" | "Top-down" | "Side view";
+
+export interface GamePlan {
+  pitch: string;
+  genre: string;
+  camera: CameraStyle;
+  platforms: string[];
+  coreLoop: string;
+  controls: string[];
+  mechanics: string[];
+  levels: { name: string; goal: string }[];
+  characters: { name: string; role: string; voiceId?: string; voiceName?: string }[];
+  artStyle: string;
+  audio: string;
+  checklist: { id: string; label: string; done: boolean }[];
+}
+
+export interface GameProject {
+  id: number;
+  title: string;
+  target: EngineTarget;
+  engine: EngineKind;
+  template: EngineTemplate | null;
+  prompt: string | null;
+  plan: GamePlan | null;
+  updatedAt: string;
+}
+
+export interface ProjectSummary {
+  id: number;
+  title: string;
+  target: EngineTarget;
+  engine: EngineKind;
+  progress: { done: number; total: number };
+  updatedAt: string;
+}
+
+export const engineApi = {
+  list: () => apexFetch<{ projects: ProjectSummary[] }>("/engine/projects").then((d) => d.projects),
+  get: (id: number) => apexFetch<{ project: GameProject; aiConnected: boolean }>(`/engine/projects/${id}`),
+  create: (body: { prompt?: string; target: EngineTarget; engine?: EngineKind; template?: EngineTemplate }) =>
+    apexFetch<{ project: GameProject; aiPlan: boolean }>("/engine/projects", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: number, body: Partial<Pick<GameProject, "title" | "target" | "engine" | "plan">>) =>
+    apexFetch<{ project: GameProject }>(`/engine/projects/${id}`, { method: "PATCH", body: JSON.stringify(body) }).then((d) => d.project),
+  remove: (id: number) => apexFetch<{ deleted: boolean }>(`/engine/projects/${id}`, { method: "DELETE" }),
+  askPlan: (id: number, message: string) =>
+    apexFetch<{ project: GameProject; reply: string }>(`/engine/projects/${id}/plan`, { method: "POST", body: JSON.stringify({ message }) }),
+};
+
 // ── 7-day streak ──────────────────────────────────────────────────────────────
 export interface StreakState {
   streak: number;
@@ -85,7 +148,7 @@ export const authApi = {
 };
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-export type ProviderId = "auto" | "openai" | "claude" | "perplexity";
+export type ProviderId = "auto" | "openai" | "claude" | "perplexity" | "gemini" | "grok" | "deepseek" | "mistral" | "llama";
 export interface ChatInput { message: string; conversationId?: number; provider?: ProviderId; tone?: string; memory?: boolean }
 export interface ChatResponse { content: string; conversationId: number; provider?: string }
 
@@ -117,10 +180,10 @@ export const chatApi = {
   },
 
   /** Which models have keys on the server. */
-  providers: async (): Promise<Record<Exclude<ProviderId, "auto">, boolean>> => {
+  providers: async (): Promise<Partial<Record<Exclude<ProviderId, "auto">, boolean>>> => {
     const res = await fetch(`${getBaseUrl()}/api/chat/providers`);
     if (!res.ok) throw new Error(`Server error (${res.status})`);
-    return ((await res.json()) as { providers: Record<Exclude<ProviderId, "auto">, boolean> }).providers;
+    return ((await res.json()) as { providers: Partial<Record<Exclude<ProviderId, "auto">, boolean>> }).providers;
   },
 };
 
