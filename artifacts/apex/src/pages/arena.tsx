@@ -36,7 +36,7 @@ interface RoundResult {
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const FIGHTERS: { id: Provider; name: string; color: string; glow: string; icon: string }[] = [
-  { id: "openai",     name: "GPT-4",      color: "#10A37F", glow: "rgba(16,163,127,0.40)",  icon: "✦" },
+  { id: "openai",     name: "ChatGPT",      color: "#10A37F", glow: "rgba(16,163,127,0.40)",  icon: "✦" },
   { id: "claude",     name: "Claude",     color: "#D97757", glow: "rgba(217,119,87,0.40)",  icon: "◆" },
   { id: "perplexity", name: "Perplexity", color: "#228BE6", glow: "rgba(34,139,230,0.40)",  icon: "◎" },
 ];

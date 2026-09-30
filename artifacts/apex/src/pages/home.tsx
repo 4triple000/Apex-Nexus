@@ -57,8 +57,8 @@ type AiPreference = "auto" | "openai" | "claude" | "perplexity";
 // ── Provider config ─────────────────────────────────────────────────────────────
 const PROVIDERS: { id: AiPreference; label: string; emoji: string; color: string; glow: string }[] = [
   { id: "auto",       label: "Auto-Route", emoji: "⚡", color: "#A29BFE", glow: "rgba(162,155,254,0.35)" },
-  { id: "openai",     label: "GPT-4",      emoji: "✦",  color: "#10A37F", glow: "rgba(16,163,127,0.35)"  },
-  { id: "claude",     label: "Claude 3",   emoji: "◆",  color: "#D97757", glow: "rgba(217,119,87,0.35)"  },
+  { id: "openai",     label: "ChatGPT",      emoji: "✦",  color: "#10A37F", glow: "rgba(16,163,127,0.35)"  },
+  { id: "claude",     label: "Claude",   emoji: "◆",  color: "#D97757", glow: "rgba(217,119,87,0.35)"  },
   { id: "perplexity", label: "Perplexity", emoji: "◎",  color: "#228BE6", glow: "rgba(34,139,230,0.35)"  },
 ];
 

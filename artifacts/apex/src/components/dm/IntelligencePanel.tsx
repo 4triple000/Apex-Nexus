@@ -1,11 +1,12 @@
 import { useState } from "react";
 import type { DmMessage } from "../../hooks/useDM";
+import { authHeaders } from "@/lib/authSession";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 async function analyzeConversation(conversationId: number) {
-  const res = await fetch(`${BASE}api/dm/conversations/${conversationId}/intelligence`, {
+  const res = await fetch(`${BASE}/api/dm/conversations/${conversationId}/intelligence`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
   });
   return res.json() as Promise<IntelligenceResult>;
 }

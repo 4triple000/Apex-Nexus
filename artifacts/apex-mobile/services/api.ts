@@ -17,6 +17,16 @@ export function setAuthSession(sessionId: string | null): void {
   authSessionId = sessionId;
 }
 
+// ── Prompt library sync ───────────────────────────────────────────────────────
+export interface SyncedPrompt { text: string; kind: "chat" | "build"; at: number }
+
+export const promptsApi = {
+  get: () => apexFetch<{ history: SyncedPrompt[]; saved: SyncedPrompt[] }>("/prompts"),
+  put: (history: SyncedPrompt[], saved: SyncedPrompt[]) =>
+    apexFetch<{ saved: boolean }>("/prompts", { method: "PUT", body: JSON.stringify({ history, saved }) }),
+  signedIn: () => !!authSessionId,
+};
+
 async function apexFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getBaseUrl()}/api${path}`;
   const res = await fetch(url, {
@@ -114,7 +124,9 @@ export interface DmConversation {
 
 export const messagesApi = {
   conversations: async (): Promise<DmConversation[]> => {
-    const res = await fetch(`${getBaseUrl()}/api/dm/conversations`);
+    const res = await fetch(`${getBaseUrl()}/api/dm/conversations`, {
+      headers: authSessionId ? { "x-apex-auth": authSessionId } : {},
+    });
     if (!res.ok) throw new Error(`Server error (${res.status})`);
     return ((await res.json()) as { conversations: DmConversation[] }).conversations ?? [];
   },
@@ -164,6 +176,7 @@ export interface StudioBuild {
   projectId: number;
   plan: { project_name: string; description?: string };
   files: { path: string }[];
+  previewHtml: string;
   summary: string;
 }
 
@@ -177,8 +190,14 @@ async function studioFetch<T>(path: string, init?: RequestInit): Promise<T> {
 export const studioApi = {
   generate: (prompt: string, sessionId: string) =>
     studioFetch<StudioBuild>("/studio/ai/generate", { method: "POST", body: JSON.stringify({ prompt, sessionId }) }),
-  edit: (projectId: number, request: string) =>
-    studioFetch<{ summary: string; changedFiles: string[] }>("/studio/ai/edit", { method: "POST", body: JSON.stringify({ projectId, request }) }),
+  edit: (projectId: number, request: string, sessionId: string) =>
+    studioFetch<{ summary: string; changedFiles: string[]; previewHtml: string }>("/studio/ai/edit", { method: "POST", body: JSON.stringify({ projectId, request, sessionId }) }),
+  project: async (id: number, sessionId: string): Promise<StudioBuild> => {
+    const { project } = await studioFetch<{ project: { id: number; title: string; plan: StudioBuild["plan"] | null; files: { path: string }[]; previewHtml: string | null } }>(
+      `/studio/ai/projects/${id}?sessionId=${encodeURIComponent(sessionId)}`,
+    );
+    return { projectId: project.id, plan: project.plan ?? { project_name: project.title }, files: project.files ?? [], previewHtml: project.previewHtml ?? "", summary: "" };
+  },
   projects: (sessionId: string) =>
     studioFetch<{ projects: StudioProject[] }>(`/studio/ai/projects?sessionId=${encodeURIComponent(sessionId)}`).then((d) => d.projects),
 };

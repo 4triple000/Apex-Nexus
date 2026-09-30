@@ -27,6 +27,15 @@ import { logger } from "../../lib/logger";
 
 const router: IRouter = Router();
 
+
+/** True when the project exists and was made by this session. */
+async function ownsProject(sessionId: unknown, projectId: number): Promise<boolean> {
+  if (typeof sessionId !== "string" || !sessionId) return false;
+  const [row] = await db.select({ id: aiStudioProjectsTable.id }).from(aiStudioProjectsTable)
+    .where(and(eq(aiStudioProjectsTable.id, projectId), eq(aiStudioProjectsTable.sessionId, sessionId))).limit(1);
+  return !!row;
+}
+
 // ── POST /studio/ai/generate ───────────────────────────────────────────────────
 router.post("/studio/ai/generate", async (req, res): Promise<void> => {
   if (!isOpenAIConfigured()) {
@@ -113,6 +122,7 @@ router.post("/studio/ai/edit", async (req, res): Promise<void> => {
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body"); return; }
+  if (!(await ownsProject(req.body?.sessionId, parsed.data.projectId))) { notFound(res, "Project not found"); return; }
 
   const { projectId, request } = parsed.data;
   const startMs = Date.now();
@@ -198,6 +208,7 @@ router.post("/studio/ai/save", async (req, res): Promise<void> => {
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body"); return; }
+  if (!(await ownsProject(req.body?.sessionId, parsed.data.projectId))) { notFound(res, "Project not found"); return; }
 
   try {
     await db
@@ -224,6 +235,7 @@ router.post("/studio/ai/workflow/run", async (req, res): Promise<void> => {
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body"); return; }
+  if (!(await ownsProject(req.body?.sessionId, parsed.data.projectId))) { notFound(res, "Project not found"); return; }
 
   const { projectId, workflowId } = parsed.data;
 
@@ -277,6 +289,7 @@ router.post("/studio/ai/autopilot/scan", async (req, res): Promise<void> => {
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body"); return; }
+  if (!(await ownsProject(req.body?.sessionId, parsed.data.projectId))) { notFound(res, "Project not found"); return; }
 
   try {
     const [project] = await db
@@ -320,6 +333,7 @@ router.post("/studio/ai/autopilot/fix", async (req, res): Promise<void> => {
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body"); return; }
+  if (!(await ownsProject(req.body?.sessionId, parsed.data.projectId))) { notFound(res, "Project not found"); return; }
 
   const { projectId, issue } = parsed.data;
 

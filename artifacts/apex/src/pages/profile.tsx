@@ -29,6 +29,7 @@ import { usePrivacy } from "@/contexts/PrivacyContext";
 import { CharacterPanel } from "@/components/character/CharacterPanel";
 import { MemoryManager } from "@/components/character/MemoryManager";
 import { CharacterSwitcher } from "@/components/character/CharacterSwitcher";
+import { useStreak } from "@/hooks/useStreak";
 
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -576,6 +577,7 @@ function MeDashboard({
   }
 
   const reputation = stats.reputation ?? 0;
+  const { streak } = useStreak();
   const tier        = getTier(reputation);
   const xpProgress  = getXpProgress(reputation);
   const nextTier    = TIERS[Math.min(TIERS.indexOf(tier) + 1, TIERS.length - 1)];
@@ -799,10 +801,10 @@ function MeDashboard({
         <SectionHeader icon={<TrendingUp size={14} />} label="Your Stats" sub="Activity overview" />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[
-            { icon: "💬", label: "Conversations", value: Math.max(stats.totalPlays ?? 0, 12), color: "#A29BFE",  suffix: "" },
+            { icon: "🎮", label: "Game Plays",    value: stats.totalPlays ?? 0,                 color: "#A29BFE",  suffix: "" },
             { icon: "⭐", label: "Reputation",    value: reputation,                            color: "#A29BFE", suffix: " pts" },
             { icon: "❤️", label: "Likes",          value: stats.totalLikes ?? 0,                color: "#EC4899", suffix: "" },
-            { icon: "🔥", label: "Day Streak",     value: 7,                                     color: "#F59E0B", suffix: " days" },
+            { icon: "🔥", label: "Day Streak",     value: streak,                                color: "#F59E0B", suffix: streak === 1 ? " day" : " days" },
           ].map(({ icon, label, value, color, suffix }) => (
             <div key={label} style={{
               padding: "14px 16px", borderRadius: 20,

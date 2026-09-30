@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Backdrop, Glass } from "@/components/glass/Glass";
 import { UsagePill } from "@/components/glass/UsagePill";
+import { PreviewFrame } from "@/components/PreviewFrame";
 import { MG, MGFont } from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { recordPrompt, usePromptLibrary } from "@/lib/promptLibrary";
@@ -74,11 +75,24 @@ export default function BuilderScreen() {
     if (!result || !change.trim() || busy) return;
     setBusy(true); setError(null);
     try {
-      const r = await studioApi.edit(result.projectId, change.trim());
+      const r = await studioApi.edit(result.projectId, change.trim(), user!.sessionId);
       setChangeNote(r.summary || `${r.changedFiles.length} files updated`);
+      if (r.previewHtml) setResult((prev) => (prev ? { ...prev, previewHtml: r.previewHtml } : prev));
       setChange("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "That change didn't go through. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openProject = async (id: number) => {
+    if (!user || busy) return;
+    setBusy(true); setError(null); setChangeNote(null);
+    try {
+      setResult(await studioApi.project(id, user.sessionId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't open that project.");
     } finally {
       setBusy(false);
     }
@@ -146,6 +160,7 @@ export default function BuilderScreen() {
               </View>
             </View>
             {result.summary ? <Text style={s.body}>{result.summary}</Text> : null}
+            {result.previewHtml ? <PreviewFrame html={result.previewHtml} /> : null}
             {changeNote ? <Text style={[s.body, { color: "#86EFAC" }]}>✓ {changeNote}</Text> : null}
             <View style={s.changeRow}>
               <TextInput value={change} onChangeText={setChange} placeholder="Ask for a change…" placeholderTextColor={MG.ink3} style={s.changeInput} onSubmitEditing={applyChange} />
@@ -197,13 +212,16 @@ export default function BuilderScreen() {
             </Glass>
           ) : (
             (projects.data ?? []).slice(0, 10).map((p) => (
-              <Glass key={p.id} radius={22} style={s.projRow}>
+              <Pressable key={p.id} onPress={() => openProject(p.id)} accessibilityLabel={`Open ${p.title}`}>
+              <Glass radius={22} style={s.projRow}>
                 <View style={s.projIcon}><Feather name="zap" size={17} color="#C9C2FF" /></View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.projTitle} numberOfLines={1}>{p.title}</Text>
                   <Text style={s.small}>{p.appType ? `${p.appType} · ` : ""}{timeAgo(p.updatedAt)}</Text>
                 </View>
+                <Feather name="chevron-right" size={16} color={MG.ink3} />
               </Glass>
+              </Pressable>
             ))
           )}
         </View>

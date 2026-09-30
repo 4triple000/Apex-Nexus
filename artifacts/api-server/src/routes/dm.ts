@@ -1,11 +1,38 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { db, dmContactsTable, dmConversationsTable, dmMessagesTable, dmAnalyticsTable } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { logger } from "../lib/logger";
+import { requireUser } from "../shared/middleware/requireAuth";
+import type { ApexRequest } from "../shared/types";
 
 const router: IRouter = Router();
+
+// Everything except Meta's webhook and the public status check needs a signed-in
+// user, and every read or write is limited to that user's own inbox.
+router.use("/dm", (req, res, next) => {
+  if (req.path.startsWith("/webhook") || req.path === "/meta/status") return next();
+  return requireUser(req as ApexRequest, res, next);
+});
+
+function me(req: unknown): number {
+  return (req as ApexRequest).userId!;
+}
+
+async function ownsConversation(userId: number, id: number): Promise<boolean> {
+  if (!Number.isFinite(id)) return false;
+  const [row] = await db.select({ id: dmConversationsTable.id }).from(dmConversationsTable)
+    .where(and(eq(dmConversationsTable.id, id), eq(dmConversationsTable.userId, userId))).limit(1);
+  return !!row;
+}
+
+async function ownsContact(userId: number, id: number): Promise<boolean> {
+  if (!Number.isFinite(id)) return false;
+  const [row] = await db.select({ id: dmContactsTable.id }).from(dmContactsTable)
+    .where(and(eq(dmContactsTable.id, id), eq(dmContactsTable.userId, userId))).limit(1);
+  return !!row;
+}
 
 // ─────────────────────────────────────────────────────────────
 // HUMAN VOICE LAYER
@@ -56,8 +83,10 @@ function getSituationContext(situation: string | null | undefined): string {
 // CONTACTS
 // ─────────────────────────────────────────────────────────────
 
-router.get("/dm/contacts", async (_req, res): Promise<void> => {
-  const contacts = await db.select().from(dmContactsTable).orderBy(desc(dmContactsTable.updatedAt));
+router.get("/dm/contacts", async (req, res): Promise<void> => {
+  const contacts = await db.select().from(dmContactsTable)
+    .where(eq(dmContactsTable.userId, me(req)))
+    .orderBy(desc(dmContactsTable.updatedAt));
   res.json({ contacts });
 });
 
@@ -65,17 +94,19 @@ router.get("/dm/contacts", async (_req, res): Promise<void> => {
 // CONVERSATIONS
 // ─────────────────────────────────────────────────────────────
 
-router.get("/dm/conversations", async (_req, res): Promise<void> => {
+router.get("/dm/conversations", async (req, res): Promise<void> => {
   const convos = await db
     .select()
     .from(dmConversationsTable)
     .leftJoin(dmContactsTable, eq(dmConversationsTable.contactId, dmContactsTable.id))
+    .where(eq(dmConversationsTable.userId, me(req)))
     .orderBy(desc(dmConversationsTable.lastMessageAt));
   res.json({ conversations: convos });
 });
 
 router.patch("/dm/conversations/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
+  if (!(await ownsConversation(me(req), id))) { res.status(404).json({ error: "Conversation not found" }); return; }
   const { autoReplyEnabled, personalityMode, customPersonalityPrompt, situationMode } = req.body;
   const [updated] = await db
     .update(dmConversationsTable)
@@ -97,6 +128,7 @@ router.patch("/dm/conversations/:id", async (req, res): Promise<void> => {
 
 router.get("/dm/conversations/:id/messages", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
+  if (!(await ownsConversation(me(req), id))) { res.status(404).json({ error: "Conversation not found" }); return; }
   const messages = await db
     .select()
     .from(dmMessagesTable)
@@ -107,6 +139,7 @@ router.get("/dm/conversations/:id/messages", async (req, res): Promise<void> => 
 
 router.post("/dm/conversations/:id/messages", async (req, res): Promise<void> => {
   const conversationId = Number(req.params.id);
+  if (!(await ownsConversation(me(req), conversationId))) { res.status(404).json({ error: "Conversation not found" }); return; }
   const { content, direction = "outbound", aiGenerated = false } = req.body;
   if (!content) { res.status(400).json({ error: "content required" }); return; }
 
@@ -467,6 +500,7 @@ Output JSON:
 
 router.post("/dm/contacts/:id/analyze", async (req, res): Promise<void> => {
   const contactId = Number(req.params.id);
+  if (!(await ownsContact(me(req), contactId))) { res.status(404).json({ error: "Contact not found" }); return; }
   const messages = await db
     .select()
     .from(dmMessagesTable)
@@ -526,6 +560,7 @@ Output JSON:
 
 router.post("/dm/conversations/:id/intelligence", async (req, res): Promise<void> => {
   const conversationId = Number(req.params.id);
+  if (!(await ownsConversation(me(req), conversationId))) { res.status(404).json({ error: "Conversation not found" }); return; }
   const messages = await db
     .select()
     .from(dmMessagesTable)
@@ -610,12 +645,16 @@ ONLY output valid JSON.`,
 // ANALYTICS
 // ─────────────────────────────────────────────────────────────
 
-router.get("/dm/analytics", async (_req, res): Promise<void> => {
-  const [contacts, conversations, messages] = await Promise.all([
-    db.select().from(dmContactsTable),
-    db.select().from(dmConversationsTable),
-    db.select().from(dmMessagesTable).orderBy(desc(dmMessagesTable.sentAt)).limit(500),
+router.get("/dm/analytics", async (req, res): Promise<void> => {
+  const userId = me(req);
+  const [contacts, conversations] = await Promise.all([
+    db.select().from(dmContactsTable).where(eq(dmContactsTable.userId, userId)),
+    db.select().from(dmConversationsTable).where(eq(dmConversationsTable.userId, userId)),
   ]);
+  const convIds = conversations.map((c) => c.id);
+  const messages = convIds.length
+    ? await db.select().from(dmMessagesTable).where(inArray(dmMessagesTable.conversationId, convIds)).orderBy(desc(dmMessagesTable.sentAt)).limit(500)
+    : [];
 
   const totalMessages = messages.length;
   const outbound = messages.filter((m) => m.direction === "outbound").length;
@@ -641,7 +680,8 @@ router.get("/dm/analytics", async (_req, res): Promise<void> => {
 // SEED DEMO DATA
 // ─────────────────────────────────────────────────────────────
 
-router.post("/dm/seed-demo", async (_req, res): Promise<void> => {
+router.post("/dm/seed-demo", async (req, res): Promise<void> => {
+  const userId = me(req);
   const demoContacts = [
     { username: "ashley", displayName: "Ashley K.", platform: "demo", bio: "Coffee lover ☕ | Traveler | Foodie", responseSpeed: "medium", personaTraits: { humor: 7, flirtiness: 6, responsiveness: 7, tone: "playful", notes: "Loves humor, responds better to playful tone" } },
     { username: "jordan", displayName: "Jordan M.", platform: "demo", bio: "Gym | Music | Good Vibes Only", responseSpeed: "fast", personaTraits: { humor: 5, flirtiness: 4, responsiveness: 8, tone: "warm", notes: "Responds quickly, likes direct conversation" } },
@@ -649,11 +689,13 @@ router.post("/dm/seed-demo", async (_req, res): Promise<void> => {
   ];
 
   for (const contactData of demoContacts) {
-    const existing = await db.select().from(dmContactsTable).where(eq(dmContactsTable.username, contactData.username)).limit(1);
+    const existing = await db.select().from(dmContactsTable)
+      .where(and(eq(dmContactsTable.username, contactData.username), eq(dmContactsTable.userId, userId))).limit(1);
     if (existing.length > 0) continue;
 
-    const [contact] = await db.insert(dmContactsTable).values(contactData).returning();
+    const [contact] = await db.insert(dmContactsTable).values({ ...contactData, userId }).returning();
     const [conv] = await db.insert(dmConversationsTable).values({
+      userId,
       contactId: contact.id,
       platform: "demo",
       personalityMode: "smooth",

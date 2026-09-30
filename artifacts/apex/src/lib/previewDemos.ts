@@ -32,7 +32,7 @@ const BATTLE_DEMO: DemoSequence = {
   messages: [
     {
       actor: "system", ms: 0, emoji: "⚔️",
-      text:  "Logic Battle starting — GPT-4 vs Claude",
+      text:  "Logic Battle starting — ChatGPT vs Claude",
       badge: "ROUND 1",
     },
     {
@@ -46,7 +46,7 @@ const BATTLE_DEMO: DemoSequence = {
     {
       actor: "system", ms: 3000, emoji: "🔥",
       text:  "Round 1 scored — Claude wins with depth",
-      badge: "Claude 91 · GPT-4 86",
+      badge: "Claude 91 · ChatGPT 86",
     },
     {
       actor: "gpt4", ms: 3800,
@@ -88,7 +88,7 @@ const WORKFLOWS_DEMO: DemoSequence = {
     },
     {
       actor: "step", ms: 1500, emoji: "✍️",
-      text:  "Step 2 · GPT-4 — converting transcript to blog post (1,200 words)",
+      text:  "Step 2 · ChatGPT — converting transcript to blog post (1,200 words)",
       badge: "4.7s",
     },
     {
@@ -142,7 +142,7 @@ const AVATAR_VOICE_DEMO: DemoSequence = {
     },
     {
       actor: "ai", ms: 4800,
-      text:  "I remember your project on GPT-4 vs Claude benchmarks from last week. Should I continue from there or start fresh?",
+      text:  "I remember your project on ChatGPT vs Claude benchmarks from last week. Should I continue from there or start fresh?",
     },
     {
       actor: "system", ms: 6000, emoji: "✨",

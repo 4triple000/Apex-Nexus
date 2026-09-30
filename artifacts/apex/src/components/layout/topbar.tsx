@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Search, Bell, ChevronDown } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+
+function planLabel(tier?: string, isOwner?: boolean) {
+  if (isOwner) return "Owner";
+  if (!tier || tier === "free") return "Free plan";
+  return `${tier[0].toUpperCase()}${tier.slice(1).replace(/_/g, " ")} plan`;
+}
 
 export function TopBar() {
+  const { user } = useAuth();
   const [, nav] = useLocation();
   const [query, setQuery] = useState("");
 
@@ -74,12 +82,12 @@ export function TopBar() {
               className="w-full h-full rounded-full flex items-center justify-center text-xs font-bold"
               style={{ background: "rgba(30,26,62,0.62)", color: "#A78BFA" }}
             >
-              A
+              {(user?.username?.trim()[0] ?? "A").toUpperCase()}
             </div>
           </div>
           <div className="flex flex-col leading-none">
-            <span className="text-sm font-medium text-white">Apex</span>
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>Prime User</span>
+            <span className="text-sm font-medium text-white">{user?.username || "Guest"}</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>{planLabel(user?.subscriptionTier, user?.isOwner)}</span>
           </div>
           <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.4)", marginLeft: 2 }} />
         </div>

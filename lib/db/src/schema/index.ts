@@ -21,6 +21,7 @@ export * from "./usage";
 export * from "./votes";
 export * from "./workflows";
 export * from "./dm";
+export * from "./prompts";
 export * from "./marketplace";
 export * from "./studio";
 export * from "./studio_marketplace";

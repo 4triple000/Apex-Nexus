@@ -170,7 +170,7 @@ export const FEATURES: Record<string, FeatureConfig> = {
     name:         'AI Battle Arena',
     tagline:      'Early Access',
     hype:         'Battle Arena is almost ready',
-    description:  'Pit GPT-4, Claude, and Perplexity against each other in real-time head-to-head battles. Vote on the best response and shape your personal AI rankings.',
+    description:  'Pit ChatGPT, Claude, and Perplexity against each other in real-time head-to-head battles. Vote on the best response and shape your personal AI rankings.',
     icon:         '⚔️',
     gradient:     ['#EF4444', '#DC2626'],
     borderColors: ['#EF4444', '#F97316', '#A855F7'],

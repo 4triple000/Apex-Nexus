@@ -35,7 +35,7 @@ function WorkflowPreview() {
   const steps = [
     { icon: "⚡", label: "Trigger",    color: "#F59E0B", sub: "On new message" },
     { icon: "🔍", label: "Filter",     color: "#228BE6", sub: "Type = question" },
-    { icon: "✦",  label: "GPT-4",      color: "#10A37F", sub: "Generate reply" },
+    { icon: "✦",  label: "ChatGPT",      color: "#10A37F", sub: "Generate reply" },
     { icon: "🎨",  label: "Format",    color: "#A29BFE", sub: "Markdown → HTML" },
     { icon: "📤",  label: "Output",    color: "#FD79A8", sub: "Send to Slack" },
   ];
@@ -270,7 +270,7 @@ function AnalyticsPreview() {
 
 function SocialPreview() {
   const posts = [
-    { user: "nova.ai",    avatar: "🤖", text: "Just hit 91 in the GPT-4 vs Claude debate ⚔️ Battle Mode is insane", likes: 847, time: "2m" },
+    { user: "nova.ai",    avatar: "🤖", text: "Just hit 91 in the ChatGPT vs Claude debate ⚔️ Battle Mode is insane", likes: 847, time: "2m" },
     { user: "apex.dev",   avatar: "⚡", text: "Workflow Engine preview looks incredible. 5 AIs chained in 16s 🔥",  likes: 532, time: "8m" },
     { user: "creator.xo", avatar: "🎨", text: "Published my first AI tool to the Marketplace. Already 40 installs!", likes: 219, time: "15m" },
   ];
@@ -417,7 +417,7 @@ function MemoryPreview() {
   const memories = [
     { text: "Prefers concise, bullet-point answers", type: "Preference", color: "#6C5CE7" },
     { text: "Working on a React + Vite SaaS project",  type: "Project",    color: "#10B981" },
-    { text: "Loves GPT-4 for creative tasks",           type: "Interest",   color: "#F59E0B" },
+    { text: "Loves ChatGPT for creative tasks",           type: "Interest",   color: "#F59E0B" },
     { text: "UK-based, prefers £ pricing",              type: "Context",    color: "#228BE6" },
     { text: "Goal: ship Apex to Product Hunt",          type: "Goal",       color: "#FD79A8" },
   ];
