@@ -49,6 +49,11 @@ const MODELS: { id: ModelId; name: string; maker: string; tagline: string; alias
   { id: "openai",     name: "ChatGPT",    maker: "OpenAI",     tagline: "Fast, all-round everyday answers",      aliases: ["gpt", "chatgpt", "openai"] },
   { id: "claude",     name: "Claude",     maker: "Anthropic",  tagline: "Deep reasoning, writing and code",      aliases: ["claude", "anthropic", "opus", "sonnet"] },
   { id: "perplexity", name: "Perplexity", maker: "Perplexity", tagline: "Live web research with sources",        aliases: ["perplexity", "sonar", "search", "web"] },
+  { id: "gemini",     name: "Gemini",     maker: "Google",     tagline: "Huge context: reads long docs, images and video", aliases: ["gemini", "google", "bard"] },
+  { id: "grok",       name: "Grok",       maker: "xAI",        tagline: "Bold, witty answers with a real-time feel", aliases: ["grok", "xai", "x"] },
+  { id: "deepseek",   name: "DeepSeek",   maker: "DeepSeek",   tagline: "Strong reasoning and code at a low cost",   aliases: ["deepseek", "deep seek", "r1"] },
+  { id: "mistral",    name: "Mistral",    maker: "Mistral AI", tagline: "Fast and great in many languages",          aliases: ["mistral", "le chat"] },
+  { id: "llama",      name: "Llama",      maker: "Meta · via Groq", tagline: "Open model with lightning-fast replies", aliases: ["llama", "meta", "groq"] },
 ];
 
 const MODES: { id: ChatMode; label: string; sub: string }[] = [
@@ -318,8 +323,10 @@ function ModelCarousel({
 }
 
 function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Partial<Record<ModelId, boolean>> | undefined }) {
-  const models: ModelId[] = ["openai", "claude", "perplexity"];
+  const models = MODELS.map((m) => m.id).filter((id) => id !== "auto");
   const connected = status ? models.filter((m) => status[m]).length : undefined;
+  // Connected models first; five logos fit, the rest show as "+N"
+  const shown = [...models].sort((a, b) => Number(!!status?.[b]) - Number(!!status?.[a])).slice(0, 5);
   const body = mode === "battle"
     ? "Every connected model answers the same message, so you can compare them side by side."
     : "Every connected model answers, then Apex blends the best parts into one answer.";
@@ -333,15 +340,18 @@ function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Partial<R
         style={StyleSheet.absoluteFill}
       />
       <View style={s.logoStack}>
-        {models.map((m, i) => (
+        {shown.map((m, i) => (
           <View key={m} style={[s.stackTile, { marginLeft: i ? -12 : 0, opacity: status && !status[m] ? 0.45 : 1 }]}>
             <ModelLogo id={m} size={30} />
           </View>
         ))}
+        {models.length > shown.length ? (
+          <View style={[s.stackTile, { marginLeft: -12 }]}><Text style={s.connectedCount}>+{models.length - shown.length}</Text></View>
+        ) : null}
       </View>
       <View style={s.slideRow}>
         <Text style={s.slideTitle}>{mode === "battle" ? "Battle" : "Hive"}</Text>
-        {connected !== undefined ? <Text style={s.connectedCount}>{connected} of 3 connected</Text> : null}
+        {connected !== undefined ? <Text style={s.connectedCount}>{connected} of {models.length} connected</Text> : null}
       </View>
       <Text style={s.slideSub}>{body}</Text>
     </Glass>
@@ -369,7 +379,7 @@ export default function HomeScreen() {
 
   const { data: providers } = useQuery({ queryKey: ["providers"], queryFn: chatApi.providers, staleTime: 60_000, retry: 1 });
   const status = providers
-    ? { ...providers, auto: providers.openai || providers.claude || providers.perplexity }
+    ? { ...providers, auto: Object.values(providers).some(Boolean) }
     : undefined;
 
   const push = (m: Omit<ChatMessageData, "id">) =>
@@ -477,6 +487,9 @@ export default function HomeScreen() {
               {mode === "chat"
                 ? <ModelCarousel value={model} onChange={setModel} status={status} width={cardWidth} />
                 : <View style={{ width: cardWidth }}><ModeCard mode={mode} status={status} /></View>}
+              <Pressable accessibilityRole="link" onPress={() => router.navigate("/(tabs)/models")} style={{ padding: 4 }}>
+                <Text style={s.allModels}>See all AI models: images, voices, video, 3D →</Text>
+              </Pressable>
             </View>
           ) : (
             <View style={{ gap: 4 }}>
@@ -555,6 +568,7 @@ const s = StyleSheet.create({
   arrow: { position: "absolute", top: "42%" },
   arrowInner: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
   dots: { flexDirection: "row", justifyContent: "center", gap: 6 },
+  allModels: { color: MG.violet, fontSize: 13, fontFamily: MGFont.bold, textAlign: "center" },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: MG.ink, opacity: 0.28 },
   dotOn: { width: 20, opacity: 0.9 },
 

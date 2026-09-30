@@ -17,6 +17,16 @@ export function setAuthSession(sessionId: string | null): void {
   authSessionId = sessionId;
 }
 
+// ── AI model directory ────────────────────────────────────────────────────────
+export type ModelCategory = "chat" | "game" | "image" | "audio" | "video" | "editing";
+export interface CatalogModel {
+  id: string; name: string; maker: string; category: ModelCategory; tagline: string;
+  bestFor: string[]; color: string; chat?: boolean; connected: boolean;
+}
+export const modelsApi = {
+  list: () => apexFetch<{ categories: Record<ModelCategory, string>; models: CatalogModel[] }>("/models"),
+};
+
 // ── Apex Engine projects (plan on the phone, build on the computer) ─────────
 export type EngineTarget = "apex" | "mobile" | "pc";
 export type EngineKind = "apex" | "unity" | "unreal";
@@ -32,7 +42,7 @@ export interface GamePlan {
   controls: string[];
   mechanics: string[];
   levels: { name: string; goal: string }[];
-  characters: { name: string; role: string }[];
+  characters: { name: string; role: string; voiceId?: string; voiceName?: string }[];
   artStyle: string;
   audio: string;
   checklist: { id: string; label: string; done: boolean }[];
@@ -138,7 +148,7 @@ export const authApi = {
 };
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
-export type ProviderId = "auto" | "openai" | "claude" | "perplexity";
+export type ProviderId = "auto" | "openai" | "claude" | "perplexity" | "gemini" | "grok" | "deepseek" | "mistral" | "llama";
 export interface ChatInput { message: string; conversationId?: number; provider?: ProviderId; tone?: string; memory?: boolean }
 export interface ChatResponse { content: string; conversationId: number; provider?: string }
 
@@ -170,10 +180,10 @@ export const chatApi = {
   },
 
   /** Which models have keys on the server. */
-  providers: async (): Promise<Record<Exclude<ProviderId, "auto">, boolean>> => {
+  providers: async (): Promise<Partial<Record<Exclude<ProviderId, "auto">, boolean>>> => {
     const res = await fetch(`${getBaseUrl()}/api/chat/providers`);
     if (!res.ok) throw new Error(`Server error (${res.status})`);
-    return ((await res.json()) as { providers: Record<Exclude<ProviderId, "auto">, boolean> }).providers;
+    return ((await res.json()) as { providers: Partial<Record<Exclude<ProviderId, "auto">, boolean>> }).providers;
   },
 };
 

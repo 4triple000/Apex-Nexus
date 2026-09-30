@@ -26,7 +26,8 @@ export const GamePlan = z.object({
   controls: z.array(z.string().max(160)).max(16),
   mechanics: z.array(z.string().max(240)).max(16),
   levels: z.array(z.object({ name: z.string().max(80), goal: z.string().max(240) })).max(16),
-  characters: z.array(z.object({ name: z.string().max(80), role: z.string().max(240) })).max(16),
+  // voiceId/voiceName: the ElevenLabs voice picked for the character
+  characters: z.array(z.object({ name: z.string().max(80), role: z.string().max(240), voiceId: z.string().max(40).optional(), voiceName: z.string().max(40).optional() })).max(16),
   artStyle: z.string().max(600),
   audio: z.string().max(600),
   checklist: z.array(z.object({ id: z.string().max(40), label: z.string().max(160), done: z.boolean() })).max(30),

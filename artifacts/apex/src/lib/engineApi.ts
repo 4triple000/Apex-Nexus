@@ -20,7 +20,7 @@ export interface GamePlan {
   controls: string[];
   mechanics: string[];
   levels: { name: string; goal: string }[];
-  characters: { name: string; role: string }[];
+  characters: { name: string; role: string; voiceId?: string; voiceName?: string }[];
   artStyle: string;
   audio: string;
   checklist: { id: string; label: string; done: boolean }[];

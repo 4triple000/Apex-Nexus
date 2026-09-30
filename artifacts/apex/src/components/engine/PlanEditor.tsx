@@ -5,6 +5,7 @@
 import { Plus, Trash2, Download, Check, Monitor, Smartphone } from "lucide-react";
 import type { CameraStyle, GamePlan, GameProject } from "@/lib/engineApi";
 import { engineLabel } from "@/lib/engineApi";
+import { CharacterList } from "./CharacterList";
 
 export type PlanSection = "overview" | "loop" | "controls" | "mechanics" | "levels" | "characters" | "art" | "checklist";
 
@@ -77,7 +78,7 @@ export function PlanSectionEditor({ plan, section, onChange }: { plan: GamePlan;
     case "levels":
       return <PairList label="Levels" a="Name" b="Goal" items={plan.levels.map((l) => [l.name, l.goal])} onChange={(v) => set({ levels: v.map(([name, goal]) => ({ name, goal })) })} />;
     case "characters":
-      return <PairList label="Characters" a="Name" b="Role" items={plan.characters.map((c) => [c.name, c.role])} onChange={(v) => set({ characters: v.map(([name, role]) => ({ name, role })) })} />;
+      return <CharacterList characters={plan.characters} onChange={(characters) => set({ characters })} />;
     case "art":
       return (
         <div style={stack}>
@@ -154,6 +155,9 @@ export function BuildCard({ project, plan, onDownload, downloading, error, onEng
           ? `Your plan is saved to your account. When you're at your computer, open Apex, go to Games → Create → this project, and download it there.`
           : `Unzip it and ${project.engine === "unity" ? "add it in Unity Hub" : "double-click the .uproject file"}. The README inside walks you through it${mobile ? ", including putting it on your phone" : ""}.`}
       </p>
+      <a href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/models?cat=game`} className="mg-focus" style={{ fontSize: 13, fontWeight: 700, color: "var(--mg-violet)", textDecoration: "none" }}>
+        AI tools for your game: worlds, 3D models, voices →
+      </a>
     </div>
   );
 }

@@ -23,9 +23,9 @@ const TABS: { name: string; title: string; icon: TabIconName }[] = [
 /** Floating Midnight Glass tab bar (same on iOS, Android and web). */
 function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  // The Engine screens live under Games
+  // The Engine screens live under Games; AI Models opens from Home
   const current = state.routes[state.index]?.name;
-  const activeName = current === "engine" || current === "engine-project" ? "games" : current;
+  const activeName = current === "engine" || current === "engine-project" ? "games" : current === "models" ? "index" : current;
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { paddingBottom: 16 + (Platform.OS === "web" ? 0 : insets.bottom) }]}>
       <Glass radius={32} intensity={50} style={styles.bar}>
@@ -73,6 +73,7 @@ export default function TabLayout() {
       <Tabs.Screen name="settings" options={{ title: "Settings", href: null }} />
       <Tabs.Screen name="engine" options={{ title: "Apex Engine", href: null }} />
       <Tabs.Screen name="engine-project" options={{ title: "Game", href: null }} />
+      <Tabs.Screen name="models" options={{ title: "AI Models", href: null }} />
     </Tabs>
     </View>
   );

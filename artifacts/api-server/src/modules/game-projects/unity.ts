@@ -646,7 +646,7 @@ ${plan.mechanics.map((m) => `- ${m}`).join("\n")}
 ${plan.levels.map((l) => `- **${l.name}:** ${l.goal}`).join("\n")}
 
 ## Characters
-${plan.characters.map((c) => `- **${c.name}:** ${c.role}`).join("\n")}
+${plan.characters.map((c) => `- **${c.name}:** ${c.role}${c.voiceName ? ` (voice: ${c.voiceName}, ElevenLabs)` : ""}`).join("\n")}
 
 ## Art style
 ${plan.artStyle}

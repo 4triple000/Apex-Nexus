@@ -44,6 +44,7 @@ const LandingPage = lazy(() => import("@/pages/landing"));
 const EngineLauncherPage = lazy(() => import("@/pages/game-engine"));
 const EngineEditorPage = lazy(() => import("@/pages/game-engine-editor"));
 const GamesPage = lazy(() => import("@/pages/games"));
+const ModelsPage = lazy(() => import("@/pages/models"));
 const ApexDevOSPage = lazy(() => import("@/pages/apex-dev-os"));
 const ApexAvatarPage = lazy(() => import("@/pages/apex-avatar"));
 const DomainSettingsPage = lazy(() => import("@/pages/domain-settings"));
@@ -166,6 +167,7 @@ function Router() {
               <Route path="/insights" component={InsightsPage} />
               <Route path="/settings" component={SettingsPage} />
               <Route path="/games" component={GamesPage} />
+              <Route path="/models" component={ModelsPage} />
               <Route path="/game-engine" component={EngineLauncherPage} />
               <Route path="/multiplayer" component={MultiplayerPage} />
               <Route path="/apex-features"><Redirect to="/" replace /></Route>

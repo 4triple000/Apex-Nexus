@@ -184,7 +184,15 @@ export default function EngineProjectScreen() {
               {section === "controls" ? <List label="CONTROLS" items={plan.controls} onChange={(controls) => set({ controls })} /> : null}
               {section === "mechanics" ? <List label="MECHANICS" items={plan.mechanics} onChange={(mechanics) => set({ mechanics })} /> : null}
               {section === "levels" ? <Pairs label="LEVELS" a="Name" b="Goal" items={plan.levels.map((l) => [l.name, l.goal])} onChange={(v) => set({ levels: v.map(([name, goal]) => ({ name, goal })) })} /> : null}
-              {section === "characters" ? <Pairs label="CHARACTERS" a="Name" b="Role" items={plan.characters.map((c) => [c.name, c.role])} onChange={(v) => set({ characters: v.map(([name, role]) => ({ name, role })) })} /> : null}
+              {section === "characters" ? (
+                <>
+                  {/* Keep each character's voice (picked in the Engine on the website) while editing here */}
+                  <Pairs label="CHARACTERS" a="Name" b="Role" items={plan.characters.map((c) => [c.name, c.role])} onChange={(v) => set({ characters: v.map(([name, role], i) => ({ ...plan.characters[i], name, role })) })} />
+                  {plan.characters.some((c) => c.voiceName) ? (
+                    <Text style={s.note}>Voices: {plan.characters.filter((c) => c.voiceName).map((c) => `${c.name || "?"} (${c.voiceName})`).join(", ")}. Change voices in the Engine on the website.</Text>
+                  ) : <Text style={s.note}>Pick an ElevenLabs voice for each character in the Engine on the website.</Text>}
+                </>
+              ) : null}
               {section === "art" ? (
                 <>
                   <Field label="ART STYLE"><TextInput multiline value={plan.artStyle} onChangeText={(v) => set({ artStyle: v.slice(0, 600) })} style={[s.input, { minHeight: 80 }]} /></Field>

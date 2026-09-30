@@ -159,7 +159,7 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
   const schema = z.object({
     message: z.string().min(1).max(4000),
     conversationId: z.number().int().positive().optional(),
-    provider: z.enum(["auto", "openai", "claude", "perplexity"]).optional(),
+    provider: z.enum(["auto", "openai", "claude", "perplexity", "gemini", "grok", "deepseek", "mistral", "llama"]).optional(),
     // From the app's Settings page
     tone: z.enum(["friend", "assistant", "formal", "creative"]).optional(),
     memory: z.boolean().optional(),

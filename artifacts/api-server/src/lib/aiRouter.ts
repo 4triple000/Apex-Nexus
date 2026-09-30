@@ -19,12 +19,38 @@ function getPerplexity(): OpenAI | null {
   return perplexityClient;
 }
 
+// Chat providers that serve an OpenAI-compatible API. The model can be changed with <NAME>_MODEL on the server.
+type CompatProvider = "gemini" | "grok" | "deepseek" | "mistral" | "llama";
+const COMPAT: Record<CompatProvider, { name: string; envKey: string; baseURL: string; model: string; modelEnv: string }> = {
+  gemini:   { name: "Gemini",   envKey: "GEMINI_API_KEY",   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/", model: "gemini-2.5-flash", modelEnv: "GEMINI_MODEL" },
+  grok:     { name: "Grok",     envKey: "XAI_API_KEY",      baseURL: "https://api.x.ai/v1",            model: "grok-4",                  modelEnv: "XAI_MODEL" },
+  deepseek: { name: "DeepSeek", envKey: "DEEPSEEK_API_KEY", baseURL: "https://api.deepseek.com",       model: "deepseek-chat",           modelEnv: "DEEPSEEK_MODEL" },
+  mistral:  { name: "Mistral",  envKey: "MISTRAL_API_KEY",  baseURL: "https://api.mistral.ai/v1",      model: "mistral-large-latest",    modelEnv: "MISTRAL_MODEL" },
+  llama:    { name: "Llama",    envKey: "GROQ_API_KEY",     baseURL: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile", modelEnv: "GROQ_MODEL" },
+};
+const isCompat = (p: string): p is CompatProvider => p in COMPAT;
+
+const compatClients: Partial<Record<CompatProvider, OpenAI>> = {};
+function getCompat(p: CompatProvider): OpenAI | null {
+  const cfg = COMPAT[p];
+  const apiKey = process.env[cfg.envKey];
+  if (!apiKey) return null;
+  compatClients[p] ??= new OpenAI({ apiKey, baseURL: cfg.baseURL });
+  return compatClients[p]!;
+}
+const compatModel = (p: CompatProvider) => process.env[COMPAT[p].modelEnv] || COMPAT[p].model;
+
 /** Which chat providers have credentials on this server. */
 export function providerStatus(): Record<AiProvider, boolean> {
   return {
     openai:     isOpenAIConfigured(),
     claude:     !!process.env.ANTHROPIC_API_KEY,
     perplexity: !!process.env.PERPLEXITY_API_KEY,
+    gemini:     !!process.env.GEMINI_API_KEY,
+    grok:       !!process.env.XAI_API_KEY,
+    deepseek:   !!process.env.DEEPSEEK_API_KEY,
+    mistral:    !!process.env.MISTRAL_API_KEY,
+    llama:      !!process.env.GROQ_API_KEY,
   };
 }
 
@@ -43,7 +69,8 @@ const HUMAN_VOICE_RULES = `VOICE — You are Apex. Speak like a real human frien
 - Match the user's energy — casual gets casual back, serious gets dialed-in focus
 - It's okay to start a sentence with "And", "But", or "So" — real humans do it all the time`;
 
-export type AiProvider = "openai" | "claude" | "perplexity";
+export type AiProvider = "openai" | "claude" | "perplexity" | CompatProvider;
+export const AI_PROVIDERS: AiProvider[] = ["openai", "claude", "perplexity", "gemini", "grok", "deepseek", "mistral", "llama"];
 
 export interface AiResponse {
   provider: AiProvider | "hive";
@@ -60,7 +87,7 @@ export function getTierLimit(tier: string): number {
 }
 
 function routeToProvider(message: string, preferredProvider?: string): AiProvider {
-  if (preferredProvider && preferredProvider !== "auto") {
+  if (preferredProvider && preferredProvider !== "auto" && (AI_PROVIDERS as string[]).includes(preferredProvider)) {
     return preferredProvider as AiProvider;
   }
 
@@ -79,17 +106,44 @@ function routeToProvider(message: string, preferredProvider?: string): AiProvide
   return (Object.keys(status) as AiProvider[]).find((p) => status[p]) ?? ideal;
 }
 
-const CALLERS: Record<AiProvider, (message: string) => Promise<AiResponse>> = {
-  openai:     (m) => callOpenAI(m),
-  claude:     (m) => callClaude(m),
-  perplexity: (m) => callPerplexity(m),
+const CALLERS: Record<AiProvider, (message: string, hint?: string) => Promise<AiResponse>> = {
+  openai:     (m, h) => callOpenAI(m, h),
+  claude:     (m, h) => callClaude(m, h),
+  perplexity: (m, h) => callPerplexity(m, h),
+  gemini:     (m, h) => callCompat("gemini", m, h),
+  grok:       (m, h) => callCompat("grok", m, h),
+  deepseek:   (m, h) => callCompat("deepseek", m, h),
+  mistral:    (m, h) => callCompat("mistral", m, h),
+  llama:      (m, h) => callCompat("llama", m, h),
 };
 
-// Battle and Hive use every connected provider (all of them if none are, so the errors explain why)
+// Battle and Hive use every connected provider (the original three if none are, so the errors explain why)
 function activeProviders(): AiProvider[] {
   const status = providerStatus();
-  const connected = (Object.keys(status) as AiProvider[]).filter((p) => status[p]);
-  return connected.length ? connected : (Object.keys(status) as AiProvider[]);
+  const connected = AI_PROVIDERS.filter((p) => status[p]);
+  return connected.length ? connected : ["openai", "claude", "perplexity"];
+}
+
+async function callCompat(provider: CompatProvider, message: string, personalizationHint?: string): Promise<AiResponse> {
+  const start = Date.now();
+  const cfg = COMPAT[provider];
+  const client = getCompat(provider);
+  if (!client) {
+    return { provider, content: "", responseTime: 0, error: `${cfg.name} isn't connected yet. Add ${cfg.envKey} on the server.` };
+  }
+  const baseSystem = `You are Apex (${cfg.name} mode), a helpful AI assistant. Be clear, accurate and friendly.\n\n${HUMAN_VOICE_RULES}`;
+  try {
+    const response = await client.chat.completions.create({
+      model: compatModel(provider),
+      messages: [
+        { role: "system", content: personalizationHint ? `${baseSystem}\n${personalizationHint}` : baseSystem },
+        { role: "user", content: message },
+      ],
+    });
+    return { provider, content: response.choices[0]?.message?.content ?? "No response", responseTime: Date.now() - start };
+  } catch (err) {
+    return { provider, content: "", responseTime: Date.now() - start, error: err instanceof Error ? `${cfg.name}: ${err.message}` : `${cfg.name} error` };
+  }
 }
 
 async function callOpenAI(message: string, personalizationHint?: string): Promise<AiResponse> {
@@ -189,17 +243,7 @@ async function callPerplexity(message: string, personalizationHint?: string): Pr
 
 export async function chatSingle(message: string, preferredProvider?: string, personalizationHint?: string): Promise<AiResponse[]> {
   const provider = routeToProvider(message, preferredProvider);
-
-  let result: AiResponse;
-  if (provider === "claude") {
-    result = await callClaude(message, personalizationHint);
-  } else if (provider === "perplexity") {
-    result = await callPerplexity(message, personalizationHint);
-  } else {
-    result = await callOpenAI(message, personalizationHint);
-  }
-
-  return [result];
+  return [await CALLERS[provider](message, personalizationHint)];
 }
 
 export async function chatBattle(message: string): Promise<AiResponse[]> {
@@ -209,7 +253,7 @@ export async function chatBattle(message: string): Promise<AiResponse[]> {
 export async function chatHive(message: string): Promise<{ responses: AiResponse[]; combined: string }> {
   const responses = await Promise.all(activeProviders().map((p) => CALLERS[p](message)));
   const validResponses = responses.filter(r => !r.error && r.content);
-  const NAMES: Record<string, string> = { openai: "ChatGPT", claude: "Claude", perplexity: "Perplexity" };
+  const NAMES: Record<string, string> = { openai: "ChatGPT", claude: "Claude", perplexity: "Perplexity", ...Object.fromEntries(Object.entries(COMPAT).map(([k, v]) => [k, v.name])) };
 
   const combinedPrompt = `You are a synthesis engine. Several AI models have responded to a user's question. Synthesize the best answer from them, combining the strongest insights from each without repeating information. Be concise and comprehensive.
 
@@ -274,6 +318,13 @@ export async function chatWithHistory(
       }
       const content = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
       return { provider, content, responseTime: Date.now() - start };
+    }
+    if (isCompat(provider)) {
+      const cfg = COMPAT[provider];
+      const compat = getCompat(provider);
+      if (!compat) return { provider, content: "", responseTime: 0, error: `${cfg.name} isn't connected yet. Add ${cfg.envKey} on the server.` };
+      const response = await compat.chat.completions.create({ model: compatModel(provider), messages: [{ role: "system", content: system }, ...turns] });
+      return { provider, content: response.choices[0]?.message?.content ?? "", responseTime: Date.now() - start };
     }
     const client = provider === "perplexity" ? getPerplexity() : isOpenAIConfigured() ? openai : null;
     if (!client) {
