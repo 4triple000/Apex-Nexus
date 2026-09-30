@@ -43,7 +43,17 @@ export const MG = {
   cyan: "#00C2FF",
   pink: "#FF4FA3",
   glassBorder: "rgba(255,255,255,0.16)",
-  glassFill: "rgba(255,255,255,0.07)",
+  glassFill: "rgba(255,255,255,0.08)",
+};
+
+/** Midnight Glass fonts (loaded in app/_layout.tsx). */
+export const MGFont = {
+  display: "Sora_700Bold",
+  displaySemi: "Sora_600SemiBold",
+  body: "Manrope_400Regular",
+  medium: "Manrope_500Medium",
+  semi: "Manrope_600SemiBold",
+  bold: "Manrope_700Bold",
 };
 
 export default colors;

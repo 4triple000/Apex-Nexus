@@ -36,13 +36,13 @@ export function Layout({ children }: { children: ReactNode }) {
           MOBILE layout — hidden on lg+ screens
       ══════════════════════════════════════════════ */}
       <div
-        className="lg:hidden min-h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
+        className="mg-font lg:hidden min-h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
         style={{ background: "var(--mg-bg)", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
       >
-        {/* Midnight Glass: soft moving light that the frosted surfaces pick up */}
-        <div aria-hidden className="mg-blob" style={{ width: 280, height: 280, top: 60, left: -90, background: "rgba(108,92,231,0.55)" }} />
-        <div aria-hidden className="mg-blob" style={{ width: 240, height: 240, top: "42%", right: -80, background: "rgba(0,194,255,0.32)", animationDelay: "-5s" }} />
-        <div aria-hidden className="mg-blob" style={{ width: 220, height: 220, bottom: 40, left: 10, background: "rgba(255,79,163,0.26)", animationDelay: "-10s" }} />
+        {/* Midnight Glass: bright moving light that the frosted surfaces pick up */}
+        <div aria-hidden className="mg-blob" style={{ width: 280, height: 280, top: 120, left: -85, background: "#6C5CE7" }} />
+        <div aria-hidden className="mg-blob" style={{ width: 250, height: 250, top: 330, right: -70, background: "#00C2FF", opacity: 0.75, animationDelay: "-5s" }} />
+        <div aria-hidden className="mg-blob" style={{ width: 225, height: 225, bottom: 55, left: 25, background: "#FF4FA3", opacity: 0.55, animationDelay: "-9s" }} />
 
         <ApexControlPanel />
 

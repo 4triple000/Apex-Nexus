@@ -4,6 +4,7 @@
 import React from "react";
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 import { MG } from "@/constants/colors";
@@ -15,16 +16,19 @@ export function Backdrop() {
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: MG.bg }]}>
       <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
         <Defs>
-          <RadialGradient id={`mgViolet${uid}`} cx="10%" cy="18%" r="55%">
-            <Stop offset="0" stopColor="#6C5CE7" stopOpacity="0.55" />
+          <RadialGradient id={`mgViolet${uid}`} cx="4%" cy="24%" r="42%">
+            <Stop offset="0" stopColor="#6C5CE7" stopOpacity="0.95" />
+            <Stop offset="0.55" stopColor="#6C5CE7" stopOpacity="0.45" />
             <Stop offset="1" stopColor="#6C5CE7" stopOpacity="0" />
           </RadialGradient>
-          <RadialGradient id={`mgCyan${uid}`} cx="95%" cy="55%" r="50%">
-            <Stop offset="0" stopColor="#00C2FF" stopOpacity="0.3" />
+          <RadialGradient id={`mgCyan${uid}`} cx="98%" cy="47%" r="40%">
+            <Stop offset="0" stopColor="#00C2FF" stopOpacity="0.8" />
+            <Stop offset="0.55" stopColor="#00C2FF" stopOpacity="0.32" />
             <Stop offset="1" stopColor="#00C2FF" stopOpacity="0" />
           </RadialGradient>
-          <RadialGradient id={`mgPink${uid}`} cx="20%" cy="92%" r="45%">
-            <Stop offset="0" stopColor="#FF4FA3" stopOpacity="0.24" />
+          <RadialGradient id={`mgPink${uid}`} cx="22%" cy="88%" r="36%">
+            <Stop offset="0" stopColor="#FF4FA3" stopOpacity="0.6" />
+            <Stop offset="0.55" stopColor="#FF4FA3" stopOpacity="0.25" />
             <Stop offset="1" stopColor="#FF4FA3" stopOpacity="0" />
           </RadialGradient>
         </Defs>
@@ -41,7 +45,7 @@ export function Glass({
   children,
   style,
   radius = 24,
-  intensity = 40,
+  intensity = 30,
 }: {
   children?: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -60,7 +64,11 @@ export function Glass({
           style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
         />
       ) : null}
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.tint, { borderRadius: radius }]} />
+      <LinearGradient
+        pointerEvents="none"
+        colors={["rgba(255,255,255,0.16)", "rgba(255,255,255,0.05)"]}
+        style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
+      />
       <View pointerEvents="none" style={[styles.highlight, { borderTopLeftRadius: radius, borderTopRightRadius: radius }]} />
       {children}
     </View>
@@ -76,15 +84,14 @@ const styles = StyleSheet.create({
   shell: {
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: MG.glassBorder,
+    borderColor: "rgba(255,255,255,0.18)",
   },
-  tint: { backgroundColor: MG.glassFill },
   highlight: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.3)",
+    backgroundColor: "rgba(255,255,255,0.35)",
   },
 });

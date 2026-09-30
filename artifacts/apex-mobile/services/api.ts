@@ -105,3 +105,44 @@ export const memoryApi = {
   get: (userId: number) =>
     apexFetch<{ memory: MemoryItem[]; count: number }>(`/mobile/memory/${userId}`),
 };
+
+// ── Messages (Instagram / Messenger inbox) ────────────────────────────────────
+export interface DmConversation {
+  dm_conversations: { id: number; lastMessageAt?: string | null; unreadCount?: number | null };
+  dm_contacts: { id: number; displayName?: string | null; username: string; platform: string } | null;
+}
+
+export const messagesApi = {
+  conversations: async (): Promise<DmConversation[]> => {
+    const res = await fetch(`${getBaseUrl()}/api/dm/conversations`);
+    if (!res.ok) throw new Error(`Server error (${res.status})`);
+    return ((await res.json()) as { conversations: DmConversation[] }).conversations ?? [];
+  },
+  metaStatus: async (): Promise<{ configured: boolean }> => {
+    const res = await fetch(`${getBaseUrl()}/api/dm/meta/status`);
+    if (!res.ok) throw new Error(`Server error (${res.status})`);
+    return (await res.json()) as { configured: boolean };
+  },
+};
+
+// ── Games ─────────────────────────────────────────────────────────────────────
+export interface GameEntry {
+  id: number;
+  name: string;
+  creatorName: string;
+  likeCount: number;
+  playCount: number;
+  tags: string[];
+  isRemix: boolean;
+}
+
+export const gamesApi = {
+  feed: async (): Promise<GameEntry[]> => {
+    const res = await fetch(`${getBaseUrl()}/api/game-feed?limit=30`);
+    if (!res.ok) throw new Error(`Server error (${res.status})`);
+    return ((await res.json()) as { entries: GameEntry[] }).entries ?? [];
+  },
+};
+
+/** The Apex website, where games are played. */
+export const WEB_APP_URL = (process.env.EXPO_PUBLIC_WEB_URL ?? "https://apex-nexus-apex.vercel.app").replace(/\/$/, "");

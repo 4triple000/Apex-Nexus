@@ -33,7 +33,8 @@ import { ModelLogo, MODEL_COLORS, type ModelId } from "@/components/glass/ModelL
 import { MessageBubble, type ChatMessageData } from "@/components/chat/MessageBubble";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
-import { MG } from "@/constants/colors";
+import { MG, MGFont } from "@/constants/colors";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "@/context/AuthContext";
 import { chatApi } from "@/services/api";
 
@@ -77,6 +78,7 @@ function Header({ name, onMenu, onAvatar }: { name: string; onMenu: () => void; 
         <Text style={s.greetBig} numberOfLines={1}>Hey, {name}</Text>
       </View>
       <Pressable onPress={onAvatar} accessibilityLabel="Your profile" style={s.avatar}>
+        <LinearGradient colors={["#8B7BFF", "#00C2FF"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
         <Text style={s.avatarText}>{name.trim()[0]?.toUpperCase() ?? "A"}</Text>
       </Pressable>
     </View>
@@ -238,6 +240,13 @@ function ModelCarousel({
           initialScrollIndex={index}
           renderItem={({ item }) => (
             <View style={[s.slide, { width }]} accessibilityLabel={`${item.name}. ${item.tagline}`}>
+              <LinearGradient
+                pointerEvents="none"
+                colors={[`${MODEL_COLORS[item.id]}66`, "rgba(0,194,255,0.14)"]}
+                start={{ x: 0.1, y: 0 }}
+                end={{ x: 0.9, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
               <View style={[s.logoTile, { shadowColor: MODEL_COLORS[item.id] }]}>
                 <ModelLogo id={item.id} size={item.id === "auto" ? 60 : 50} />
               </View>
@@ -275,6 +284,13 @@ function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Partial<R
     : "Every connected model answers, then Apex blends the best parts into one answer.";
   return (
     <Glass radius={30} style={s.modeCard}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={mode === "battle" ? ["rgba(255,107,107,0.4)", "rgba(0,194,255,0.12)"] : ["rgba(139,123,255,0.45)", "rgba(0,194,255,0.14)"]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={s.logoStack}>
         {models.map((m, i) => (
           <View key={m} style={[s.stackTile, { marginLeft: i ? -12 : 0, opacity: status && !status[m] ? 0.45 : 1 }]}>
@@ -297,11 +313,13 @@ function MenuSheet({ visible, onClose }: { visible: boolean; onClose: () => void
   const router = useRouter();
   const { logout } = useAuth();
   const items: { icon: React.ComponentProps<typeof Feather>["name"]; label: string; onPress: () => void }[] = [
-    { icon: "home",     label: "Home",       onPress: () => router.navigate("/(tabs)") },
-    { icon: "code",     label: "AI Studio",  onPress: () => router.navigate("/(tabs)/builder") },
-    { icon: "aperture", label: "Apex Orb",   onPress: () => router.navigate("/(tabs)/orb") },
-    { icon: "user",     label: "You",        onPress: () => router.navigate("/(tabs)/profile") },
-    { icon: "log-out",  label: "Sign out",   onPress: () => { logout(); } },
+    { icon: "home",           label: "Home",       onPress: () => router.navigate("/(tabs)") },
+    { icon: "message-circle", label: "Chat",       onPress: () => router.navigate("/(tabs)/messages") },
+    { icon: "star",           label: "AI Studio",  onPress: () => router.navigate("/(tabs)/builder") },
+    { icon: "play-circle",    label: "Games",      onPress: () => router.navigate("/(tabs)/games") },
+    { icon: "aperture",       label: "Apex Orb",   onPress: () => router.navigate("/(tabs)/orb") },
+    { icon: "user",           label: "You",        onPress: () => router.navigate("/(tabs)/profile") },
+    { icon: "log-out",        label: "Sign out",   onPress: () => { logout(); } },
   ];
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -459,30 +477,30 @@ const s = StyleSheet.create({
 
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44 },
   circleBtn: { width: 42, height: 42, alignItems: "center", justifyContent: "center" },
-  greetSmall: { fontSize: 12, color: MG.ink3, fontFamily: "Inter_500Medium" },
-  greetBig: { fontSize: 19, color: MG.ink, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
-  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#5B8CFF", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
-  avatarText: { color: "#FFFFFF", fontSize: 16, fontFamily: "Inter_700Bold" },
+  greetSmall: { fontSize: 12, color: MG.ink3, fontFamily: MGFont.medium },
+  greetBig: { fontSize: 19, color: MG.ink, fontFamily: MGFont.display, letterSpacing: -0.4 },
+  avatar: { width: 42, height: 42, borderRadius: 21, overflow: "hidden", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
+  avatarText: { color: "#FFFFFF", fontSize: 16, fontFamily: MGFont.bold },
 
   modelBadge: { flexDirection: "row", alignItems: "center", gap: 8, height: 42, paddingLeft: 12, paddingRight: 16 },
-  modelBadgeText: { color: MG.ink, fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  modelBadgeSub: { color: MG.ink3, fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  modelBadgeText: { color: MG.ink, fontSize: 14, fontFamily: MGFont.semi },
+  modelBadgeSub: { color: MG.ink3, fontSize: 11, fontFamily: MGFont.semi },
 
   search: { flexDirection: "row", alignItems: "center", gap: 10, height: 46, paddingHorizontal: 16 },
   searchInput: {
-    flex: 1, minWidth: 0, height: 44, color: MG.ink, fontSize: 15, fontFamily: "Inter_400Regular", paddingVertical: 0,
+    flex: 1, minWidth: 0, height: 44, color: MG.ink, fontSize: 15, fontFamily: MGFont.body, paddingVertical: 0,
     ...(Platform.OS === "web" ? ({ outlineStyle: "none" } as object) : {}),
   },
   dropdown: { position: "absolute", top: 54, left: 0, right: 0, borderRadius: 22, padding: 6, backgroundColor: "rgba(22,19,44,0.98)", borderWidth: 1, borderColor: MG.glassBorder },
   result: { flexDirection: "row", alignItems: "center", gap: 12, padding: 10, borderRadius: 16 },
   resultIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.07)", alignItems: "center", justifyContent: "center" },
-  resultTitle: { color: MG.ink, fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  resultSub: { color: MG.ink3, fontSize: 12, fontFamily: "Inter_400Regular" },
+  resultTitle: { color: MG.ink, fontSize: 14, fontFamily: MGFont.semi },
+  resultSub: { color: MG.ink3, fontSize: 12, fontFamily: MGFont.body },
 
   chips: { flexDirection: "row", gap: 8 },
   chip: { height: 36, paddingHorizontal: 18, borderRadius: 18, justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
   chipOn: { backgroundColor: "rgba(255,255,255,0.92)", borderColor: "transparent" },
-  chipText: { color: MG.ink2, fontSize: 13.5, fontFamily: "Inter_600SemiBold" },
+  chipText: { color: MG.ink2, fontSize: 13.5, fontFamily: MGFont.semi },
   chipTextOn: { color: "#120F2A" },
 
   slide: { minHeight: 236, padding: 22, justifyContent: "flex-end", gap: 6 },
@@ -493,12 +511,12 @@ const s = StyleSheet.create({
     shadowOpacity: 0.6, shadowRadius: 24, shadowOffset: { width: 0, height: 12 },
   },
   slideRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" },
-  slideTitle: { color: MG.ink, fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: -0.4 },
-  slideSub: { color: MG.ink2, fontSize: 13.5, fontFamily: "Inter_400Regular", lineHeight: 19 },
+  slideTitle: { color: MG.ink, fontSize: 24, fontFamily: MGFont.display, letterSpacing: -0.5 },
+  slideSub: { color: MG.ink2, fontSize: 13.5, fontFamily: MGFont.body, lineHeight: 19 },
   pill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
   pillOn: { backgroundColor: "rgba(74,222,128,0.14)", borderColor: "rgba(74,222,128,0.3)" },
   pillDot: { width: 6, height: 6, borderRadius: 3 },
-  pillText: { fontSize: 11.5, fontFamily: "Inter_600SemiBold" },
+  pillText: { fontSize: 11.5, fontFamily: MGFont.semi },
   arrow: { position: "absolute", top: "42%" },
   arrowInner: { width: 34, height: 34, alignItems: "center", justifyContent: "center" },
   dots: { flexDirection: "row", justifyContent: "center", gap: 6 },
@@ -508,11 +526,11 @@ const s = StyleSheet.create({
   modeCard: { padding: 22, minHeight: 236, justifyContent: "space-between", gap: 12 },
   logoStack: { flexDirection: "row", justifyContent: "center", paddingTop: 6 },
   stackTile: { width: 62, height: 62, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(24,20,48,0.9)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
-  connectedCount: { color: MG.ink3, fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  connectedCount: { color: MG.ink3, fontSize: 12, fontFamily: MGFont.semi },
 
   menuBackdrop: { flex: 1, backgroundColor: "rgba(5,4,14,0.55)", padding: 16, paddingTop: 70 },
   menu: { padding: 10, width: 240 },
-  menuTitle: { color: MG.ink3, fontSize: 11, letterSpacing: 1.2, textTransform: "uppercase", fontFamily: "Inter_700Bold", padding: 10 },
+  menuTitle: { color: MG.ink3, fontSize: 11, letterSpacing: 1.2, textTransform: "uppercase", fontFamily: MGFont.bold, padding: 10 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 14 },
-  menuLabel: { color: MG.ink, fontSize: 15, fontFamily: "Inter_500Medium" },
+  menuLabel: { color: MG.ink, fontSize: 15, fontFamily: MGFont.medium },
 });

@@ -833,7 +833,7 @@ export default function Home() {
           left: 0,
           right: 0,
           padding: "8px 12px 16px",
-          background: "linear-gradient(to top, rgba(10,9,24,0.96) 55%, transparent 100%)",
+          background: messages.length === 0 ? "transparent" : "linear-gradient(to top, rgba(10,9,24,0.9) 45%, transparent 100%)",
           zIndex: 10,
         }}
       >

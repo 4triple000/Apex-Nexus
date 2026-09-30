@@ -21,7 +21,7 @@ import { Feather } from "@expo/vector-icons";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BACKGROUND      = "transparent";
-const CONTAINER_BG    = "rgba(22,19,44,0.72)";
+const CONTAINER_BG    = "rgba(255,255,255,0.09)";
 const BORDER_DEFAULT  = "rgba(255,255,255,0.16)";
 const BORDER_FOCUSED  = "#8B7BFF";
 const PLACEHOLDER_CLR = "rgba(243,240,255,0.4)";
