@@ -26,7 +26,7 @@ import { MarketplaceFeed } from '@/components/marketplace/MarketplaceFeed';
 import { CreatorDashboard } from '@/components/marketplace/CreatorDashboard';
 import { cn } from '@/lib/utils';
 
-const GOLD = '#ffcc33';
+const GOLD = '#A29BFE';
 
 const CATEGORY_ICONS: Record<string, string> = {
   video: '🎥', game: '🎮', podcast: '🎙️', blog: '✍️',
@@ -100,7 +100,7 @@ function RunPanel({ workflow, onClose }: RunPanelProps) {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 pb-28">
         {/* Input variables */}
         {inputVars.length > 0 && (
-          <div className="rounded-2xl p-4 space-y-3" style={{ background: '#0d1424', border: '1px solid rgba(255,204,51,0.15)' }}>
+          <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(30,26,62,0.62)', border: '1px solid rgba(162,155,254,0.15)' }}>
             <span className="text-[10px] font-mono text-yellow-400/60 uppercase tracking-widest block">
               📥 Pipeline Inputs
             </span>
@@ -114,7 +114,7 @@ function RunPanel({ workflow, onClose }: RunPanelProps) {
                   onChange={(e) => setInputs({ ...inputs, [v]: e.target.value })}
                   placeholder={`Enter ${v}…`}
                   className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: 'rgba(255,204,51,0.05)', border: '1px solid rgba(255,204,51,0.15)', color: '#f5e070', caretColor: GOLD }}
+                  style={{ background: 'rgba(162,155,254,0.05)', border: '1px solid rgba(162,155,254,0.15)', color: '#f5e070', caretColor: GOLD }}
                 />
               </div>
             ))}
@@ -213,7 +213,7 @@ function RunPanel({ workflow, onClose }: RunPanelProps) {
       </div>
 
       {/* Run button */}
-      <div className="flex-none px-4 py-4 border-t border-white/5" style={{ background: '#040b14' }}>
+      <div className="flex-none px-4 py-4 border-t border-white/5" style={{ background: 'transparent' }}>
         <button
           onClick={handleRun}
           disabled={runPipeline.isPending}
@@ -290,14 +290,14 @@ function WorkflowsPageInner() {
   const myWorkflows = workflows ?? [];
 
   return (
-    <div className="flex flex-col h-full" style={{ background: '#060d1a' }}>
+    <div className="flex flex-col h-full" style={{ background: 'transparent' }}>
       {/* ── Header ── */}
       <div className="flex-none px-4 pt-5 pb-0 border-b border-white/5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1
               className="text-xl font-black tracking-[0.15em] uppercase"
-              style={{ color: GOLD, textShadow: '0 0 24px rgba(255,204,51,0.3)' }}
+              style={{ color: GOLD, textShadow: '0 0 24px rgba(162,155,254,0.3)' }}
             >
               AI WORKFLOWS
             </h1>
@@ -309,7 +309,7 @@ function WorkflowsPageInner() {
             <Link href="/workflow-builder">
               <button
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black font-mono uppercase tracking-wider transition-all active:scale-95 border"
-                style={{ background: 'rgba(255,204,51,0.1)', color: GOLD, borderColor: 'rgba(255,204,51,0.3)' }}
+                style={{ background: 'rgba(162,155,254,0.1)', color: GOLD, borderColor: 'rgba(162,155,254,0.3)' }}
               >
                 <Wand2 className="w-3.5 h-3.5" />
                 AI
@@ -384,7 +384,7 @@ function WorkflowsPageInner() {
                 <button
                   onClick={() => setTab('templates')}
                   className="px-5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all active:scale-95"
-                  style={{ background: 'rgba(255,204,51,0.1)', border: '1px solid rgba(255,204,51,0.25)', color: GOLD }}
+                  style={{ background: 'rgba(162,155,254,0.1)', border: '1px solid rgba(162,155,254,0.25)', color: GOLD }}
                 >
                   Browse Templates →
                 </button>
@@ -398,8 +398,8 @@ function WorkflowsPageInner() {
                   key={wf.id}
                   className="rounded-2xl overflow-hidden"
                   style={{
-                    background: '#0d1424',
-                    border: `1px solid ${wf.enabled ? 'rgba(255,204,51,0.15)' : 'rgba(255,255,255,0.06)'}`,
+                    background: 'rgba(30,26,62,0.62)',
+                    border: `1px solid ${wf.enabled ? 'rgba(162,155,254,0.15)' : 'rgba(255,255,255,0.06)'}`,
                   }}
                 >
                   {/* Card header */}
@@ -407,7 +407,7 @@ function WorkflowsPageInner() {
                     <div className="flex items-start gap-3">
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                        style={{ background: 'rgba(255,204,51,0.08)', border: '1px solid rgba(255,204,51,0.1)' }}
+                        style={{ background: 'rgba(162,155,254,0.08)', border: '1px solid rgba(162,155,254,0.1)' }}
                       >
                         {catIcon}
                       </div>
@@ -417,7 +417,7 @@ function WorkflowsPageInner() {
                             {wf.name}
                           </span>
                           {wf.isTemplate && (
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,204,51,0.15)', color: GOLD }}>
+                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(162,155,254,0.15)', color: GOLD }}>
                               shared
                             </span>
                           )}
@@ -461,7 +461,7 @@ function WorkflowsPageInner() {
                     <button
                       onClick={() => setRunningWorkflow(wf)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all active:scale-95"
-                      style={{ background: 'rgba(255,204,51,0.1)', border: '1px solid rgba(255,204,51,0.2)', color: GOLD }}
+                      style={{ background: 'rgba(162,155,254,0.1)', border: '1px solid rgba(162,155,254,0.2)', color: GOLD }}
                     >
                       <Play className="w-3 h-3" /> Run
                     </button>
@@ -516,7 +516,7 @@ function WorkflowsPageInner() {
               <div
                 key={tpl.id}
                 className="rounded-2xl overflow-hidden"
-                style={{ background: '#0d1424', border: '1px solid rgba(255,255,255,0.07)' }}
+                style={{ background: 'rgba(30,26,62,0.62)', border: '1px solid rgba(255,255,255,0.07)' }}
               >
                 {/* Gradient header */}
                 <div

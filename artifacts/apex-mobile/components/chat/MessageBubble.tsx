@@ -15,11 +15,11 @@ import {
 } from "react-native";
 
 // ── Design tokens (hardcoded to the spec) ────────────────────────────────────
-const USER_BUBBLE = "#2563EB";
-const AI_BUBBLE   = "#1F2937";
+const USER_BUBBLE = "#6C5CE7";
+const AI_BUBBLE   = "rgba(34,30,62,0.85)";
 const TEXT_COLOR  = "#FFFFFF";
-const AVATAR_BG   = "#1F2937";
-const AVATAR_BORDER = "#374151";
+const AVATAR_BG   = "#2A2458";
+const AVATAR_BORDER = "rgba(139,123,255,0.45)";
 
 export interface ChatMessageData {
   id: string;

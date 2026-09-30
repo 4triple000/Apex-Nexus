@@ -96,14 +96,14 @@ export default function DeployDashboardPage() {
   return (
     <div style={{
       minHeight: "100dvh",
-      background: "#07080e",
+      background: "transparent",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       color: "#fff",
     }}>
       {/* Header */}
       <div style={{
         position: "sticky", top: 0, zIndex: 20,
-        background: "rgba(7,8,14,0.96)",
+        background: "rgba(14,12,32,0.55)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         padding: "12px 16px",

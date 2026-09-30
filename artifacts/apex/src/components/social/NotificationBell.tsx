@@ -50,7 +50,7 @@ export function NotificationBell() {
         onClick={handleOpen}
         className="relative flex items-center justify-center w-8 h-8 rounded-full hover:bg-white/10 transition-colors"
       >
-        <Bell size={18} className={cn("transition-colors", open ? "text-[#ffcc33]" : "text-white/60")} />
+        <Bell size={18} className={cn("transition-colors", open ? "text-[#A29BFE]" : "text-white/60")} />
         {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center">
             {unread > 9 ? "9+" : unread}
@@ -59,7 +59,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-10 w-72 max-h-80 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto z-50">
+        <div className="absolute right-0 top-10 w-72 max-h-80 bg-[rgba(30,26,62,0.62)] border border-white/10 rounded-2xl shadow-2xl overflow-y-auto z-50">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <span className="text-sm font-bold text-white">Notifications</span>
             {unread > 0 && <span className="text-xs text-white/40">{unread} new</span>}
@@ -82,7 +82,7 @@ export function NotificationBell() {
                     <p className="text-xs text-white/80 leading-snug">{n.message}</p>
                     <p className="text-[10px] text-white/30 mt-0.5">{timeAgo(n.createdAt)}</p>
                   </div>
-                  {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-[#ffcc33] flex-shrink-0 mt-1" />}
+                  {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-[#A29BFE] flex-shrink-0 mt-1" />}
                 </div>
               ))}
             </div>

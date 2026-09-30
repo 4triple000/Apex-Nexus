@@ -87,7 +87,7 @@ function LockBadge({ tierMeta, featureName, featureIcon }: {
         <div style={{
           position: "absolute", bottom: -6, right: -6,
           width: 18, height: 18, borderRadius: "50%",
-          background: "#07080F", border: `1px solid ${tierMeta.border}`,
+          background: "rgba(14,11,32,0.92)", border: `1px solid ${tierMeta.border}`,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <Lock style={{ width: 9, height: 9, color: tierMeta.color }} />

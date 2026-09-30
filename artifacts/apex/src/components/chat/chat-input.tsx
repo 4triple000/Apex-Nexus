@@ -314,13 +314,13 @@ export function ChatInput({ onSend, disabled, onVoiceStart, onVoiceStop }: ChatI
           padding: "8px 8px 8px 14px",
           borderRadius: 26,
           background: focused
-            ? "rgba(26,29,36,0.98)"
-            : "rgba(20,22,28,0.95)",
+            ? "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.07))"
+            : "linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.045))",
           border: focused
-            ? "1px solid rgba(108,92,231,0.35)"
-            : "1px solid rgba(255,255,255,0.09)",
-          backdropFilter:       "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
+            ? "1px solid rgba(139,123,255,0.6)"
+            : "1px solid rgba(255,255,255,0.16)",
+          backdropFilter:       "blur(22px) saturate(180%)",
+          WebkitBackdropFilter: "blur(22px) saturate(180%)",
           boxShadow: focused
             ? [
                 "0 0 0 3px rgba(108,92,231,0.12)",
@@ -328,8 +328,8 @@ export function ChatInput({ onSend, disabled, onVoiceStart, onVoiceStop }: ChatI
                 "0 2px 8px rgba(0,0,0,0.30)",
               ].join(", ")
             : [
-                "0 8px 32px rgba(0,0,0,0.40)",
-                "0 2px 8px rgba(0,0,0,0.25)",
+                "inset 0 1px 0 rgba(255,255,255,0.3)",
+                "0 10px 30px rgba(0,0,0,0.28)",
               ].join(", "),
           transition: `all 0.25s ${EASE_IOS}`,
         }}

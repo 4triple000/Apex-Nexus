@@ -45,7 +45,7 @@ class ProfileErrorBoundary extends Component<
       return (
         <div style={{
           display: "flex", flexDirection: "column", alignItems: "center",
-          justifyContent: "center", height: "100%", background: "#07080E",
+          justifyContent: "center", height: "100%", background: "transparent",
           gap: 16, padding: 32,
         }}>
           <div style={{ fontSize: 40 }}>⚠️</div>
@@ -252,7 +252,7 @@ function GameMiniCard({
       <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
         <ModeTag color="#A29BFE">{modeTagLabel(game.winCondition)}</ModeTag>
         <ModeTag color="#6C5CE7">⚖️ {game.gravity}g</ModeTag>
-        {(game.coins?.length ?? 0) > 0 && <ModeTag color="#FFCC33">🪙 {game.coins!.length}</ModeTag>}
+        {(game.coins?.length ?? 0) > 0 && <ModeTag color="#A29BFE">🪙 {game.coins!.length}</ModeTag>}
         {game.enemies.length > 0 && <ModeTag color="#EF4444">👹 {game.enemies.length}</ModeTag>}
         {game.surviveSecs && <ModeTag color="#10B981">⏱ {game.surviveSecs}s</ModeTag>}
       </div>
@@ -435,7 +435,7 @@ function MyGamesSection({ nav }: { nav: (path: string) => void }) {
                           : "⏱ Survive"
                         }</ModeTag>
                         <ModeTag color="#6C5CE7">⚖️ {game.gravity}g</ModeTag>
-                        {(game.coins?.length ?? 0) > 0 && <ModeTag color="#FFCC33">🪙 {game.coins!.length}</ModeTag>}
+                        {(game.coins?.length ?? 0) > 0 && <ModeTag color="#A29BFE">🪙 {game.coins!.length}</ModeTag>}
                         {game.enemies.length > 0 && <ModeTag color="#EF4444">👹 {game.enemies.length}</ModeTag>}
                         {meta?.createdAt && (
                           <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginLeft: "auto" }}>
@@ -641,7 +641,7 @@ function MeDashboard({
               position: "absolute", bottom: -6, right: -6,
               fontSize: 18, width: 26, height: 26,
               display: "flex", alignItems: "center", justifyContent: "center",
-              borderRadius: 9, background: "#07080E",
+              borderRadius: 9, background: "transparent",
               border: `1px solid ${tier.color}50`,
             }}>{tier.icon}</div>
 
@@ -650,7 +650,7 @@ function MeDashboard({
               <div style={{
                 position: "absolute", top: "100%", left: 0, marginTop: 8, zIndex: 50,
                 padding: 10, borderRadius: 16,
-                background: "rgba(12,10,24,0.98)", backdropFilter: "blur(24px)",
+                background: "rgba(14,12,32,0.55)", backdropFilter: "blur(24px)",
                 border: "1px solid rgba(108,92,231,0.30)",
                 display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 4,
                 boxShadow: "0 20px 60px rgba(0,0,0,0.70)",
@@ -708,8 +708,8 @@ function MeDashboard({
               {isProUser && (
                 <div style={{
                   padding: "3px 9px", borderRadius: 99,
-                  background: "rgba(255,204,51,0.15)", border: "1px solid rgba(255,204,51,0.30)",
-                  fontSize: 9, fontWeight: 800, color: "#FFCC33", letterSpacing: "0.04em",
+                  background: "rgba(162,155,254,0.15)", border: "1px solid rgba(162,155,254,0.30)",
+                  fontSize: 9, fontWeight: 800, color: "#A29BFE", letterSpacing: "0.04em",
                 }}>👑 {tierLabel}</div>
               )}
             </div>
@@ -800,7 +800,7 @@ function MeDashboard({
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[
             { icon: "💬", label: "Conversations", value: Math.max(stats.totalPlays ?? 0, 12), color: "#A29BFE",  suffix: "" },
-            { icon: "⭐", label: "Reputation",    value: reputation,                            color: "#FFCC33", suffix: " pts" },
+            { icon: "⭐", label: "Reputation",    value: reputation,                            color: "#A29BFE", suffix: " pts" },
             { icon: "❤️", label: "Likes",          value: stats.totalLikes ?? 0,                color: "#EC4899", suffix: "" },
             { icon: "🔥", label: "Day Streak",     value: 7,                                     color: "#F59E0B", suffix: " days" },
           ].map(({ icon, label, value, color, suffix }) => (
@@ -834,10 +834,10 @@ function MeDashboard({
           flex: 1, padding: "12px", borderRadius: 16, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
           background: isProUser
-            ? "rgba(255,204,51,0.12)" : "linear-gradient(135deg, #6C5CE7, #A29BFE)",
-          border: isProUser ? "1px solid rgba(255,204,51,0.30)" : "none",
+            ? "rgba(162,155,254,0.12)" : "linear-gradient(135deg, #6C5CE7, #A29BFE)",
+          border: isProUser ? "1px solid rgba(162,155,254,0.30)" : "none",
           fontSize: 12, fontWeight: 800,
-          color: isProUser ? "#FFCC33" : "white",
+          color: isProUser ? "#A29BFE" : "white",
           boxShadow: isProUser ? "none" : "0 4px 16px rgba(108,92,231,0.45)",
         }}>
           {isProUser ? <Crown size={13} /> : <Zap size={13} />}
@@ -1352,7 +1352,7 @@ function ProfilePageInner() {
 
   if (isLoading || !profile) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#07080E" }}>
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "transparent" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "20px 16px 14px" }}>
           <div style={{ height: 16, width: 120, borderRadius: 8, background: "rgba(255,255,255,0.08)", animation: "skeleton-shimmer 1.4s ease-in-out infinite alternate" }} />
         </div>
@@ -1366,14 +1366,14 @@ function ProfilePageInner() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#07080E", overflowY: "auto" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "transparent", overflowY: "auto" }}>
 
       {/* Header */}
       <div style={{
         position: "sticky", top: 0, zIndex: 10,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "16px 16px 12px",
-        background: "rgba(7,8,14,0.95)", backdropFilter: "blur(20px)",
+        background: "rgba(14,12,32,0.55)", backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
       }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: isMe ? "white" : "rgba(255,255,255,0.65)" }}>
@@ -1412,8 +1412,8 @@ function ProfilePageInner() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 900, color: "white", margin: "0 0 6px", letterSpacing: "-0.01em" }}>{profile.username}</h2>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
-                  <Star size={11} style={{ color: "#FFCC33", fill: "#FFCC33" }} />
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#FFCC33" }}>{(stats.reputation ?? 0).toLocaleString()} pts</span>
+                  <Star size={11} style={{ color: "#A29BFE", fill: "#A29BFE" }} />
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#A29BFE" }}>{(stats.reputation ?? 0).toLocaleString()} pts</span>
                   <span style={{ marginLeft: 4, fontSize: 10, color: tier_label(stats.reputation ?? 0).color, fontWeight: 700 }}>{tier_label(stats.reputation ?? 0).label}</span>
                 </div>
                 {profile.bio && <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", margin: 0, lineHeight: 1.5 }}>{profile.bio}</p>}

@@ -379,7 +379,7 @@ export function ChatView({ conversation, contact, messages }: ChatViewProps) {
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#08090F", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "transparent", overflow: "hidden" }}>
 
       {/* ── Chat Header ────────────────────────────────────────── */}
       <motion.div
@@ -388,7 +388,7 @@ export function ChatView({ conversation, contact, messages }: ChatViewProps) {
         transition={{ duration: 0.3 }}
         style={{
           flexShrink: 0, padding: "12px 14px 10px",
-          background: "rgba(8,9,15,0.97)", backdropFilter: "blur(24px)",
+          background: "rgba(14,12,32,0.55)", backdropFilter: "blur(24px)",
           borderBottom: "1px solid rgba(255,255,255,0.07)",
           display: "flex", alignItems: "center", gap: 12,
         }}

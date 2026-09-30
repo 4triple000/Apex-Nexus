@@ -25,7 +25,7 @@ interface IntelligenceResult {
 }
 
 function RiskGauge({ value, label, low, high }: { value: number; label: string; low: string; high: string }) {
-  const color = value >= 70 ? "#ef4444" : value >= 40 ? "#ffcc33" : "#10b981";
+  const color = value >= 70 ? "#ef4444" : value >= 40 ? "#A29BFE" : "#10b981";
   const circumference = 2 * Math.PI * 28;
   const offset = circumference * (1 - value / 100);
   return (
@@ -72,7 +72,7 @@ export function IntelligencePanel({ conversationId, messages }: IntelligencePane
     }
   }
 
-  const urgencyColors = { low: "#10b981", medium: "#ffcc33", high: "#ef4444" };
+  const urgencyColors = { low: "#10b981", medium: "#A29BFE", high: "#ef4444" };
   const urgencyLabels = { low: "When ready", medium: "Soon", high: "URGENT" };
 
   return (
@@ -86,7 +86,7 @@ export function IntelligencePanel({ conversationId, messages }: IntelligencePane
           onClick={runAnalysis}
           disabled={loading || messages.length < 2}
           className="px-3 py-1.5 rounded-lg text-xs font-bold text-black disabled:opacity-40 transition-opacity"
-          style={{ background: "#ffcc33" }}
+          style={{ background: "#A29BFE" }}
         >
           {loading ? "Analyzing..." : "Analyze"}
         </button>

@@ -2,7 +2,7 @@ import { Sparkles } from "lucide-react";
 import { usePersonalization } from "@/hooks/useAILearning";
 
 const TONE_COLORS: Record<string, string> = {
-  confident: "#ffcc33",
+  confident: "#A29BFE",
   flirty: "#f472b6",
   humorous: "#34d399",
   professional: "#38bdf8",

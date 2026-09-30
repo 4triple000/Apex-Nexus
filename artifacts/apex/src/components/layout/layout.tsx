@@ -29,6 +29,7 @@ function PageTransition({ children, location }: { children: ReactNode; location:
 export function Layout({ children }: { children: ReactNode }) {
   const avatarStore = useAvatar();
   const [location] = useLocation();
+  // Home and Chat leave room for the fixed ☰ button in their own headers; other pages start below it
 
   return (
     <>
@@ -36,17 +37,12 @@ export function Layout({ children }: { children: ReactNode }) {
           MOBILE layout — hidden on lg+ screens
       ══════════════════════════════════════════════ */}
       <div
-        className="lg:hidden min-h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
-        style={{ background: "var(--mg-bg)", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
+        className="mg-font lg:hidden min-h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
+        style={{ background: "transparent", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
       >
-        {/* Midnight Glass: soft moving light that the frosted surfaces pick up */}
-        <div aria-hidden className="mg-blob" style={{ width: 280, height: 280, top: 60, left: -90, background: "rgba(108,92,231,0.55)" }} />
-        <div aria-hidden className="mg-blob" style={{ width: 240, height: 240, top: "42%", right: -80, background: "rgba(0,194,255,0.32)", animationDelay: "-5s" }} />
-        <div aria-hidden className="mg-blob" style={{ width: 220, height: 220, bottom: 40, left: 10, background: "rgba(255,79,163,0.26)", animationDelay: "-10s" }} />
-
         <ApexControlPanel />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingBottom: 96, paddingTop: 4 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingBottom: 96, paddingTop: location === "/" || location.startsWith("/dm") ? 4 : 64 }}>
           <PageTransition location={location}>{children}</PageTransition>
         </div>
 
@@ -59,13 +55,8 @@ export function Layout({ children }: { children: ReactNode }) {
       ══════════════════════════════════════════════ */}
       <div
         className="hidden lg:flex min-h-[100dvh] w-full relative"
-        style={{ background: "#07070F" }}
+        style={{ background: "transparent", color: "var(--mg-ink)" }}
       >
-        {/* Subtle purple gradient top-left bloom */}
-        <div aria-hidden style={{ position: "fixed", top: 0, left: 0, width: 600, height: 400, background: "radial-gradient(ellipse at 0% 0%, rgba(124,58,237,0.08) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-        {/* Bottom-right blue bloom */}
-        <div aria-hidden style={{ position: "fixed", bottom: 0, right: 0, width: 500, height: 400, background: "radial-gradient(ellipse at 100% 100%, rgba(59,130,246,0.07) 0%, transparent 65%)", pointerEvents: "none", zIndex: 0 }} />
-
         {/* Sidebar */}
         <Sidebar />
 

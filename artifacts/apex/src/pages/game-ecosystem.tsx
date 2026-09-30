@@ -152,7 +152,7 @@ function FeedCard({
 
   const tagColor = (tag: string) => {
     const colors: Record<string, string> = {
-      platformer: "#6C5CE7", neon: "#A29BFE", coins: "#ffcc33",
+      platformer: "#6C5CE7", neon: "#A29BFE", coins: "#A29BFE",
       survival: "#E17055", sky: "#74B9FF", hard: "#D63031",
       boss: "#E17055", speed: "#00CEC9", dodge: "#FD79A8",
       combat: "#D63031", "ai-generated": "#6C5CE7", viral: "#FD79A8",
@@ -174,7 +174,7 @@ function FeedCard({
       }}
     >
       {/* Preview */}
-      <div style={{ position: "relative", background: "#07080E", display: "flex", justifyContent: "center", padding: "12px 0" }}>
+      <div style={{ position: "relative", background: "transparent", display: "flex", justifyContent: "center", padding: "12px 0" }}>
         <GamePreviewCanvas config={game.gameConfig} size={280} />
 
         {/* Overlay badges */}
@@ -374,7 +374,7 @@ function RemixStudio({ game, onClose, onPublish }: {
         onClick={e => e.stopPropagation()}
         style={{
           width: "100%", maxHeight: "90vh", overflowY: "auto",
-          background: "#0F1115", borderRadius: "24px 24px 0 0",
+          background: "transparent", borderRadius: "24px 24px 0 0",
           padding: 20, border: "1px solid rgba(108,92,231,0.3)",
         }}
       >
@@ -518,7 +518,7 @@ function AnalyticsModal({ game, onClose }: { game: GameEntry; onClose: () => voi
         transition={{ type: "spring", damping: 26, stiffness: 300 }}
         onClick={e => e.stopPropagation()}
         style={{ width: "100%", maxHeight: "90vh", overflowY: "auto",
-          background: "#0F1115", borderRadius: "24px 24px 0 0",
+          background: "transparent", borderRadius: "24px 24px 0 0",
           padding: 20, border: "1px solid rgba(108,92,231,0.3)" }}
       >
         <div style={{ width: 36, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 2, margin: "0 auto 16px" }} />
@@ -536,14 +536,14 @@ function AnalyticsModal({ game, onClose }: { game: GameEntry; onClose: () => voi
               <Stat label="Plays" value={data.stats.plays} />
               <Stat label="Likes" value={data.stats.likes} color="#FD79A8" />
               <Stat label="Wins" value={data.stats.completions} color="#00CEC9" />
-              <Stat label="Remixes" value={data.stats.remixes} color="#ffcc33" />
+              <Stat label="Remixes" value={data.stats.remixes} color="#A29BFE" />
             </div>
 
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
               <Stat label="Win Rate" value={`${data.stats.completionRate}%`} color="#00CEC9" />
               <Stat label="Replay Rate" value={`${data.stats.replayRate}%`} color="#A29BFE" />
               <Stat label="Avg Play" value={`${data.stats.avgPlayDurationSec}s`} color="#74B9FF" />
-              <Stat label="Trend Score" value={data.stats.trendScore} color="#ffcc33" />
+              <Stat label="Trend Score" value={data.stats.trendScore} color="#A29BFE" />
             </div>
 
             {/* Engagement Score Bar */}
@@ -674,7 +674,7 @@ export default function GameEcosystemPage() {
   ];
 
   return (
-    <div style={{ background: "#07080E", minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+    <div style={{ background: "transparent", minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <div style={{
         background: "linear-gradient(180deg, rgba(108,92,231,0.12) 0%, transparent 100%)",
@@ -821,7 +821,7 @@ export default function GameEcosystemPage() {
               <h2 style={{ color: "#fff", fontWeight: 800, margin: "0 0 4px" }}>{playingGame.name}</h2>
               <p style={{ color: "#636e72", fontSize: 13, margin: 0 }}>by {playingGame.creatorName}</p>
             </div>
-            <div style={{ background: "#07080E", borderRadius: 16, padding: 8,
+            <div style={{ background: "transparent", borderRadius: 16, padding: 8,
               border: "1px solid rgba(108,92,231,0.3)", marginBottom: 16 }}>
               <GamePreviewCanvas config={playingGame.gameConfig} size={300} />
             </div>

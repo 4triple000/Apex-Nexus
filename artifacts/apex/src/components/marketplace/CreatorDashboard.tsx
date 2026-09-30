@@ -52,18 +52,18 @@ export function CreatorDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-3 gap-2">
-          <StatBox icon="⚡" label="Workflows" value={stats?.totalWorkflows ?? 0} color="#ffcc33" />
+          <StatBox icon="⚡" label="Workflows" value={stats?.totalWorkflows ?? 0} color="#A29BFE" />
           <StatBox icon="▶" label="Total Plays" value={(stats?.totalPlays ?? 0).toLocaleString()} color="#10b981" />
           <StatBox icon="🔀" label="Remixes" value={stats?.totalRemixes ?? 0} color="#8b5cf6" />
-          <StatBox icon="⭐" label="Avg Rating" value={stats?.avgRating ? `${stats.avgRating}/5` : "—"} color="#ffcc33" />
+          <StatBox icon="⭐" label="Avg Rating" value={stats?.avgRating ? `${stats.avgRating}/5` : "—"} color="#A29BFE" />
           <StatBox icon="💬" label="Reviews" value={stats?.totalRatings ?? 0} color="#ec4899" />
           <StatBox icon="🌐" label="Published" value={stats?.publishedCount ?? 0} color="#3b82f6" />
         </div>
 
         {/* Top Workflow */}
         {stats?.topWorkflow && (
-          <div className="rounded-xl p-4 border border-[#ffcc33]/20 bg-[#ffcc33]/5">
-            <p className="text-[#ffcc33] font-bold text-xs mb-2">🏆 TOP WORKFLOW</p>
+          <div className="rounded-xl p-4 border border-[#A29BFE]/20 bg-[#A29BFE]/5">
+            <p className="text-[#A29BFE] font-bold text-xs mb-2">🏆 TOP WORKFLOW</p>
             <p className="text-white font-bold text-sm">{stats.topWorkflow.title}</p>
             <div className="flex gap-4 mt-2">
               <span className="text-white/50 text-xs">▶ {stats.topWorkflow.playCount.toLocaleString()} plays</span>
@@ -96,7 +96,7 @@ export function CreatorDashboard() {
                       {isPublished ? (
                         <span className="text-[10px] text-green-400 font-bold">✅ Published</span>
                       ) : (
-                        <span className="text-[10px] text-[#ffcc33]">Publish →</span>
+                        <span className="text-[10px] text-[#A29BFE]">Publish →</span>
                       )}
                     </button>
 
@@ -129,7 +129,7 @@ export function CreatorDashboard() {
                                 <button
                                   key={e}
                                   onClick={() => setPublishData((p) => ({ ...p, thumbnailEmoji: e }))}
-                                  className={`w-8 h-8 rounded-lg text-lg transition-all ${publishData.thumbnailEmoji === e ? "bg-[#ffcc33]/20 border border-[#ffcc33]/40" : "bg-white/5 hover:bg-white/10"}`}
+                                  className={`w-8 h-8 rounded-lg text-lg transition-all ${publishData.thumbnailEmoji === e ? "bg-[#A29BFE]/20 border border-[#A29BFE]/40" : "bg-white/5 hover:bg-white/10"}`}
                                 >
                                   {e}
                                 </button>
@@ -141,7 +141,7 @@ export function CreatorDashboard() {
                           onClick={handlePublish}
                           disabled={publish.isPending}
                           className="w-full py-2.5 rounded-xl text-sm font-bold text-black disabled:opacity-50"
-                          style={{ background: "#ffcc33" }}
+                          style={{ background: "#A29BFE" }}
                         >
                           {publish.isPending ? "Publishing..." : "🚀 Publish Now"}
                         </button>

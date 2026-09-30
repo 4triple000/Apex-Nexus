@@ -166,7 +166,7 @@ function CodeEditor({
         ref={lineNosRef}
         style={{
           width: 48, flexShrink: 0, overflowY: "hidden",
-          background: "#0D1117", borderRight: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(30,26,62,0.62)", borderRight: "1px solid rgba(255,255,255,0.06)",
           paddingTop: 14, paddingBottom: 14, userSelect: "none",
           fontFamily: "'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
           fontSize: 12, lineHeight: "20px", color: "rgba(255,255,255,0.18)",
@@ -191,7 +191,7 @@ function CodeEditor({
         autoCapitalize="off"
         style={{
           flex: 1, resize: "none", border: "none", outline: "none",
-          background: "#0D1117", color: "#ABB2BF",
+          background: "rgba(30,26,62,0.62)", color: "#ABB2BF",
           fontFamily: "'Fira Code', 'Cascadia Code', 'JetBrains Mono', monospace",
           fontSize: 12, lineHeight: "20px",
           padding: "14px 16px", overflowY: "auto",
@@ -617,7 +617,7 @@ User request: `;
                       </div>
                       <div style={{
                         maxHeight: 200, overflow: "auto",
-                        background: "#0D1117",
+                        background: "rgba(30,26,62,0.62)",
                       }}>
                         <pre style={{
                           margin: 0, padding: "10px 14px", fontSize: 11, lineHeight: "18px",
@@ -801,7 +801,7 @@ export default function DevCockpitPage() {
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100dvh",
-      background: "#0A0C10", color: "#ABB2BF",
+      background: "transparent", color: "#ABB2BF",
       fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
       overflow: "hidden",
     }}>
@@ -810,7 +810,7 @@ export default function DevCockpitPage() {
       <div style={{
         flexShrink: 0, height: 46, display: "flex", alignItems: "center",
         padding: "0 16px", gap: 12,
-        background: "#0D1117", borderBottom: "1px solid rgba(255,255,255,0.07)",
+        background: "rgba(30,26,62,0.62)", borderBottom: "1px solid rgba(255,255,255,0.07)",
         zIndex: 10,
       }}>
         {/* Back */}
@@ -902,7 +902,7 @@ export default function DevCockpitPage() {
 
           {/* Files panel */}
           {mobileTab === "files" && (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#0D1117" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "rgba(30,26,62,0.62)" }}>
               <div style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", flexWrap: "wrap", gap: 4, flexShrink: 0 }}>
                 {ROOTS.map(r => (
                   <button key={r.id} onClick={() => setRoot(r.id)} style={{ padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, cursor: "pointer", border: "none", background: root === r.id ? "rgba(97,175,239,0.18)" : "transparent", color: root === r.id ? "#61AFEF" : "rgba(255,255,255,0.30)" }}>
@@ -925,7 +925,7 @@ export default function DevCockpitPage() {
           {/* Editor panel */}
           {mobileTab === "editor" && (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-              <div style={{ flexShrink: 0, height: 34, display: "flex", alignItems: "center", padding: "0 14px", gap: 10, background: "#0F1319", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ flexShrink: 0, height: 34, display: "flex", alignItems: "center", padding: "0 14px", gap: 10, background: "rgba(30,26,62,0.62)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                 {selectedFile ? (
                   <>
                     <span style={{ fontSize: 11, color: fileColor(selectedFile.split("/").pop() ?? "") }}>{selectedFile.split("/").pop()}</span>
@@ -940,7 +940,7 @@ export default function DevCockpitPage() {
 
           {/* AI panel */}
           {mobileTab === "ai" && (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#0D1117" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "rgba(30,26,62,0.62)" }}>
               <div style={{ flexShrink: 0, height: 34, display: "flex", alignItems: "center", padding: "0 16px", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                 <span style={{ fontSize: 12 }}>🤖</span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.70)" }}>AI Builder</span>
@@ -957,7 +957,7 @@ export default function DevCockpitPage() {
           )}
 
           {/* Bottom tab bar */}
-          <div style={{ flexShrink: 0, height: 58, display: "flex", background: "#0D1117", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <div style={{ flexShrink: 0, height: 58, display: "flex", background: "rgba(30,26,62,0.62)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
             {([
               { key: "ai",     icon: "🤖", label: "AI Builder" },
               { key: "files",  icon: "📁", label: "Files" },
@@ -989,7 +989,7 @@ export default function DevCockpitPage() {
         {/* ── LEFT: File Tree (220px) ───────────────────────────────────────── */}
         <div style={{
           width: 220, flexShrink: 0, display: "flex", flexDirection: "column",
-          background: "#0D1117", borderRight: "1px solid rgba(255,255,255,0.07)",
+          background: "rgba(30,26,62,0.62)", borderRight: "1px solid rgba(255,255,255,0.07)",
           overflow: "hidden",
         }}>
           {/* Root selector */}
@@ -1040,7 +1040,7 @@ export default function DevCockpitPage() {
           {/* Editor top bar */}
           <div style={{
             flexShrink: 0, height: 34, display: "flex", alignItems: "center", padding: "0 14px", gap: 10,
-            background: "#0F1319", borderBottom: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(30,26,62,0.62)", borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}>
             {selectedFile ? (
               <>
@@ -1068,7 +1068,7 @@ export default function DevCockpitPage() {
         {/* ── RIGHT: AI Console (340px) ──────────────────────────────────────── */}
         <div style={{
           width: 340, flexShrink: 0, display: "flex", flexDirection: "column",
-          background: "#0D1117", borderLeft: "1px solid rgba(255,255,255,0.07)",
+          background: "rgba(30,26,62,0.62)", borderLeft: "1px solid rgba(255,255,255,0.07)",
           overflow: "hidden",
         }}>
           {/* Header */}

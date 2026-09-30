@@ -178,7 +178,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
         <span style={{ fontSize: 10, color: "#636e72" }}>{label}</span>
         <span style={{ fontSize: 10, color: scoreColor(value), fontWeight: 700 }}>{Math.round(value * 100)}%</span>
       </div>
-      <div style={{ height: 4, background: "#1a1b2e", borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ height: 4, background: "rgba(30,26,62,0.62)", borderRadius: 3, overflow: "hidden" }}>
         <div style={{
           height: "100%", width: `${Math.round(value * 100)}%`,
           background: scoreColor(value), borderRadius: 3, transition: "width 0.5s",
@@ -194,12 +194,12 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
   return (
     <div style={{
       fontFamily: "'SF Pro Display', -apple-system, sans-serif",
-      background: "#07080E", borderRadius: 16,
+      background: "transparent", borderRadius: 16,
       border: "1px solid #1a1b2e", overflow: "hidden",
     }}>
       {/* ── Header ── */}
       <div style={{
-        background: "linear-gradient(135deg, #0a0b18, #0f1025)",
+        background: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
         borderBottom: "1px solid #1a1b2e", padding: "16px 18px",
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -212,7 +212,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
             <div>
               <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: -0.3 }}>
                 AI Game Studio
-                <span style={{ marginLeft: 8, fontSize: 9, background: "#1a1b2e", color: "#6C5CE7", padding: "2px 7px", borderRadius: 10, fontWeight: 700, letterSpacing: 1 }}>v1</span>
+                <span style={{ marginLeft: 8, fontSize: 9, background: "rgba(30,26,62,0.62)", color: "#6C5CE7", padding: "2px 7px", borderRadius: 10, fontWeight: 700, letterSpacing: 1 }}>v1</span>
               </div>
               <div style={{ fontSize: 11, color: "#636e72" }}>Autonomous · idea→design→build→test→optimize→publish</div>
             </div>
@@ -225,7 +225,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
               { v: status?.publishThisHour ?? 0, l: `/${status?.maxPublishPerHour ?? 5}h`, c: "#fdcb6e" },
             ].map(({ v, l, c }) => (
               <div key={l} style={{
-                background: "#0f1020", border: "1px solid #1a1b2e",
+                background: "rgba(30,26,62,0.62)", border: "1px solid #1a1b2e",
                 borderRadius: 20, padding: "4px 10px", textAlign: "center",
               }}>
                 <div style={{ fontSize: 16, fontWeight: 800, color: c }}>{v}</div>
@@ -234,7 +234,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
             ))}
             <div style={{
               display: "flex", alignItems: "center", gap: 6,
-              background: "#0f1020", border: "1px solid #1a1b2e",
+              background: "rgba(30,26,62,0.62)", border: "1px solid #1a1b2e",
               borderRadius: 20, padding: "6px 12px",
             }}>
               <div style={{
@@ -278,7 +278,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
       </div>
 
       {/* ── Tab bar ── */}
-      <div style={{ display: "flex", borderBottom: "1px solid #1a1b2e", background: "#07080E" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid #1a1b2e", background: "transparent" }}>
         {([
           { id: "studio",  label: "🎯 Studio"                                           },
           { id: "games",   label: `🎮 Games${games.length ? ` (${games.length})` : ""}` },
@@ -304,7 +304,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
             {/* Current run live view */}
             {status?.currentRun && status.currentRun.stage !== "idle" && (
               <div style={{
-                background: "#0f1020", border: `1px solid ${currentMeta.color}44`,
+                background: "rgba(30,26,62,0.62)", border: `1px solid ${currentMeta.color}44`,
                 borderRadius: 12, padding: 14,
               }}>
                 <div style={{ fontSize: 10, color: "#636e72", marginBottom: 8, fontWeight: 700, letterSpacing: 1 }}>
@@ -320,10 +320,10 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
                       {status.currentRun.idea.concept}
                     </div>
                     <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                      <span style={{ fontSize: 9, background: "#1a1b2e", color: "#A29BFE", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>
+                      <span style={{ fontSize: 9, background: "rgba(30,26,62,0.62)", color: "#A29BFE", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>
                         {MODE_LABELS[status.currentRun.idea.suggestedMode] ?? status.currentRun.idea.suggestedMode}
                       </span>
-                      <span style={{ fontSize: 9, background: "#1a1b2e", color: "#636e72", padding: "2px 8px", borderRadius: 10 }}>
+                      <span style={{ fontSize: 9, background: "rgba(30,26,62,0.62)", color: "#636e72", padding: "2px 8px", borderRadius: 10 }}>
                         {status.currentRun.idea.genre}
                       </span>
                     </div>
@@ -358,7 +358,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
             )}
 
             {/* Engine overview */}
-            <div style={{ background: "#0f1020", border: "1px solid #1a1b2e", borderRadius: 12, padding: 14 }}>
+            <div style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #1a1b2e", borderRadius: 12, padding: 14 }}>
               <div style={{ fontSize: 10, color: "#636e72", marginBottom: 10, fontWeight: 700, letterSpacing: 1 }}>
                 STUDIO ENGINES
               </div>
@@ -372,7 +372,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
                   { icon: "🌐", name: "Publish Engine",    desc: "Feed + remix + multiplayer support",  color: "#00b894" },
                 ].map((e) => (
                   <div key={e.name} style={{
-                    background: "#12132a", border: "1px solid #1a1b2e",
+                    background: "rgba(30,26,62,0.62)", border: "1px solid #1a1b2e",
                     borderRadius: 10, padding: "10px 12px",
                     display: "flex", alignItems: "center", gap: 8,
                   }}>
@@ -407,7 +407,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
             )}
 
             {/* Log */}
-            <div style={{ background: "#050607", border: "1px solid #1a1b2e", borderRadius: 10, padding: 10, maxHeight: 110, overflowY: "auto" }}>
+            <div style={{ background: "transparent", border: "1px solid #1a1b2e", borderRadius: 10, padding: 10, maxHeight: 110, overflowY: "auto" }}>
               <div style={{ fontSize: 10, color: "#636e72", marginBottom: 4, fontWeight: 700, letterSpacing: 1 }}>LIVE LOG</div>
               {log.length === 0
                 ? <div style={{ fontSize: 11, color: "#2d3436" }}>No activity yet…</div>
@@ -430,7 +430,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
               const isExpanded = expanded === game.id;
               return (
                 <div key={game.id} style={{
-                  background: "#0f1020", border: "1px solid #1a1b2e",
+                  background: "rgba(30,26,62,0.62)", border: "1px solid #1a1b2e",
                   borderRadius: 12, overflow: "hidden",
                 }}>
                   <div style={{ padding: "12px 14px" }}>
@@ -441,10 +441,10 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
                           <span style={{ fontSize: 9, background: "#6C5CE722", color: "#A29BFE", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>
                             {MODE_LABELS[game.config.gameMode ?? "platformer"] ?? game.config.gameMode}
                           </span>
-                          <span style={{ fontSize: 9, background: "#1a1b2e", color: "#636e72", padding: "2px 8px", borderRadius: 10 }}>
+                          <span style={{ fontSize: 9, background: "rgba(30,26,62,0.62)", color: "#636e72", padding: "2px 8px", borderRadius: 10 }}>
                             {game.genre}
                           </span>
-                          <span style={{ fontSize: 9, background: "#1a1b2e", color: "#636e72", padding: "2px 8px", borderRadius: 10 }}>
+                          <span style={{ fontSize: 9, background: "rgba(30,26,62,0.62)", color: "#636e72", padding: "2px 8px", borderRadius: 10 }}>
                             v{game.version}
                           </span>
                           {game.remixEnabled && <span style={{ fontSize: 9, background: "#00b89422", color: "#00b894", padding: "2px 8px", borderRadius: 10 }}>🔀 Remix</span>}
@@ -490,7 +490,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
                   </div>
 
                   {isExpanded && (
-                    <div style={{ borderTop: "1px solid #1a1b2e", padding: "12px 14px", background: "#080910" }}>
+                    <div style={{ borderTop: "1px solid #1a1b2e", padding: "12px 14px", background: "transparent" }}>
                       <div style={{ fontSize: 10, color: "#636e72", marginBottom: 4, fontWeight: 700, letterSpacing: 1 }}>IDEA MECHANIC</div>
                       <div style={{ fontSize: 11, color: "#b2bec3", marginBottom: 8 }}>{game.idea.uniqueMechanic}</div>
                       <div style={{ fontSize: 10, color: "#636e72", marginBottom: 4, fontWeight: 700, letterSpacing: 1 }}>OPTIMIZATION</div>
@@ -517,7 +517,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
               </div>
             ) : runs.map((run) => (
               <div key={run.id} style={{
-                background: "#0f1020",
+                background: "rgba(30,26,62,0.62)",
                 border: `1px solid ${run.publishedGame ? "#00b89433" : run.stage === "failed" ? "#e1705533" : "#1a1b2e"}`,
                 borderRadius: 10, padding: "12px 14px",
               }}>
@@ -565,7 +565,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
             </div>
 
             {/* Interval */}
-            <div style={{ background: "#0f1020", border: "1px solid #1a1b2e", borderRadius: 10, padding: 14 }}>
+            <div style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #1a1b2e", borderRadius: 10, padding: 14 }}>
               <div style={{ fontSize: 10, color: "#636e72", marginBottom: 8, fontWeight: 700, letterSpacing: 1 }}>AUTO-LOOP INTERVAL</div>
               <div style={{ display: "flex", gap: 8 }}>
                 {[15, 30, 60, 120].map((m) => (
@@ -582,7 +582,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
 
             {/* Auto-loop toggle */}
             <div style={{
-              background: "#0f1020", border: "1px solid #1a1b2e", borderRadius: 10, padding: 14,
+              background: "rgba(30,26,62,0.62)", border: "1px solid #1a1b2e", borderRadius: 10, padding: 14,
               display: "flex", alignItems: "center", justifyContent: "space-between",
             }}>
               <div>
@@ -631,7 +631,7 @@ export default function GameStudioPanel({ onPlay }: GameStudioPanelProps) {
 
             {/* Safety info */}
             <div style={{
-              background: "#0f1020", border: "1px solid #1a1b2e", borderRadius: 10,
+              background: "rgba(30,26,62,0.62)", border: "1px solid #1a1b2e", borderRadius: 10,
               padding: 14, fontSize: 11, color: "#636e72", lineHeight: 1.8,
             }}>
               <div style={{ fontWeight: 700, color: "#dfe6e9", marginBottom: 6 }}>🔐 Safety Controls</div>

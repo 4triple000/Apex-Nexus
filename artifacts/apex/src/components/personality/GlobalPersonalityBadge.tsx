@@ -106,7 +106,7 @@ export function GlobalPersonalityBadge({ compact = false }: Props) {
             top: 56, right: 10,
             zIndex: 999,
             width: 320,
-            background: "rgba(10,11,20,0.97)",
+            background: "rgba(14,12,32,0.55)",
             backdropFilter: "blur(24px)",
             WebkitBackdropFilter: "blur(24px)",
             border: "1px solid rgba(162,155,254,0.18)",

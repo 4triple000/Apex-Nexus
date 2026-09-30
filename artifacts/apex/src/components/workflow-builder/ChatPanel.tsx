@@ -53,7 +53,7 @@ export function ChatPanel({ messages, isLoading, onSend, onClear }: ChatPanelPro
         borderRight: "1px solid #1e1e1e",
         display: "flex",
         flexDirection: "column",
-        background: "#0d0d0d",
+        background: "transparent",
       }}
     >
       {/* Header */}
@@ -72,14 +72,14 @@ export function ChatPanel({ messages, isLoading, onSend, onClear }: ChatPanelPro
               width: 28,
               height: 28,
               borderRadius: 8,
-              background: "rgba(255,204,51,0.15)",
-              border: "1px solid rgba(255,204,51,0.3)",
+              background: "rgba(162,155,254,0.15)",
+              border: "1px solid rgba(162,155,254,0.3)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Sparkles size={14} color="#FFCC33" />
+            <Sparkles size={14} color="#A29BFE" />
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
@@ -155,7 +155,7 @@ export function ChatPanel({ messages, isLoading, onSend, onClear }: ChatPanelPro
                   key={s}
                   onClick={() => onSend(s)}
                   style={{
-                    background: "#161616",
+                    background: "rgba(30,26,62,0.62)",
                     border: "1px solid #222",
                     borderRadius: 8,
                     padding: "8px 10px",
@@ -168,7 +168,7 @@ export function ChatPanel({ messages, isLoading, onSend, onClear }: ChatPanelPro
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "#1e1e1e";
-                    e.currentTarget.style.borderColor = "#FFCC3333";
+                    e.currentTarget.style.borderColor = "#A29BFE33";
                     e.currentTarget.style.color = "#fff";
                   }}
                   onMouseLeave={(e) => {
@@ -193,18 +193,18 @@ export function ChatPanel({ messages, isLoading, onSend, onClear }: ChatPanelPro
                 width: 26,
                 height: 26,
                 borderRadius: 8,
-                background: "rgba(255,204,51,0.1)",
+                background: "rgba(162,155,254,0.1)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
               }}
             >
-              <Sparkles size={12} color="#FFCC33" />
+              <Sparkles size={12} color="#A29BFE" />
             </div>
             <div
               style={{
-                background: "#161616",
+                background: "rgba(30,26,62,0.62)",
                 border: "1px solid #252525",
                 borderRadius: "4px 12px 12px 12px",
                 padding: "10px 12px",
@@ -213,7 +213,7 @@ export function ChatPanel({ messages, isLoading, onSend, onClear }: ChatPanelPro
                 gap: 8,
               }}
             >
-              <Loader2 size={12} color="#FFCC33" className="animate-spin" />
+              <Loader2 size={12} color="#A29BFE" className="animate-spin" />
               <span style={{ fontSize: 12, color: "#666" }}>Building workflow…</span>
             </div>
           </div>
@@ -224,7 +224,7 @@ export function ChatPanel({ messages, isLoading, onSend, onClear }: ChatPanelPro
       <div style={{ padding: "10px 12px", borderTop: "1px solid #1a1a1a" }}>
         <div
           style={{
-            background: "#161616",
+            background: "rgba(30,26,62,0.62)",
             border: "1px solid #252525",
             borderRadius: 12,
             display: "flex",
@@ -268,7 +268,7 @@ export function ChatPanel({ messages, isLoading, onSend, onClear }: ChatPanelPro
               width: 28,
               height: 28,
               borderRadius: 8,
-              background: input.trim() && !isLoading ? "#FFCC33" : "#1e1e1e",
+              background: input.trim() && !isLoading ? "#A29BFE" : "#1e1e1e",
               border: "none",
               cursor: input.trim() && !isLoading ? "pointer" : "not-allowed",
               display: "flex",
@@ -310,7 +310,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             width: 26,
             height: 26,
             borderRadius: 8,
-            background: "rgba(255,204,51,0.1)",
+            background: "rgba(162,155,254,0.1)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -318,14 +318,14 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             marginTop: 1,
           }}
         >
-          <Sparkles size={12} color="#FFCC33" />
+          <Sparkles size={12} color="#A29BFE" />
         </div>
       )}
       <div
         style={{
           maxWidth: "78%",
           background: isUser
-            ? "rgba(255,204,51,0.12)"
+            ? "rgba(162,155,254,0.12)"
             : isError
             ? "rgba(239,68,68,0.1)"
             : isWorkflow
@@ -333,7 +333,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
             : "#161616",
           border: `1px solid ${
             isUser
-              ? "rgba(255,204,51,0.25)"
+              ? "rgba(162,155,254,0.25)"
               : isError
               ? "rgba(239,68,68,0.25)"
               : isWorkflow

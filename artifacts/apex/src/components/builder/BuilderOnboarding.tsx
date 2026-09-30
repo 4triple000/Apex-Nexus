@@ -36,9 +36,9 @@ const BLUE  = "#00D2FF";
 const CYAN  = "#00D2D3";
 const PURP  = "#A29BFE";
 const PINK  = "#FD79A8";
-const GOLD  = "#FFCC33";
+const GOLD  = "#A29BFE";
 const RED   = "#FF5F6D";
-const BG    = "#06070D";
+const BG = "transparent";
 const BG2   = "#0D0E18";
 
 // ─── Step types ───────────────────────────────────────────────────────────────

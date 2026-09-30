@@ -71,7 +71,7 @@ export function HubHeader({ name, onAvatar }: { name?: string; onAvatar: () => v
       <div style={{ width: 42, flexShrink: 0 }} aria-hidden />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12, color: "var(--mg-ink-3)", fontWeight: 500 }}>{greeting}</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "var(--mg-ink)", letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <div className="mg-display" style={{ fontSize: 18, fontWeight: 700, color: "var(--mg-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           Hey, {name?.trim() || "Creator"}
         </div>
       </div>
@@ -319,13 +319,13 @@ export function ModelCarousel({
               role="group"
               aria-roledescription="slide"
               aria-label={`${m.name}, ${i + 1} of ${MODELS.length}`}
-              style={{ position: "relative", minHeight: 236, padding: "22px 22px 20px", display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6, background: `radial-gradient(120% 90% at 50% 0%, ${m.color}40 0%, transparent 62%)` }}
+              style={{ position: "relative", minHeight: 236, padding: "22px 22px 20px", display: "flex", flexDirection: "column", justifyContent: "flex-end", gap: 6, background: `radial-gradient(90% 70% at 50% 18%, ${m.color}45 0%, transparent 70%), linear-gradient(160deg, rgba(139,123,255,0.35), rgba(0,194,255,0.12))` }}
             >
               <div style={{ position: "absolute", top: 26, left: "50%", transform: "translateX(-50%)", width: 92, height: 92, borderRadius: 28, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", boxShadow: `inset 0 1px 0 rgba(255,255,255,0.35), 0 16px 40px ${m.color}55` }}>
                 {m.id === "auto" ? <ApexLogo size={60} radius={18} /> : <m.Logo size={50} color={m.id === "openai" ? "#FFFFFF" : m.color} />}
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 24, fontWeight: 700, color: "var(--mg-ink)", letterSpacing: "-0.02em" }}>{m.name}</div>
+                <div className="mg-display" style={{ fontSize: 24, fontWeight: 700, color: "var(--mg-ink)" }}>{m.name}</div>
                 <StatusPill connected={status?.[m.id]} />
               </div>
               <div style={{ fontSize: 13.5, color: "var(--mg-ink-2)" }}>
@@ -366,7 +366,7 @@ export function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Pa
       </div>
       <div style={{ display: "grid", gap: 6 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <div style={{ fontSize: 24, fontWeight: 700, color: "var(--mg-ink)" }}>{copy.title}</div>
+          <div className="mg-display" style={{ fontSize: 24, fontWeight: 700, color: "var(--mg-ink)" }}>{copy.title}</div>
           {connected !== undefined && (
             <span style={{ fontSize: 12, fontWeight: 600, color: "var(--mg-ink-3)" }}>{connected} of {models.length} connected</span>
           )}

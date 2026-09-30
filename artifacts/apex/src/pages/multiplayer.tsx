@@ -354,7 +354,7 @@ function GameSession({
   return (
     <div style={{
       flex: 1, display: "flex", flexDirection: "column",
-      background: "#07080E", position: "relative",
+      background: "transparent", position: "relative",
       animation: `fadeIn 0.4s ${IOS} both`,
     }}>
 
@@ -887,7 +887,7 @@ export default function MultiplayerPage() {
   return (
     <div style={{
       flex: 1, display: "flex", flexDirection: "column",
-      background: "#07080E", overflowY: "auto",
+      background: "transparent", overflowY: "auto",
       position: "relative",
     }}>
       {/* Global styles */}
@@ -921,7 +921,7 @@ export default function MultiplayerPage() {
         position: "sticky", top: 0, zIndex: 20,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "18px 20px 14px",
-        background: "rgba(7,8,14,0.90)",
+        background: "rgba(14,12,32,0.55)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>

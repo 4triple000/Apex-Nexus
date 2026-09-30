@@ -5,7 +5,7 @@ const COLORS = [
   ["#f59e0b", "#b45309"],
   ["#3b82f6", "#1d4ed8"],
   ["#ef4444", "#b91c1c"],
-  ["#ffcc33", "#d97706"],
+  ["#A29BFE", "#d97706"],
 ];
 
 export function ContactAvatar({

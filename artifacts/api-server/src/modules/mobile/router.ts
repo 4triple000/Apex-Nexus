@@ -26,7 +26,7 @@ import {
   mobileMemoryTable,
 } from "@workspace/db";
 import { hashPassword, verifyPassword } from "./crypto";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { chatWithHistory } from "../../lib/aiRouter";
 import { extractMemoryFromMessage, buildMemorySystemPrompt } from "../memory/extractor";
 import { success, badRequest, notFound, serverError, unauthorized, forbidden } from "../../shared/utils/response";
 import { requireUser } from "../../shared/middleware/requireAuth";
@@ -151,13 +151,14 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
   const schema = z.object({
     message: z.string().min(1).max(4000),
     conversationId: z.number().int().positive().optional(),
+    provider: z.enum(["auto", "openai", "claude", "perplexity"]).optional(),
   });
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) { badRequest(res, parsed.error.errors[0]?.message ?? "Invalid body"); return; }
 
   const userId = currentUserId(req);
-  const { message, conversationId: existingConvId } = parsed.data;
+  const { message, conversationId: existingConvId, provider } = parsed.data;
   if (existingConvId && !(await ownsConversation(userId, existingConvId))) {
     notFound(res, "Conversation not found");
     return;
@@ -193,18 +194,13 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
       `Be direct, helpful, and conversational. Keep responses focused and clear.` +
       memorySection;
 
-    // 5. Call OpenAI
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 2048,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...historyMessages,
-        { role: "user", content: message },
-      ],
-    });
-
-    const aiContent = response.choices[0]?.message?.content ?? "I'm having trouble responding right now. Please try again.";
+    // 5. Ask the chosen model
+    const reply = await chatWithHistory(provider, systemPrompt, historyMessages, message);
+    if (reply.error) {
+      res.status(503).json({ ok: false, error: reply.error });
+      return;
+    }
+    const aiContent = reply.content || "I'm having trouble responding right now. Please try again.";
 
     // 6. Store both messages
     await db.insert(mobileMessagesTable).values([
@@ -220,7 +216,7 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
     success(res, {
       content: aiContent,
       conversationId,
-      tokensUsed: response.usage?.total_tokens,
+      provider: reply.provider,
     });
   } catch (err) {
     logger.error({ err }, "Mobile chat error");

@@ -48,7 +48,7 @@ export function ShareMessage({ message, score, personalityMode = "smooth", conta
       const { default: html2canvas } = await import("html2canvas");
       if (!cardRef.current) return;
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: "#0a0a14",
+        backgroundColor: "rgba(14,11,32,0.92)",
         scale: 2,
       });
       const link = document.createElement("a");
@@ -79,7 +79,7 @@ export function ShareMessage({ message, score, personalityMode = "smooth", conta
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-black font-black text-xs" style={{ background: "#ffcc33" }}>A</div>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-black font-black text-xs" style={{ background: "#A29BFE" }}>A</div>
               <span className="text-white font-black text-sm tracking-widest">APEX AI</span>
             </div>
             <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: `${modeColor}20`, color: modeColor }}>
@@ -120,7 +120,7 @@ export function ShareMessage({ message, score, personalityMode = "smooth", conta
         </div>
 
         {/* Controls */}
-        <div className="bg-[#0d0d1a] rounded-2xl border border-white/10 p-4 space-y-3">
+        <div className="bg-[rgba(30,26,62,0.62)] rounded-2xl border border-white/10 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-white font-bold text-sm">Share this win</p>
             <button onClick={onClose} className="text-white/40 text-sm hover:text-white">✕</button>
@@ -130,7 +130,7 @@ export function ShareMessage({ message, score, personalityMode = "smooth", conta
             <span className="text-white/60 text-xs">Include "Made with Apex" tag</span>
             <button
               onClick={() => setWithWatermark((prev) => !prev)}
-              className={`w-10 h-5 rounded-full transition-all relative ${withWatermark ? "bg-[#ffcc33]" : "bg-white/10"}`}
+              className={`w-10 h-5 rounded-full transition-all relative ${withWatermark ? "bg-[#A29BFE]" : "bg-white/10"}`}
             >
               <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${withWatermark ? "right-0.5" : "left-0.5"}`} />
             </button>
@@ -146,7 +146,7 @@ export function ShareMessage({ message, score, personalityMode = "smooth", conta
             <button
               onClick={downloadCard}
               className="py-3 rounded-xl text-sm font-bold text-black transition-opacity"
-              style={{ background: "#ffcc33" }}
+              style={{ background: "#A29BFE" }}
             >
               📸 Save Card
             </button>

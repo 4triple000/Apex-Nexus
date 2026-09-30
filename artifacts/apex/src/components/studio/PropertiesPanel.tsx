@@ -12,7 +12,7 @@ interface PropertiesPanelProps {
 export function PropertiesPanel({ selectedNode, selectedEdge, onUpdateNode, onDeleteNode, onDeleteEdge }: PropertiesPanelProps) {
   if (!selectedNode && !selectedEdge) {
     return (
-      <div className="h-full bg-[#080d18] border-l border-white/8 flex flex-col items-center justify-center p-4">
+      <div className="h-full bg-[transparent] border-l border-white/8 flex flex-col items-center justify-center p-4">
         <div className="text-4xl mb-3 opacity-20">⚙️</div>
         <p className="text-white/25 text-xs text-center">Click a node to edit properties</p>
       </div>
@@ -21,7 +21,7 @@ export function PropertiesPanel({ selectedNode, selectedEdge, onUpdateNode, onDe
 
   if (selectedEdge) {
     return (
-      <div className="h-full bg-[#080d18] border-l border-white/8 flex flex-col p-4 gap-4">
+      <div className="h-full bg-[transparent] border-l border-white/8 flex flex-col p-4 gap-4">
         <div>
           <p className="text-white/40 text-[9px] font-mono uppercase tracking-wider mb-2">Connection</p>
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
@@ -52,7 +52,7 @@ export function PropertiesPanel({ selectedNode, selectedEdge, onUpdateNode, onDe
   }
 
   return (
-    <div className="h-full bg-[#080d18] border-l border-white/8 flex flex-col overflow-hidden">
+    <div className="h-full bg-[transparent] border-l border-white/8 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="p-4 border-b border-white/8">
         <div className="flex items-center gap-3">
@@ -93,7 +93,7 @@ export function PropertiesPanel({ selectedNode, selectedEdge, onUpdateNode, onDe
                   <select
                     value={String(node.data[field.key] ?? field.default ?? "")}
                     onChange={(e) => handleChange(field.key, e.target.value)}
-                    className="w-full bg-[#0d1424] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-[rgba(30,26,62,0.62)] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none"
                     style={{ borderColor: `${def.color}20` }}
                   >
                     {field.options?.map((opt) => (

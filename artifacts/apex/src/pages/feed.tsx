@@ -28,7 +28,7 @@ const SPRING    = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 const COLOR_MAP: Record<string, string> = {
   blue: "#4a9eff", red: "#ff4444", green: "#44ff88",
   yellow: "#ffdd44", purple: "#a855f7", orange: "#ff8c00",
-  cyan: "#00cfff", pink: "#ff79a8", gold: "#ffcc33", gray: "#888",
+  cyan: "#00cfff", pink: "#ff79a8", gold: "#A29BFE", gray: "#888",
 };
 function rc(c?: string) { return COLOR_MAP[c?.toLowerCase() ?? ""] ?? c ?? "#888"; }
 
@@ -133,7 +133,7 @@ function RemixModal({ entry, onClose }: { entry: FeedEntry; onClose: () => void 
         onClick={(e) => e.stopPropagation()}
         style={{
           width: "100%", maxWidth: 480,
-          background: "linear-gradient(180deg, #13141A 0%, #0F1015 100%)",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))",
           borderRadius: "28px 28px 0 0",
           border: "1px solid rgba(255,255,255,0.10)",
           borderBottom: "none",
@@ -319,8 +319,8 @@ function RemixModal({ entry, onClose }: { entry: FeedEntry; onClose: () => void 
                 </div>
                 {/* Live indicator */}
                 <div style={{ position: "absolute", top: 10, right: 10, display: "flex", alignItems: "center", gap: 5, background: "rgba(0,0,0,0.60)", borderRadius: 20, padding: "4px 10px" }}>
-                  <Zap size={10} style={{ color: "#ffcc33" }} />
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#ffcc33" }}>AI Remix</span>
+                  <Zap size={10} style={{ color: "#A29BFE" }} />
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#A29BFE" }}>AI Remix</span>
                 </div>
               </div>
             ) : (
@@ -592,7 +592,7 @@ function ShareModal({ entry, onClose }: { entry: FeedEntry; onClose: () => void 
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: "100%", maxWidth: 480, background: "#13141A",
+          width: "100%", maxWidth: 480, background: "rgba(30,26,62,0.62)",
           borderRadius: "24px 24px 0 0", padding: "28px 24px 36px",
           border: "1px solid rgba(255,255,255,0.10)",
           animation: `slide-up 0.30s ${IOS} both`,
@@ -802,7 +802,7 @@ function GameFeedCard({
               {gameResult.phase === "won" ? "You Won!" : "Game Over"}
             </div>
             {gameResult.score > 0 && (
-              <div style={{ fontSize: 15, color: "#ffcc33", fontWeight: 700 }}>
+              <div style={{ fontSize: 15, color: "#A29BFE", fontWeight: 700 }}>
                 Score: {gameResult.score}
               </div>
             )}
@@ -1172,7 +1172,7 @@ export default function FeedPage() {
   return (
     <div style={{
       height: "100%", display: "flex", flexDirection: "column",
-      background: "#0A0A0F", overflow: "hidden",
+      background: "transparent", overflow: "hidden",
     }}>
 
       {/* ── Header ──────────────────────────────────────────────── */}

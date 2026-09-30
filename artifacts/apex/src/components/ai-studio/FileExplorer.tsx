@@ -160,11 +160,11 @@ export function FileExplorer({ files, onCopyFile, onDownloadFile }: FileExplorer
   const lines = selectedFile?.content.split("\n") ?? [];
 
   return (
-    <div className="flex h-full" style={{ background: "#0D0D0D" }}>
+    <div className="flex h-full" style={{ background: "transparent" }}>
       {/* File tree sidebar */}
       <div
         className="w-52 flex-shrink-0 flex flex-col border-r overflow-y-auto"
-        style={{ background: "#0D0D0D", borderColor: "#1C1C1E" }}
+        style={{ background: "transparent", borderColor: "#1C1C1E" }}
       >
         <div
           className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest border-b flex-shrink-0"
@@ -210,7 +210,7 @@ export function FileExplorer({ files, onCopyFile, onDownloadFile }: FileExplorer
             {/* Code toolbar */}
             <div
               className="flex items-center gap-3 px-4 py-2.5 border-b flex-shrink-0"
-              style={{ background: "#0D0D0D", borderColor: "#1C1C1E" }}
+              style={{ background: "transparent", borderColor: "#1C1C1E" }}
             >
               <div
                 className="px-1.5 py-0.5 rounded text-[9px] font-bold"
@@ -251,7 +251,7 @@ export function FileExplorer({ files, onCopyFile, onDownloadFile }: FileExplorer
             </div>
 
             {/* Code content */}
-            <div className="flex-1 overflow-auto" style={{ background: "#0D0D0F" }}>
+            <div className="flex-1 overflow-auto" style={{ background: "transparent" }}>
               <table className="w-full border-collapse min-w-full">
                 <tbody>
                   {lines.map((line, i) => (
@@ -346,9 +346,9 @@ function FileNode({
       className="w-full flex items-center gap-2 py-1 text-xs transition-all text-left"
       style={{
         paddingLeft: 12 + depth * 16,
-        background: isSelected ? "rgba(255,204,51,0.08)" : "transparent",
-        color: isSelected ? "#FFCC33" : "rgba(255,255,255,0.55)",
-        borderRight: isSelected ? "2px solid #FFCC33" : "2px solid transparent",
+        background: isSelected ? "rgba(162,155,254,0.08)" : "transparent",
+        color: isSelected ? "#A29BFE" : "rgba(255,255,255,0.55)",
+        borderRight: isSelected ? "2px solid #A29BFE" : "2px solid transparent",
       }}
     >
       <div

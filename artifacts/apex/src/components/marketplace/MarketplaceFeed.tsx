@@ -60,12 +60,12 @@ export function MarketplaceFeed() {
               if (!e.target.value) { setSearch(""); }
             }}
             placeholder="Search workflows..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#ffcc33]/40"
+            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#A29BFE]/40"
           />
           <button
             type="submit"
             className="px-4 py-2.5 rounded-xl text-sm font-bold text-black"
-            style={{ background: "#ffcc33" }}
+            style={{ background: "#A29BFE" }}
           >
             🔍
           </button>
@@ -81,7 +81,7 @@ export function MarketplaceFeed() {
               onClick={() => setSort(opt.value)}
               className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                 sort === opt.value
-                  ? "bg-[#ffcc33] text-black"
+                  ? "bg-[#A29BFE] text-black"
                   : "bg-white/5 text-white/50 hover:bg-white/10"
               }`}
             >
@@ -126,7 +126,7 @@ export function MarketplaceFeed() {
             <button
               onClick={handleSeed}
               className="px-5 py-2.5 rounded-xl text-sm font-bold text-black"
-              style={{ background: "#ffcc33" }}
+              style={{ background: "#A29BFE" }}
             >
               🚀 Load Featured Workflows
             </button>

@@ -18,7 +18,7 @@ const FILTER_CONFIG: { id: InsightFilter; label: string; icon: React.ReactNode }
 ];
 
 const TONE_LABELS: Record<string, { emoji: string; desc: string; color: string }> = {
-  confident: { emoji: "💪", desc: "You communicate with authority. Direct, certain, impactful.", color: "#ffcc33" },
+  confident: { emoji: "💪", desc: "You communicate with authority. Direct, certain, impactful.", color: "#A29BFE" },
   flirty: { emoji: "😏", desc: "Playful and charming. Your messages draw people in naturally.", color: "#f472b6" },
   humorous: { emoji: "😄", desc: "Wit and lightness. You make conversations fun.", color: "#34d399" },
   professional: { emoji: "👔", desc: "Clear, structured, polished. You command respect.", color: "#38bdf8" },
@@ -46,7 +46,7 @@ export default function InsightsPage() {
   const trends = trendsData?.trends ?? [];
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-y-auto">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <div className="flex items-center gap-3">
@@ -110,7 +110,7 @@ export default function InsightsPage() {
                     <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
-                        style={{ width: `${Math.round((rate as number) * 100)}%`, background: TONE_LABELS[t]?.color ?? "#ffcc33" }}
+                        style={{ width: `${Math.round((rate as number) * 100)}%`, background: TONE_LABELS[t]?.color ?? "#A29BFE" }}
                       />
                     </div>
                     <span className="text-[10px] text-white/30 w-8 text-right">{Math.round((rate as number) * 100)}%</span>
@@ -150,7 +150,7 @@ export default function InsightsPage() {
       {trends.length > 0 && (
         <div className="px-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={12} className="text-[#ffcc33]" />
+            <TrendingUp size={12} className="text-[#A29BFE]" />
             <span className="text-xs font-bold text-white">Trending Now</span>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -161,7 +161,7 @@ export default function InsightsPage() {
                   key={tag}
                   onClick={() => nav("/marketplace")}
                   className="px-3 py-1 rounded-full text-xs font-medium"
-                  style={{ background: "#ffcc3322", color: "#ffcc33" }}
+                  style={{ background: "#A29BFE22", color: "#A29BFE" }}
                 >
                   {tag.charAt(0).toUpperCase() + tag.slice(1)} ↗
                 </button>
@@ -181,7 +181,7 @@ export default function InsightsPage() {
               "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
               filter === id ? "font-bold text-black" : "bg-white/5 text-white/50 hover:text-white/80"
             )}
-            style={filter === id ? { background: "#ffcc33", color: "#000" } : undefined}
+            style={filter === id ? { background: "#A29BFE", color: "#000" } : undefined}
           >
             {icon}
             {label}

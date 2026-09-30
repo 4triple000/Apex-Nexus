@@ -46,17 +46,17 @@ const ACTION_CONFIG_FIELDS: Record<ActionType, { key: string; label: string; pla
   trigger_webhook:  [{ key: 'url',   label: 'Webhook URL', placeholder: 'https://your-server.com/hook' }],
 };
 
-const GOLD = '#ffcc33';
+const GOLD = '#A29BFE';
 const card: React.CSSProperties = {
-  background: '#0f172a',
-  border: '1px solid rgba(255,204,51,0.18)',
+  background: 'rgba(30,26,62,0.62)',
+  border: '1px solid rgba(162,155,254,0.18)',
   borderRadius: 12,
   padding: 16,
 };
 
 const input: React.CSSProperties = {
-  background: 'rgba(255,204,51,0.06)',
-  border: '1px solid rgba(255,204,51,0.18)',
+  background: 'rgba(162,155,254,0.06)',
+  border: '1px solid rgba(162,155,254,0.18)',
   borderRadius: 10,
   color: '#f5e070',
   caretColor: GOLD,
@@ -70,7 +70,7 @@ const input: React.CSSProperties = {
 const label: React.CSSProperties = {
   fontSize: 10,
   fontFamily: 'monospace',
-  color: 'rgba(255,204,51,0.6)',
+  color: 'rgba(162,155,254,0.6)',
   textTransform: 'uppercase',
   letterSpacing: '0.12em',
   display: 'block',
@@ -130,7 +130,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
       {/* Header */}
       <div
         className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b border-border/40"
-        style={{ background: '#080f1e' }}
+        style={{ background: 'rgba(30,26,62,0.62)' }}
       >
         <div>
           <h2 className="text-base font-black tracking-wider uppercase" style={{ color: GOLD }}>
@@ -149,7 +149,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
             )}
             style={showJson
               ? { background: GOLD }
-              : { background: 'rgba(255,204,51,0.08)', border: '1px solid rgba(255,204,51,0.25)', color: GOLD }}
+              : { background: 'rgba(162,155,254,0.08)', border: '1px solid rgba(162,155,254,0.25)', color: GOLD }}
           >
             <Eye className="w-3 h-3" />
             JSON
@@ -164,7 +164,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
 
         {/* JSON Preview */}
         {showJson && (
-          <div style={{ ...card, background: '#020712' }}>
+          <div style={{ ...card, background: 'transparent' }}>
             <span style={label}>JSON Preview</span>
             <pre
               className="text-[11px] font-mono text-green-400 overflow-x-auto whitespace-pre-wrap"
@@ -204,7 +204,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
               style={{ ...input, appearance: 'none', paddingRight: 32, cursor: 'pointer' }}
             >
               {TRIGGERS.map((t) => (
-                <option key={t.value} value={t.value} style={{ background: '#0f172a' }}>
+                <option key={t.value} value={t.value} style={{ background: 'rgba(30,26,62,0.62)' }}>
                   {t.label}
                 </option>
               ))}
@@ -220,7 +220,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
             <button
               onClick={addCondition}
               className="flex items-center gap-1 text-xs font-mono px-2.5 py-1 rounded-lg transition-all active:scale-95"
-              style={{ background: 'rgba(255,204,51,0.1)', border: '1px solid rgba(255,204,51,0.2)', color: GOLD }}
+              style={{ background: 'rgba(162,155,254,0.1)', border: '1px solid rgba(162,155,254,0.2)', color: GOLD }}
             >
               <Plus className="w-3 h-3" /> Add
             </button>
@@ -249,7 +249,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
                       style={{ ...input, fontSize: 11, appearance: 'none', paddingRight: 20 }}
                     >
                       {OPERATORS.map((op) => (
-                        <option key={op.value} value={op.value} style={{ background: '#0f172a' }}>
+                        <option key={op.value} value={op.value} style={{ background: 'rgba(30,26,62,0.62)' }}>
                           {op.label}
                         </option>
                       ))}
@@ -282,7 +282,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
             <button
               onClick={addAction}
               className="flex items-center gap-1 text-xs font-mono px-2.5 py-1 rounded-lg transition-all active:scale-95"
-              style={{ background: 'rgba(255,204,51,0.1)', border: '1px solid rgba(255,204,51,0.2)', color: GOLD }}
+              style={{ background: 'rgba(162,155,254,0.1)', border: '1px solid rgba(162,155,254,0.2)', color: GOLD }}
             >
               <Plus className="w-3 h-3" /> Add
             </button>
@@ -313,7 +313,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
                         style={{ ...input, fontSize: 12, appearance: 'none', paddingRight: 28 }}
                       >
                         {ACTION_TYPES.map((at) => (
-                          <option key={at.value} value={at.value} style={{ background: '#0f172a' }}>
+                          <option key={at.value} value={at.value} style={{ background: 'rgba(30,26,62,0.62)' }}>
                             {at.label}
                           </option>
                         ))}
@@ -350,7 +350,7 @@ export function WorkflowBuilder({ initial, onSave, onClose, isSaving }: Props) {
       {/* Save bar */}
       <div
         className="sticky bottom-0 left-0 right-0 p-4 border-t border-border/40"
-        style={{ background: '#080f1e' }}
+        style={{ background: 'rgba(30,26,62,0.62)' }}
       >
         <div className="flex gap-3 max-w-lg mx-auto">
           <button

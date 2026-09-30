@@ -35,7 +35,7 @@ export default function CreatorDashboardPage() {
   const totalGross = earningsData?.totalGross ?? 0;
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-y-auto">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <div className="flex items-center gap-3">
@@ -74,10 +74,10 @@ export default function CreatorDashboardPage() {
           <div className="grid grid-cols-3 gap-3 px-4 mb-5">
             {[
               { label: "Net Earnings", value: formatCents(totalNet), icon: <DollarSign size={14} className="text-green-400" />, color: "#34d399" },
-              { label: "Gross Revenue", value: formatCents(totalGross), icon: <TrendingUp size={14} className="text-[#ffcc33]" />, color: "#ffcc33" },
+              { label: "Gross Revenue", value: formatCents(totalGross), icon: <TrendingUp size={14} className="text-[#A29BFE]" />, color: "#A29BFE" },
               { label: "Total Sales", value: String(earnings.length), icon: <ShoppingBag size={14} className="text-blue-400" />, color: "#38bdf8" },
             ].map(({ label, value, icon, color }) => (
-              <div key={label} className="p-3 bg-[#1a1a1a] border border-white/5 rounded-2xl text-center">
+              <div key={label} className="p-3 bg-[rgba(30,26,62,0.62)] border border-white/5 rounded-2xl text-center">
                 <div className="flex justify-center mb-1">{icon}</div>
                 <p className="text-base font-bold text-white">{value}</p>
                 <p className="text-[10px] text-white/40">{label}</p>
@@ -86,7 +86,7 @@ export default function CreatorDashboardPage() {
           </div>
 
           {/* Platform fee notice */}
-          <div className="mx-4 mb-4 p-3 rounded-xl bg-[#1a1a1a] border border-white/5 flex items-center justify-between">
+          <div className="mx-4 mb-4 p-3 rounded-xl bg-[rgba(30,26,62,0.62)] border border-white/5 flex items-center justify-between">
             <p className="text-xs text-white/40">Platform fee (20%) charged</p>
             <p className="text-xs font-bold text-white/60">{formatCents(totalGross - totalNet)}</p>
           </div>
@@ -94,7 +94,7 @@ export default function CreatorDashboardPage() {
           {/* Revenue by project */}
           <div className="px-4 mb-4">
             <div className="flex items-center gap-2 mb-3">
-              <BarChart3 size={14} className="text-[#ffcc33]" />
+              <BarChart3 size={14} className="text-[#A29BFE]" />
               <h2 className="text-sm font-bold text-white">Revenue by Project</h2>
             </div>
 
@@ -111,7 +111,7 @@ export default function CreatorDashboardPage() {
                 <button
                   onClick={() => nav("/studio")}
                   className="mt-3 px-4 py-2 rounded-full text-xs font-bold"
-                  style={{ background: "#ffcc33", color: "#000" }}
+                  style={{ background: "#A29BFE", color: "#000" }}
                 >
                   Open Studio
                 </button>
@@ -119,7 +119,7 @@ export default function CreatorDashboardPage() {
             )}
 
             {byProject.map((p) => (
-              <div key={p.projectId} className="flex items-center justify-between p-3 bg-[#1a1a1a] border border-white/5 rounded-xl mb-2">
+              <div key={p.projectId} className="flex items-center justify-between p-3 bg-[rgba(30,26,62,0.62)] border border-white/5 rounded-xl mb-2">
                 <div>
                   <p className="text-xs font-bold text-white">Project #{p.projectId}</p>
                   <p className="text-[10px] text-white/40">{p.sales} sale{p.sales !== 1 ? "s" : ""}</p>
@@ -155,7 +155,7 @@ export default function CreatorDashboardPage() {
           <div className="mx-4 mb-6">
             <Button
               className="w-full font-bold rounded-xl h-10 flex items-center justify-center gap-2"
-              style={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
+              style={{ background: "rgba(30,26,62,0.62)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
               onClick={() => portal.mutate()}
               disabled={portal.isPending}
             >

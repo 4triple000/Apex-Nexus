@@ -135,7 +135,7 @@ export function FeedCard({
                 width: "100%",
                 height: "100%",
                 borderRadius: "50%",
-                background: "linear-gradient(145deg, #1c1c24, #111118)",
+                background: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

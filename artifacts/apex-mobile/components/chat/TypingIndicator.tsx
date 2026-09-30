@@ -7,9 +7,9 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated, StyleSheet } from "react-native";
 
-const AI_BUBBLE   = "#1F2937";
-const AVATAR_BG   = "#1F2937";
-const AVATAR_BORDER = "#374151";
+const AI_BUBBLE   = "rgba(34,30,62,0.85)";
+const AVATAR_BG   = "#2A2458";
+const AVATAR_BORDER = "rgba(139,123,255,0.45)";
 const DOT_COLOR   = "#9CA3AF";
 
 function PulsingDot({ delay }: { delay: number }) {

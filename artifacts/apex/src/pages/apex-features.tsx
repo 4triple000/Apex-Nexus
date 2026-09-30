@@ -269,13 +269,13 @@ export function ApexFeaturesPage() {
     <div style={{
       position: "fixed", inset: 0, zIndex: 200,
       display: "flex", flexDirection: "column",
-      background: "linear-gradient(180deg, #080A14 0%, #050710 100%)",
+      background: "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))",
       fontFamily: "inherit",
     }}>
       {/* ── Header ──────────────────────────────────────────────────── */}
       <div style={{
         flexShrink: 0, padding: "16px 18px 0",
-        background: "rgba(8,10,20,0.95)", backdropFilter: "blur(20px)",
+        background: "rgba(14,12,32,0.55)", backdropFilter: "blur(20px)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
           <button onClick={() => window.history.back()} style={{
@@ -461,7 +461,7 @@ export function ApexFeaturesPage() {
                 style={{
                   display: "flex", alignItems: "center", gap: 9,
                   padding: "10px 16px", borderRadius: 99, whiteSpace: "nowrap",
-                  background: "rgba(8,10,22,0.96)",
+                  background: "rgba(14,12,32,0.55)",
                   border: `1px solid ${stateMeta.border}`,
                   boxShadow: `0 8px 32px rgba(0,0,0,0.60), 0 0 20px ${stateMeta.glow}`,
                   backdropFilter: "blur(20px)",

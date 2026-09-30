@@ -13,7 +13,7 @@ const G1 = "#6C5CE7";
 const G2 = "#A29BFE";
 const G3 = "#FD79A8";
 const GRAD = `linear-gradient(135deg, ${G1}, ${G2}, ${G3})`;
-const GOLD = "#ffcc33";
+const GOLD = "#A29BFE";
 const BG   = "#07080E";
 
 // ── Easing ─────────────────────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ function HeroSection() {
       {/* Nav bar */}
       <div
         className="fixed top-0 left-0 right-0 flex items-center justify-between px-6 py-4"
-        style={{ zIndex: 50, background: "rgba(7,8,14,0.80)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ zIndex: 50, background: "rgba(14,12,32,0.55)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
         <div className="flex items-center gap-2">
           <div
@@ -293,7 +293,7 @@ function HeroSection() {
         style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
       >
         <div className="flex -space-x-1.5">
-          {["#6C5CE7","#FD79A8","#FFCC33","#00cec9"].map((c) => (
+          {["#6C5CE7","#FD79A8","#A29BFE","#00cec9"].map((c) => (
             <div key={c} className="w-5 h-5 rounded-full border-2" style={{ background: c, borderColor: BG }} />
           ))}
         </div>

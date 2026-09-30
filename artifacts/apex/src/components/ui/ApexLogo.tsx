@@ -6,7 +6,7 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 
-import { useRef } from "react";
+import { useRef, useId } from "react";
 
 // ─── Animation keyframes (injected once) ─────────────────────────────────────
 
@@ -92,6 +92,8 @@ export function ApexLogo({
   const ref = useRef<HTMLDivElement>(null);
 
   const r = radius ?? Math.round(size * 0.28);
+  // Unique per instance: a hidden duplicate (mobile vs desktop layout) must not own the gradient
+  const gradientId = `apex-logo-bg-${useId().replace(/:/g, "")}`;
 
   // ── Filter / animation per state ─────────────────────────────────────────
   let imgAnimation  = "";
@@ -148,13 +150,13 @@ export function ApexLogo({
         style={{ width: "100%", height: "100%", display: "block", animation: imgAnimation }}
       >
         <defs>
-          <linearGradient id="apex-logo-bg" x1="0" y1="0" x2="1" y2="1">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#6C5CE7" />
             <stop offset="0.55" stopColor="#A29BFE" />
             <stop offset="1" stopColor="#FD79A8" />
           </linearGradient>
         </defs>
-        <rect width="64" height="64" fill="url(#apex-logo-bg)" />
+        <rect width="64" height="64" fill={`url(#${gradientId})`} />
         <path d="M32 14 L50 32 L32 50 L14 32 Z" fill="#FFFFFF" fillOpacity="0.95" />
       </svg>
     </div>

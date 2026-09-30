@@ -216,7 +216,7 @@ export function ReferralPanel({ entry, accent, onUpdate }: ReferralPanelProps) {
           initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
           style={{
             position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)",
-            whiteSpace: "nowrap", background: "rgba(14,15,26,0.96)",
+            whiteSpace: "nowrap", background: "rgba(14,12,32,0.55)",
             border: "1px solid rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.85)",
             fontSize: 11, fontWeight: 700, padding: "8px 16px", borderRadius: 99, zIndex: 9999,
             backdropFilter: "blur(12px)", boxShadow: "0 8px 24px rgba(0,0,0,0.50)",

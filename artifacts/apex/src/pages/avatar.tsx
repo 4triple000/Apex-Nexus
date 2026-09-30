@@ -35,14 +35,14 @@ function AvatarPageInner() {
   const handleSave = () => store.setAvatarName(localName);
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto bg-background">
+    <div className="flex flex-col h-full overflow-y-auto bg-transparent">
       {/* ── Page header ── */}
       <div className="flex-none px-4 pt-5 pb-3 border-b border-border/40">
         <div className="flex items-center justify-between">
           <div>
             <h1
               className="text-xl font-black tracking-[0.18em] uppercase"
-              style={{ color: '#ffcc33', textShadow: '0 0 20px rgba(255,204,51,0.35)' }}
+              style={{ color: '#A29BFE', textShadow: '0 0 20px rgba(162,155,254,0.35)' }}
             >
               APEX AVATAR
             </h1>
@@ -54,9 +54,9 @@ function AvatarPageInner() {
             onClick={() => setShowSettings(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all active:scale-95"
             style={{
-              background: 'rgba(255,204,51,0.08)',
-              border: '1px solid rgba(255,204,51,0.25)',
-              color: '#ffcc33',
+              background: 'rgba(162,155,254,0.08)',
+              border: '1px solid rgba(162,155,254,0.25)',
+              color: '#A29BFE',
             }}
           >
             <Settings2 className="w-3.5 h-3.5" />
@@ -73,24 +73,24 @@ function AvatarPageInner() {
           <div
             className="relative overflow-hidden"
             style={{
-              border: '2px solid #ffcc33',
+              border: '2px solid #A29BFE',
               borderRadius: 12,
               background: 'linear-gradient(145deg, #111827, #0a0f1a)',
-              boxShadow: '0 0 32px rgba(255,204,51,0.12), inset 0 0 24px rgba(0,0,0,0.5)',
+              boxShadow: '0 0 32px rgba(162,155,254,0.12), inset 0 0 24px rgba(0,0,0,0.5)',
               height: 380,
             }}
           >
             {/* Ground glow */}
             <div
               className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[200px] h-[24px] rounded-full blur-2xl pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse, rgba(255,204,51,0.2) 0%, transparent 70%)' }}
+              style={{ background: 'radial-gradient(ellipse, rgba(162,155,254,0.2) 0%, transparent 70%)' }}
             />
 
             {/* Thinking ring */}
             {store.isThinking && (
               <span
                 className="absolute inset-0 rounded-xl border-2 animate-ping pointer-events-none z-10"
-                style={{ borderColor: 'rgba(255,204,51,0.5)' }}
+                style={{ borderColor: 'rgba(162,155,254,0.5)' }}
               />
             )}
 
@@ -109,8 +109,8 @@ function AvatarPageInner() {
         <div
           className="w-full rounded-2xl p-4 space-y-4"
           style={{
-            background: '#0f172a',
-            border: '1px solid rgba(255,204,51,0.18)',
+            background: 'rgba(30,26,62,0.62)',
+            border: '1px solid rgba(162,155,254,0.18)',
             maxWidth: 400,
           }}
         >
@@ -129,17 +129,17 @@ function AvatarPageInner() {
                 placeholder="Enter name…"
                 className="flex-1 px-3 py-2.5 rounded-xl text-sm font-mono outline-none"
                 style={{
-                  background: 'rgba(255,204,51,0.06)',
-                  border: '1px solid rgba(255,204,51,0.18)',
+                  background: 'rgba(162,155,254,0.06)',
+                  border: '1px solid rgba(162,155,254,0.18)',
                   color: '#f5e070',
-                  caretColor: '#ffcc33',
+                  caretColor: '#A29BFE',
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               />
               <button
                 onClick={handleSave}
                 className="px-4 py-2.5 rounded-xl text-xs font-black font-mono uppercase tracking-wider transition-all active:scale-95"
-                style={{ background: '#ffcc33', color: '#000' }}
+                style={{ background: '#A29BFE', color: '#000' }}
               >
                 Save
               </button>
@@ -165,14 +165,14 @@ function AvatarPageInner() {
                     style={
                       active
                         ? {
-                            background: '#ffcc33',
+                            background: '#A29BFE',
                             color: '#000',
-                            boxShadow: '0 0 16px rgba(255,204,51,0.4)',
+                            boxShadow: '0 0 16px rgba(162,155,254,0.4)',
                           }
                         : {
-                            background: 'rgba(255,204,51,0.07)',
-                            border: '1px solid rgba(255,204,51,0.15)',
-                            color: '#ffcc33',
+                            background: 'rgba(162,155,254,0.07)',
+                            border: '1px solid rgba(162,155,254,0.15)',
+                            color: '#A29BFE',
                           }
                     }
                   >
@@ -197,7 +197,7 @@ function AvatarPageInner() {
             ].map(({ label, value }) => (
               <div key={label} className="flex flex-col gap-0.5">
                 <span className="text-[9px] font-mono text-white/35 uppercase tracking-widest">{label}</span>
-                <span className="text-sm font-black font-mono" style={{ color: '#ffcc33' }}>{value}</span>
+                <span className="text-sm font-black font-mono" style={{ color: '#A29BFE' }}>{value}</span>
               </div>
             ))}
           </div>
@@ -208,8 +208,8 @@ function AvatarPageInner() {
           className="px-4 py-2 rounded-full text-[11px] font-mono tracking-widest uppercase"
           style={{
             background: 'rgba(0,0,0,0.4)',
-            border: '1px solid rgba(255,204,51,0.2)',
-            color: 'rgba(255,204,51,0.7)',
+            border: '1px solid rgba(162,155,254,0.2)',
+            color: 'rgba(162,155,254,0.7)',
           }}
         >
           {store.activePersonality.emoji} {store.activePersonality.name.split('/')[0].trim()}

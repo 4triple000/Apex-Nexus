@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout/layout";
+import { MidnightBackdrop } from "@/components/layout/MidnightBackdrop";
 import { AvatarProvider } from "@/contexts/AvatarContext";
 import { PersonalityProvider } from "@/contexts/PersonalityContext";
 import { CharacterProvider } from "@/contexts/CharacterContext";
@@ -177,6 +178,8 @@ function Router() {
 
 function App() {
   return (
+    <>
+    <MidnightBackdrop />
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <ApexStateProvider>
@@ -203,6 +206,7 @@ function App() {
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
+    </>
   );
 }
 

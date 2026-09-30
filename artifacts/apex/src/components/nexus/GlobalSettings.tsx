@@ -178,7 +178,7 @@ export function GlobalSettingsPanel({ settings, onChange }: Props) {
           }}
         >
           {["English", "Spanish", "French", "German", "Japanese", "Portuguese", "Arabic", "Chinese"].map((l) => (
-            <option key={l} value={l} style={{ background: "#1a1d2e" }}>{l}</option>
+            <option key={l} value={l} style={{ background: "rgba(30,26,62,0.62)" }}>{l}</option>
           ))}
         </select>
       </div>

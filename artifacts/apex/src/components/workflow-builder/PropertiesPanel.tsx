@@ -24,7 +24,7 @@ const FIELD = ({
 );
 
 const INPUT_STYLE: React.CSSProperties = {
-  background: "#161616",
+  background: "rgba(30,26,62,0.62)",
   border: "1px solid #2a2a2a",
   borderRadius: 8,
   padding: "7px 10px",
@@ -76,7 +76,7 @@ export function PropertiesPanel({
         width: 280,
         flexShrink: 0,
         borderLeft: "1px solid #1a1a1a",
-        background: "#0d0d0d",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -135,7 +135,7 @@ export function PropertiesPanel({
             }}
             style={{
               width: "100%",
-              background: "#161616",
+              background: "rgba(30,26,62,0.62)",
               border: "1px dashed #2a2a2a",
               borderRadius: 8,
               padding: "8px",
@@ -149,8 +149,8 @@ export function PropertiesPanel({
               transition: "all 0.12s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#FFCC3355";
-              e.currentTarget.style.color = "#FFCC33";
+              e.currentTarget.style.borderColor = "#A29BFE55";
+              e.currentTarget.style.color = "#A29BFE";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "#2a2a2a";
@@ -186,7 +186,7 @@ function WorkflowMetaEditor({
           value={workflow.name}
           onChange={(e) => onChange({ ...workflow, name: e.target.value })}
           placeholder="My Workflow"
-          onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+          onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
           onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
         />
       </FIELD>
@@ -196,7 +196,7 @@ function WorkflowMetaEditor({
           value={workflow.description}
           onChange={(e) => onChange({ ...workflow, description: e.target.value })}
           placeholder="What does this workflow do?"
-          onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+          onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
           onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
         />
       </FIELD>
@@ -232,10 +232,10 @@ function TriggerEditor({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(255,204,51,0.06)", borderRadius: 8, border: "1px solid rgba(255,204,51,0.15)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(162,155,254,0.06)", borderRadius: 8, border: "1px solid rgba(162,155,254,0.15)" }}>
         <span style={{ fontSize: 16 }}>{TRIGGER_META[workflow.trigger]?.icon}</span>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#FFCC33" }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#A29BFE" }}>
             {TRIGGER_META[workflow.trigger]?.label}
           </div>
           <div style={{ fontSize: 10, color: "#665900" }}>
@@ -248,7 +248,7 @@ function TriggerEditor({
           style={SELECT_STYLE}
           value={workflow.trigger}
           onChange={(e) => onChange({ ...workflow, trigger: e.target.value as WorkflowState["trigger"] })}
-          onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+          onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
           onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
         >
           <option value="user_signup">User Signup</option>
@@ -322,7 +322,7 @@ function ActionEditor({
           style={{ ...SELECT_STYLE, flex: 1 }}
           value={action.type}
           onChange={(e) => updateType(e.target.value as WorkflowAction["type"])}
-          onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+          onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
           onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
         >
           <option value="send_message">Send Message</option>
@@ -363,7 +363,7 @@ function ActionEditor({
               value={String(d.message ?? "")}
               onChange={(e) => updateField("message", e.target.value)}
               placeholder="Enter message text… Use {{user.name}} for variables"
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             />
           </FIELD>
@@ -372,7 +372,7 @@ function ActionEditor({
               style={SELECT_STYLE}
               value={String(d.channel ?? "in-app")}
               onChange={(e) => updateField("channel", e.target.value)}
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             >
               <option value="in-app">In-App</option>
@@ -387,7 +387,7 @@ function ActionEditor({
                 value={String(d.subject ?? "")}
                 onChange={(e) => updateField("subject", e.target.value)}
                 placeholder="Email subject"
-                onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+                onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
                 onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
               />
             </FIELD>
@@ -404,7 +404,7 @@ function ActionEditor({
               value={String(d.prompt ?? "")}
               onChange={(e) => updateField("prompt", e.target.value)}
               placeholder="Describe what the AI should do… Use {{variables}}"
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             />
           </FIELD>
@@ -413,7 +413,7 @@ function ActionEditor({
               style={INPUT_STYLE}
               value={String(d.model ?? "gpt-5.2")}
               onChange={(e) => updateField("model", e.target.value)}
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             />
           </FIELD>
@@ -423,7 +423,7 @@ function ActionEditor({
               value={String(d.outputKey ?? "")}
               onChange={(e) => updateField("outputKey", e.target.value)}
               placeholder="e.g. ai_response"
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             />
           </FIELD>
@@ -435,7 +435,7 @@ function ActionEditor({
               step={0.1}
               value={Number(d.temperature ?? 0.7)}
               onChange={(e) => updateField("temperature", parseFloat(e.target.value))}
-              style={{ width: "100%", accentColor: "#FFCC33" }}
+              style={{ width: "100%", accentColor: "#A29BFE" }}
             />
           </FIELD>
         </>
@@ -450,7 +450,7 @@ function ActionEditor({
               value={String(d.field ?? "")}
               onChange={(e) => updateField("field", e.target.value)}
               placeholder="e.g. user.region"
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             />
           </FIELD>
@@ -460,7 +460,7 @@ function ActionEditor({
               value={String(d.value ?? "")}
               onChange={(e) => updateField("value", e.target.value)}
               placeholder="Value or {{variable}}"
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             />
           </FIELD>
@@ -476,7 +476,7 @@ function ActionEditor({
               value={String(d.url ?? "")}
               onChange={(e) => updateField("url", e.target.value)}
               placeholder="https://your-endpoint.com/hook"
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             />
           </FIELD>
@@ -485,7 +485,7 @@ function ActionEditor({
               style={SELECT_STYLE}
               value={String(d.method ?? "POST")}
               onChange={(e) => updateField("method", e.target.value)}
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             >
               <option value="POST">POST</option>
@@ -507,7 +507,7 @@ function ActionEditor({
               style={INPUT_STYLE}
               value={Number(d.duration ?? 5)}
               onChange={(e) => updateField("duration", parseInt(e.target.value) || 1)}
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             />
           </FIELD>
@@ -516,7 +516,7 @@ function ActionEditor({
               style={SELECT_STYLE}
               value={String(d.unit ?? "minutes")}
               onChange={(e) => updateField("unit", e.target.value)}
-              onFocus={(e) => (e.target.style.borderColor = "#FFCC3366")}
+              onFocus={(e) => (e.target.style.borderColor = "#A29BFE66")}
               onBlur={(e) => (e.target.style.borderColor = "#2a2a2a")}
             >
               <option value="seconds">Seconds</option>
@@ -537,7 +537,7 @@ function EmptyProperties() {
         width: 280,
         flexShrink: 0,
         borderLeft: "1px solid #1a1a1a",
-        background: "#0d0d0d",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
       }}

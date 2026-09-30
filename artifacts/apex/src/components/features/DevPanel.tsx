@@ -92,7 +92,7 @@ export function DevPanel({ onClose, onReset }: DevPanelProps) {
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 10001,
           maxHeight: "90vh", display: "flex", flexDirection: "column",
           borderRadius: "24px 24px 0 0",
-          background: "linear-gradient(180deg, #0A0C1A 0%, #06080F 100%)",
+          background: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
           border: "1px solid rgba(162,155,254,0.25)",
           borderBottom: "none",
           boxShadow: "0 -12px 60px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04) inset",
@@ -241,7 +241,7 @@ export function DevPanel({ onClose, onReset }: DevPanelProps) {
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
               style={{
                 position: "absolute", bottom: 70, left: "50%", transform: "translateX(-50%)",
-                whiteSpace: "nowrap", background: "rgba(10,12,26,0.96)",
+                whiteSpace: "nowrap", background: "rgba(14,12,32,0.55)",
                 border: "1px solid rgba(162,155,254,0.30)", color: "#A29BFE",
                 fontSize: 11, fontWeight: 700, padding: "8px 16px",
                 borderRadius: 99, zIndex: 100,

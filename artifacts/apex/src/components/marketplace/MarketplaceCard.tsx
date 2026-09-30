@@ -6,7 +6,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   video: "#ef4444", game: "#8b5cf6", podcast: "#f59e0b",
   blog: "#10b981", marketing: "#ec4899", research: "#3b82f6",
   productivity: "#14b8a6", creative: "#f97316", business: "#6366f1",
-  social: "#a855f7", custom: "#ffcc33",
+  social: "#a855f7", custom: "#A29BFE",
 };
 
 function StarRating({ value, count, onRate }: { value: number; count: number; onRate?: (v: number) => void }) {
@@ -21,7 +21,7 @@ function StarRating({ value, count, onRate }: { value: number; count: number; on
           onClick={() => onRate?.(star)}
           className={`text-sm transition-transform ${onRate ? "hover:scale-125 cursor-pointer" : "cursor-default"}`}
         >
-          <span style={{ color: star <= (hover || value) ? "#ffcc33" : "rgba(255,255,255,0.2)" }}>★</span>
+          <span style={{ color: star <= (hover || value) ? "#A29BFE" : "rgba(255,255,255,0.2)" }}>★</span>
         </button>
       ))}
       <span className="text-[10px] text-white/40 ml-1">({count})</span>
@@ -48,7 +48,7 @@ export function MarketplaceCard({ item, onPlay, featured }: MarketplaceCardProps
   const remixMutation = useRemixWorkflow();
   const trackPlay = useTrackPlay();
 
-  const catColor = CATEGORY_COLORS[item.category] ?? "#ffcc33";
+  const catColor = CATEGORY_COLORS[item.category] ?? "#A29BFE";
 
   async function handlePlay() {
     setLocalPlayCount((p) => p + 1);
@@ -77,11 +77,11 @@ export function MarketplaceCard({ item, onPlay, featured }: MarketplaceCardProps
   const tags = Array.isArray(item.tags) ? item.tags.slice(0, 3) : [];
 
   return (
-    <div className={`rounded-2xl border overflow-hidden transition-all hover:border-white/20 ${featured ? "border-[#ffcc33]/30 bg-gradient-to-br from-[#ffcc33]/5 to-transparent" : "border-white/8 bg-white/3"}`}>
+    <div className={`rounded-2xl border overflow-hidden transition-all hover:border-white/20 ${featured ? "border-[#A29BFE]/30 bg-gradient-to-br from-[#A29BFE]/5 to-transparent" : "border-white/8 bg-white/3"}`}>
       {/* Header / Thumbnail */}
       <div className="relative p-4 pb-3">
         {featured && (
-          <div className="absolute top-3 right-3 text-[9px] px-1.5 py-0.5 rounded-full font-bold text-black" style={{ background: "#ffcc33" }}>
+          <div className="absolute top-3 right-3 text-[9px] px-1.5 py-0.5 rounded-full font-bold text-black" style={{ background: "#A29BFE" }}>
             ⭐ FEATURED
           </div>
         )}
@@ -136,7 +136,7 @@ export function MarketplaceCard({ item, onPlay, featured }: MarketplaceCardProps
         <button
           onClick={handlePlay}
           className="flex-1 py-2.5 rounded-xl text-sm font-bold text-black transition-all hover:brightness-110 active:scale-95"
-          style={{ background: "#ffcc33" }}
+          style={{ background: "#A29BFE" }}
         >
           ▶ Play
         </button>
@@ -155,8 +155,8 @@ export function MarketplaceCard({ item, onPlay, featured }: MarketplaceCardProps
 
       {/* Rate Panel */}
       {showRatePanel && (
-        <div className="mx-4 mb-4 p-3 rounded-xl bg-white/5 border border-[#ffcc33]/20">
-          <p className="text-[#ffcc33] text-xs font-bold mb-2">Rate this workflow</p>
+        <div className="mx-4 mb-4 p-3 rounded-xl bg-white/5 border border-[#A29BFE]/20">
+          <p className="text-[#A29BFE] text-xs font-bold mb-2">Rate this workflow</p>
           <StarRating value={userRating} count={0} />
           <textarea
             value={review}
@@ -170,7 +170,7 @@ export function MarketplaceCard({ item, onPlay, featured }: MarketplaceCardProps
               onClick={submitRating}
               disabled={rateMutation.isPending || !userRating}
               className="flex-1 py-1.5 rounded-lg text-xs font-bold text-black disabled:opacity-50"
-              style={{ background: "#ffcc33" }}
+              style={{ background: "#A29BFE" }}
             >
               {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
             </button>

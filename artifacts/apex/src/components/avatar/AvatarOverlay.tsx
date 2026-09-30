@@ -91,7 +91,7 @@ export function StandingAvatar({ store, hasMessages }: StandingAvatarProps) {
         <div className="text-center mb-3 select-none">
           <div
             className="text-lg font-black tracking-[0.22em] uppercase"
-            style={{ color: '#ffcc33', textShadow: '0 0 18px rgba(255,204,51,0.45)' }}
+            style={{ color: '#A29BFE', textShadow: '0 0 18px rgba(162,155,254,0.45)' }}
           >
             APEX AVATAR
           </div>
@@ -108,8 +108,8 @@ export function StandingAvatar({ store, hasMessages }: StandingAvatarProps) {
             className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all"
             style={{
               background: 'rgba(0,0,0,0.5)',
-              border: '1px solid rgba(255,204,51,0.3)',
-              color: 'rgba(255,204,51,0.6)',
+              border: '1px solid rgba(162,155,254,0.3)',
+              color: 'rgba(162,155,254,0.6)',
             }}
             title="Customize Avatar"
           >
@@ -120,24 +120,24 @@ export function StandingAvatar({ store, hasMessages }: StandingAvatarProps) {
           {store.isThinking && (
             <span
               className="absolute inset-0 rounded-xl border-2 animate-ping pointer-events-none z-10"
-              style={{ borderColor: 'rgba(255,204,51,0.5)' }}
+              style={{ borderColor: 'rgba(162,155,254,0.5)' }}
             />
           )}
 
           <div
             className="relative overflow-hidden"
             style={{
-              border: '2px solid #ffcc33',
+              border: '2px solid #A29BFE',
               borderRadius: 10,
               background: 'linear-gradient(145deg, #111827, #0a0f1a)',
-              boxShadow: '0 0 28px rgba(255,204,51,0.15), inset 0 0 20px rgba(0,0,0,0.4)',
+              boxShadow: '0 0 28px rgba(162,155,254,0.15), inset 0 0 20px rgba(0,0,0,0.4)',
               height: 320,
             }}
           >
             {/* Ground glow inside box */}
             <div
               className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[180px] h-[20px] rounded-full blur-xl pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse, rgba(255,204,51,0.18) 0%, transparent 70%)' }}
+              style={{ background: 'radial-gradient(ellipse, rgba(162,155,254,0.18) 0%, transparent 70%)' }}
             />
 
             <Avatar3DScene
@@ -155,8 +155,8 @@ export function StandingAvatar({ store, hasMessages }: StandingAvatarProps) {
         <div
           className="w-full mt-3 rounded-xl p-3 space-y-3"
           style={{
-            background: '#0f172a',
-            border: '1px solid rgba(255,204,51,0.22)',
+            background: 'rgba(30,26,62,0.62)',
+            border: '1px solid rgba(162,155,254,0.22)',
             maxWidth: 340,
           }}
         >
@@ -173,17 +173,17 @@ export function StandingAvatar({ store, hasMessages }: StandingAvatarProps) {
                 placeholder="Enter name..."
                 className="flex-1 px-3 py-2 rounded-lg text-sm font-mono outline-none"
                 style={{
-                  background: 'rgba(255,204,51,0.06)',
-                  border: '1px solid rgba(255,204,51,0.2)',
+                  background: 'rgba(162,155,254,0.06)',
+                  border: '1px solid rgba(162,155,254,0.2)',
                   color: '#f5e070',
-                  caretColor: '#ffcc33',
+                  caretColor: '#A29BFE',
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               />
               <button
                 onClick={handleSave}
                 className="px-3 py-2 rounded-lg text-xs font-bold font-mono uppercase tracking-wider transition-all active:scale-95"
-                style={{ background: '#ffcc33', color: '#000' }}
+                style={{ background: '#A29BFE', color: '#000' }}
               >
                 Save
               </button>
@@ -208,11 +208,11 @@ export function StandingAvatar({ store, hasMessages }: StandingAvatarProps) {
                     )}
                     style={
                       active
-                        ? { background: '#ffcc33', color: '#000' }
+                        ? { background: '#A29BFE', color: '#000' }
                         : {
-                            background: 'rgba(255,204,51,0.08)',
-                            border: '1px solid rgba(255,204,51,0.18)',
-                            color: '#ffcc33',
+                            background: 'rgba(162,155,254,0.08)',
+                            border: '1px solid rgba(162,155,254,0.18)',
+                            color: '#A29BFE',
                           }
                     }
                   >
@@ -237,7 +237,7 @@ export function StandingAvatar({ store, hasMessages }: StandingAvatarProps) {
             ].map(({ label, value }) => (
               <div key={label} className="flex items-baseline gap-1.5">
                 <span className="text-[10px] font-mono text-white/40 uppercase">{label}:</span>
-                <span className="text-[11px] font-mono font-bold" style={{ color: '#ffcc33' }}>{value}</span>
+                <span className="text-[11px] font-mono font-bold" style={{ color: '#A29BFE' }}>{value}</span>
               </div>
             ))}
           </div>

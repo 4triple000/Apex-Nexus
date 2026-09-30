@@ -70,7 +70,7 @@ export function FTUEScreen({ onComplete }: FTUEScreenProps) {
       {/* ── Fullscreen dark backdrop ─────────────────────────────────── */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 99999,
-        background: "#07080E",
+        background: "rgba(14,11,32,0.92)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",

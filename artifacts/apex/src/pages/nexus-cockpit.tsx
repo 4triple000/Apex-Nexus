@@ -169,7 +169,7 @@ export default function NexusCockpit() {
 
   return (
     <div style={{
-      minHeight: "100dvh", background: "#0a0b14",
+      minHeight: "100dvh", background: "transparent",
       display: "flex", flexDirection: "column",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       color: "#fff", maxWidth: 480, margin: "0 auto", position: "relative",
@@ -178,7 +178,7 @@ export default function NexusCockpit() {
       {/* ── Sticky header ─────────────────────────────────────────────────── */}
       <div style={{
         position: "sticky", top: 0, zIndex: 50,
-        background: "rgba(10,11,20,0.95)",
+        background: "rgba(14,12,32,0.55)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
       }}>

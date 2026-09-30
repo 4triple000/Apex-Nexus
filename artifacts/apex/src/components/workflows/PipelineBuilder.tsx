@@ -4,11 +4,11 @@ import { cn } from '@/lib/utils';
 import { AI_PROVIDERS, PIPELINE_TEMPLATES, getProvider } from './aiProviders';
 import type { WorkflowDraft, PipelineStep } from '@/hooks/useWorkflows';
 
-const GOLD = '#ffcc33';
+const GOLD = '#A29BFE';
 
 const cardStyle: React.CSSProperties = {
-  background: '#0d1424',
-  border: '1px solid rgba(255,204,51,0.15)',
+  background: 'rgba(30,26,62,0.62)',
+  border: '1px solid rgba(162,155,254,0.15)',
   borderRadius: 14,
   padding: 16,
 };
@@ -29,7 +29,7 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: 10,
   fontFamily: 'monospace',
-  color: 'rgba(255,204,51,0.55)',
+  color: 'rgba(162,155,254,0.55)',
   textTransform: 'uppercase',
   letterSpacing: '0.12em',
   display: 'block',
@@ -96,7 +96,7 @@ export function PipelineBuilder({ initial, onSave, onClose, isSaving }: Props) {
       {/* ── Header ── */}
       <div
         className="flex-none flex items-center justify-between px-4 py-3 border-b border-white/5"
-        style={{ background: '#060d1a' }}
+        style={{ background: 'rgba(30,26,62,0.62)' }}
       >
         <div>
           <h2 className="text-base font-black tracking-wider uppercase" style={{ color: GOLD }}>
@@ -110,7 +110,7 @@ export function PipelineBuilder({ initial, onSave, onClose, isSaving }: Props) {
             className="px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all"
             style={showTemplates
               ? { background: GOLD, color: '#000' }
-              : { background: 'rgba(255,204,51,0.08)', border: '1px solid rgba(255,204,51,0.2)', color: GOLD }}
+              : { background: 'rgba(162,155,254,0.08)', border: '1px solid rgba(162,155,254,0.2)', color: GOLD }}
           >
             Templates
           </button>
@@ -150,7 +150,7 @@ export function PipelineBuilder({ initial, onSave, onClose, isSaving }: Props) {
               <button
                 onClick={() => { setSteps([newStep()]); setShowTemplates(false); }}
                 className="flex flex-col items-start gap-1.5 p-3 rounded-xl text-left transition-all active:scale-95"
-                style={{ background: 'rgba(255,204,51,0.06)', border: '1px dashed rgba(255,204,51,0.2)' }}
+                style={{ background: 'rgba(162,155,254,0.06)', border: '1px dashed rgba(162,155,254,0.2)' }}
               >
                 <span className="text-xl">✨</span>
                 <span className="text-[11px] font-bold" style={{ color: GOLD }}>Start Blank</span>
@@ -344,7 +344,7 @@ export function PipelineBuilder({ initial, onSave, onClose, isSaving }: Props) {
           <button
             onClick={addStep}
             className="w-full mt-3 py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-mono font-bold transition-all active:scale-95"
-            style={{ background: 'rgba(255,204,51,0.06)', border: '1px dashed rgba(255,204,51,0.25)', color: GOLD }}
+            style={{ background: 'rgba(162,155,254,0.06)', border: '1px dashed rgba(162,155,254,0.25)', color: GOLD }}
           >
             <Plus className="w-4 h-4" />
             Add Step
@@ -353,7 +353,7 @@ export function PipelineBuilder({ initial, onSave, onClose, isSaving }: Props) {
 
         {/* JSON Preview */}
         {showJson && (
-          <div style={{ ...cardStyle, background: '#020712' }}>
+          <div style={{ ...cardStyle, background: 'transparent' }}>
             <span style={labelStyle}>JSON Preview</span>
             <pre className="text-[11px] font-mono text-green-400 overflow-x-auto whitespace-pre-wrap max-h-72 overflow-y-auto">
               {JSON.stringify(draft, null, 2)}
@@ -365,7 +365,7 @@ export function PipelineBuilder({ initial, onSave, onClose, isSaving }: Props) {
       {/* Save bar */}
       <div
         className="flex-none px-4 py-4 border-t border-white/5"
-        style={{ background: '#060d1a' }}
+        style={{ background: 'rgba(30,26,62,0.62)' }}
       >
         <div className="flex gap-3">
           <button

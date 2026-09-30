@@ -5,7 +5,7 @@ const QUICK_ACTIONS = [
   { icon: Camera,  label: "Screenshot Analyzer", href: "/screenshot"  },
   { icon: Swords,  label: "Battle Mode",          href: "/arena"       },
   { icon: Mic,     label: "Voice Chat",           href: "/apex-os"     },
-  { icon: Bot,     label: "DM Automation",        href: "/dm"          },
+  { icon: Bot,     label: "Messages",        href: "/dm"          },
 ];
 
 export function RightPanel() {
@@ -22,8 +22,10 @@ export function RightPanel() {
       style={{
         width: 272,
         padding: "20px 16px",
-        borderLeft: "1px solid rgba(255,255,255,0.05)",
-        background: "#07070F",
+        borderLeft: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(14,12,32,0.4)",
+        backdropFilter: "blur(22px) saturate(180%)",
+        WebkitBackdropFilter: "blur(22px) saturate(180%)",
       }}
     >
       {/* Quick Actions */}

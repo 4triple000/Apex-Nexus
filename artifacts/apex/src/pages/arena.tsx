@@ -98,7 +98,7 @@ function ArenaField({ phase, winnerSide, colorA, colorB }: {
       style={{
         position: "relative",
         height: 110,
-        background: "linear-gradient(180deg, #0A0008 0%, #050010 100%)",
+        background: "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))",
         borderTop: "1px solid rgba(255,255,255,0.06)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         overflow: "hidden",
@@ -390,7 +390,7 @@ function KoScreen({ winner, fighterA, fighterB, history, onRematch }: {
   return (
     <div style={{
       position: "absolute", inset: 0, zIndex: 50,
-      background: "rgba(5,0,12,0.97)",
+      background: "rgba(14,12,32,0.55)",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       padding: 24,
       animation: "ko-enter 0.5s ease-out both",
@@ -599,14 +599,14 @@ function ArenaPageInner() {
     <div style={{
       position: "fixed", inset: 0, zIndex: 100,
       display: "flex", flexDirection: "column",
-      background: "#05000A",
+      background: "transparent",
       fontFamily: "inherit",
     }}>
 
       {/* ── Header ────────────────────────────────────────── */}
       <div style={{
         flexShrink: 0, padding: "14px 16px 12px",
-        background: "rgba(5,0,12,0.95)",
+        background: "rgba(14,12,32,0.55)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         display: "flex", alignItems: "center", gap: 10,
@@ -656,7 +656,7 @@ function ArenaPageInner() {
           flexShrink: 0,
           display: "flex", alignItems: "center", gap: 10,
           padding: "10px 16px",
-          background: "rgba(5,0,12,0.90)",
+          background: "rgba(14,12,32,0.55)",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
         }}>
           {/* Fighter A */}

@@ -180,7 +180,7 @@ export function DeployPanel({ projectId, projectName, onClose }: Props) {
         transition={{ type: "spring", stiffness: 320, damping: 36 }}
         style={{
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 101,
-          background: "#12141e",
+          background: "rgba(30,26,62,0.62)",
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: "22px 22px 0 0",
           maxHeight: "88vh", overflowY: "auto",

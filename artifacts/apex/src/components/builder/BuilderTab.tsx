@@ -14,11 +14,11 @@ import { authHeaders } from "@/lib/authSession";
 import OrchestratorPanel from "../agents/OrchestratorPanel";
 
 // ── Design tokens (matching game-engine.tsx) ───────────────────────────────
-const BG     = "#07080E";
+const BG = "transparent";
 const CARD   = "rgba(255,255,255,0.04)";
 const BORDER = "rgba(255,255,255,0.08)";
 const GRAD   = "linear-gradient(135deg,#6C5CE7,#A29BFE,#FD79A8)";
-const GOLD   = "#ffcc33";
+const GOLD   = "#A29BFE";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface PlanFile {
@@ -234,7 +234,7 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
               flex: 1, padding: "8px 0", borderRadius: 10, border: "none",
               background: subTab === id
                 ? id === "builder"
-                  ? "rgba(255,204,51,0.15)"
+                  ? "rgba(162,155,254,0.15)"
                   : "linear-gradient(135deg,#6C5CE7,#A29BFE)"
                 : "none",
               color: subTab === id
@@ -264,8 +264,8 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
       {devMode ? (
         <div style={{
           borderRadius: 12,
-          background: "rgba(255,204,51,0.07)",
-          border: "1px solid rgba(255,204,51,0.25)",
+          background: "rgba(162,155,254,0.07)",
+          border: "1px solid rgba(162,155,254,0.25)",
           padding: "10px 14px",
           display: "flex", alignItems: "center", gap: 10,
         }}>
@@ -276,7 +276,7 @@ export function BuilderTab({ api }: { api: (p: string) => string }) {
           <button
             onClick={exitDevMode}
             style={{
-              background: "none", border: "1px solid rgba(255,204,51,0.30)",
+              background: "none", border: "1px solid rgba(162,155,254,0.30)",
               borderRadius: 8, color: GOLD, fontSize: 11, fontWeight: 700,
               padding: "4px 10px", cursor: "pointer",
             }}

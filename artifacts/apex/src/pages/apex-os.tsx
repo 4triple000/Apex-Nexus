@@ -20,7 +20,7 @@ const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 
 // ── Design tokens ────────────────────────────────────────────────────────────
-const BG     = "#07080E";
+const BG = "transparent";
 const CARD   = "rgba(18,20,30,0.90)";
 const BORDER = "rgba(255,255,255,0.07)";
 const PURPLE = "#6C5CE7";
@@ -101,7 +101,7 @@ function StatusBar({ aiThinking, voiceOn, onVoiceToggle }: {
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "12px 16px",
-      background: "rgba(7,8,14,0.97)", backdropFilter: "blur(24px)",
+      background: "rgba(14,12,32,0.55)", backdropFilter: "blur(24px)",
       borderBottom: "1px solid rgba(108,92,231,0.18)",
       position: "sticky", top: 0, zIndex: 50,
     }}>
@@ -197,7 +197,7 @@ function HorizontalDock({ active, onChange }: { active: string; onChange: (id: s
       display: "flex", gap: 8, padding: "12px 16px",
       overflowX: "auto", scrollbarWidth: "none",
       borderBottom: `1px solid ${BORDER}`,
-      background: "rgba(7,8,14,0.80)", backdropFilter: "blur(16px)",
+      background: "rgba(14,12,32,0.55)", backdropFilter: "blur(16px)",
     }}>
       {DOCK_ITEMS.map((item) => {
         const isActive = active === item.id;
@@ -691,7 +691,7 @@ export default function ApexOSPage() {
           onClick={() => nav("/")}
           style={{
             padding: "10px 20px", borderRadius: 99, cursor: "pointer",
-            background: "rgba(7,8,14,0.95)", backdropFilter: "blur(20px)",
+            background: "rgba(14,12,32,0.55)", backdropFilter: "blur(20px)",
             border: "1px solid rgba(255,255,255,0.12)",
             fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)",
             display: "flex", alignItems: "center", gap: 6,

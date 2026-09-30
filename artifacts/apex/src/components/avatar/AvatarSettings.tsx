@@ -317,7 +317,7 @@ export function AvatarSettings({ store, onClose }: AvatarSettingsProps) {
       />
 
       <div className="relative pointer-events-auto flex flex-col h-full mt-[3%] rounded-t-3xl overflow-hidden animate-in slide-in-from-bottom-6 duration-300"
-        style={{ background: 'linear-gradient(180deg, #0e0e1c 0%, #08080f 100%)' }}
+        style={{ background: 'linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))' }}
       >
         {/* ── Avatar preview area ─────────────────────────────── */}
         <div

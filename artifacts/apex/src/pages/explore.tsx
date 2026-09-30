@@ -22,7 +22,7 @@ export default function ExplorePage() {
   const likedSet = new Set(likedData?.likedIds ?? []);
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-y-auto">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-5 pb-3">
         <div className="flex items-center gap-3">
@@ -40,7 +40,7 @@ export default function ExplorePage() {
       {/* Suggested creators */}
       <div className="px-4 mb-5">
         <div className="flex items-center gap-2 mb-3">
-          <UserPlus size={14} className="text-[#ffcc33]" />
+          <UserPlus size={14} className="text-[#A29BFE]" />
           <h2 className="text-sm font-bold text-white">People to Follow</h2>
         </div>
 
@@ -63,7 +63,7 @@ export default function ExplorePage() {
               return (
                 <div
                   key={creator.id}
-                  className="flex-shrink-0 w-28 bg-[#1a1a1a] border border-white/5 rounded-2xl p-3 flex flex-col items-center gap-2"
+                  className="flex-shrink-0 w-28 bg-[rgba(30,26,62,0.62)] border border-white/5 rounded-2xl p-3 flex flex-col items-center gap-2"
                 >
                   <button onClick={() => nav(`/profile/${creator.id}`)} className="text-3xl hover:scale-110 transition-transform">
                     {creator.avatarEmoji}
@@ -76,7 +76,7 @@ export default function ExplorePage() {
                     <Button
                       size="sm"
                       className="h-6 px-3 text-[10px] font-bold rounded-full w-full"
-                      style={{ background: "#ffcc33", color: "#000" }}
+                      style={{ background: "#A29BFE", color: "#000" }}
                       onClick={() => follow.mutate({ targetUserId: creator.id })}
                     >
                       Follow
@@ -92,7 +92,7 @@ export default function ExplorePage() {
       {/* Trending projects */}
       <div className="px-4 pb-4">
         <div className="flex items-center gap-2 mb-3">
-          <TrendingUp size={14} className="text-[#ffcc33]" />
+          <TrendingUp size={14} className="text-[#A29BFE]" />
           <h2 className="text-sm font-bold text-white">Trending Projects</h2>
         </div>
 
@@ -121,7 +121,7 @@ export default function ExplorePage() {
             <button
               onClick={() => nav("/studio")}
               className="mt-3 px-4 py-2 rounded-full text-xs font-bold"
-              style={{ background: "#ffcc33", color: "#000" }}
+              style={{ background: "#A29BFE", color: "#000" }}
             >
               Open Studio
             </button>

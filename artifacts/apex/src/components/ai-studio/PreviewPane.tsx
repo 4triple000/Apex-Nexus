@@ -54,7 +54,7 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
     return (
       <div
         className="flex flex-col items-center justify-center h-full text-center gap-4"
-        style={{ background: "#0D0D0D" }}
+        style={{ background: "transparent" }}
       >
         <div
           className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl"
@@ -70,9 +70,9 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
         </div>
         <div
           className="flex items-center gap-2 px-4 py-2 rounded-xl mt-2"
-          style={{ background: "rgba(255,204,51,0.06)", border: "1px solid rgba(255,204,51,0.12)" }}
+          style={{ background: "rgba(162,155,254,0.06)", border: "1px solid rgba(162,155,254,0.12)" }}
         >
-          <span className="text-[#FFCC33] text-xs">⚡</span>
+          <span className="text-[#A29BFE] text-xs">⚡</span>
           <span className="text-white/40 text-xs">Powered by GPT-5.2</span>
         </div>
       </div>
@@ -82,12 +82,12 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
   return (
     <div
       className={`flex flex-col h-full ${isFullscreen ? "fixed inset-0 z-50" : ""}`}
-      style={{ background: "#0D0D0D" }}
+      style={{ background: "transparent" }}
     >
       {/* Preview toolbar */}
       <div
         className="flex items-center gap-2 px-4 py-2.5 flex-shrink-0 border-b"
-        style={{ background: "#0D0D0D", borderColor: "#1C1C1E" }}
+        style={{ background: "transparent", borderColor: "#1C1C1E" }}
       >
         {/* Browser chrome dots */}
         <div className="flex gap-1.5 flex-shrink-0">
@@ -99,12 +99,12 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
         {/* URL bar / active step */}
         <div
           className="flex-1 px-3 py-1 rounded-lg text-xs truncate mx-2 flex items-center gap-2"
-          style={{ background: "#161B22", border: "1px solid #21262D" }}
+          style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}
         >
           {isLoading && activeStep ? (
             <>
-              <div className="w-1.5 h-1.5 rounded-full bg-[#FFCC33] animate-pulse flex-shrink-0" />
-              <span className="text-[#FFCC33] font-mono truncate">{activeStep.label}…</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-[#A29BFE] animate-pulse flex-shrink-0" />
+              <span className="text-[#A29BFE] font-mono truncate">{activeStep.label}…</span>
             </>
           ) : (
             <span className="text-white/30 font-mono">
@@ -122,9 +122,9 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
               title={mode}
               className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
               style={{
-                background: deviceMode === mode ? "rgba(255,204,51,0.15)" : "transparent",
-                color: deviceMode === mode ? "#FFCC33" : "rgba(255,255,255,0.3)",
-                border: deviceMode === mode ? "1px solid rgba(255,204,51,0.3)" : "1px solid transparent",
+                background: deviceMode === mode ? "rgba(162,155,254,0.15)" : "transparent",
+                color: deviceMode === mode ? "#A29BFE" : "rgba(255,255,255,0.3)",
+                border: deviceMode === mode ? "1px solid rgba(162,155,254,0.3)" : "1px solid transparent",
               }}
             >
               {mode === "desktop" ? "🖥" : mode === "tablet" ? "📱" : "📲"}
@@ -133,7 +133,7 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
         </div>
 
         {/* Divider */}
-        <div className="w-px h-4 flex-shrink-0" style={{ background: "#1C1C1E" }} />
+        <div className="w-px h-4 flex-shrink-0" style={{ background: "rgba(30,26,62,0.62)" }} />
 
         {/* ── Run button ──────────────────────────────────────────────────────── */}
         {onRun && html && !isLoading && (
@@ -155,7 +155,7 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
           <button
             onClick={onDeploy}
             className="flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-bold transition-all hover:brightness-110 flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #FFCC33, #FF8C00)", color: "#000" }}
+            style={{ background: "linear-gradient(135deg, #A29BFE, #FF8C00)", color: "#000" }}
             title="Deploy your app"
           >
             🚀 Deploy
@@ -184,7 +184,7 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-hidden relative flex items-start" style={{ background: "#161B22" }}>
+      <div className="flex-1 overflow-hidden relative flex items-start" style={{ background: "rgba(30,26,62,0.62)" }}>
         {/* iframe */}
         <div style={{ ...deviceStyles[deviceMode], height: "100%", transition: "width 0.3s ease" }}>
           <iframe
@@ -202,18 +202,18 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
         {showOverlay && (
           <div
             className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-8"
-            style={{ background: "rgba(13,13,13,0.96)" }}
+            style={{ background: "rgba(14,12,32,0.55)" }}
           >
             <div className="relative">
               <div
                 className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl"
-                style={{ background: "#161B22", border: "1px solid #21262D" }}
+                style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}
               >
                 ⚡
               </div>
               <div
                 className="absolute -inset-2 rounded-2xl animate-ping"
-                style={{ background: "rgba(255,204,51,0.08)", animationDuration: "2s" }}
+                style={{ background: "rgba(162,155,254,0.08)", animationDuration: "2s" }}
               />
             </div>
 
@@ -230,14 +230,14 @@ export function PreviewPane({ html, isLoading, buildSteps, projectName, external
               <div className="w-full max-w-xs">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-white/30 text-[11px]">Progress</span>
-                  <span className="text-[#FFCC33] text-[11px] font-mono font-bold">{progress}%</span>
+                  <span className="text-[#A29BFE] text-[11px] font-mono font-bold">{progress}%</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(30,26,62,0.62)" }}>
                   <div
                     className="h-full rounded-full transition-all duration-700 ease-out"
                     style={{
                       width: `${progress}%`,
-                      background: "linear-gradient(90deg, #FFCC33, #FF8C00)",
+                      background: "linear-gradient(90deg, #A29BFE, #FF8C00)",
                     }}
                   />
                 </div>
@@ -277,7 +277,7 @@ function OverlayStepRow({ step }: { step: BuildStep }) {
         {step.status === "active" && (
           <div
             className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: "rgba(255,204,51,0.3)", borderTopColor: "#FFCC33" }}
+            style={{ borderColor: "rgba(162,155,254,0.3)", borderTopColor: "#A29BFE" }}
           />
         )}
         {step.status === "pending" && (
@@ -296,7 +296,7 @@ function OverlayStepRow({ step }: { step: BuildStep }) {
         style={{
           color:
             step.status === "done"   ? "#4ade80" :
-            step.status === "active" ? "#FFCC33" :
+            step.status === "active" ? "#A29BFE" :
             step.status === "error"  ? "#f87171" :
             "rgba(255,255,255,0.25)",
         }}
@@ -305,7 +305,7 @@ function OverlayStepRow({ step }: { step: BuildStep }) {
       </span>
 
       {step.status === "active" && (
-        <div className="w-1.5 h-1.5 rounded-full bg-[#FFCC33] animate-pulse flex-shrink-0" />
+        <div className="w-1.5 h-1.5 rounded-full bg-[#A29BFE] animate-pulse flex-shrink-0" />
       )}
     </div>
   );

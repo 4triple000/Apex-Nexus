@@ -62,7 +62,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(function Sha
       ref={ref}
       style={{
         width: 380,
-        background: "linear-gradient(160deg, #0D0E18 0%, #10121F 55%, #0A0B14 100%)",
+        background: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
         borderRadius: 20,
         overflow: "hidden",
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",

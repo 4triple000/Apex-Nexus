@@ -25,6 +25,7 @@ import Svg, {
   Rect,
   G,
 } from "react-native-svg";
+import { Backdrop } from "@/components/glass/Glass";
 
 const WAVE_ORB = [3, 5, 8, 13, 19, 26, 34, 38, 34, 26, 19, 13, 8, 5, 3];
 
@@ -135,6 +136,7 @@ export default function OrbScreen() {
 
   return (
     <View style={[styles.root]}>
+      <Backdrop />
 
       {/* Deep ambient glow behind orb */}
       <View style={styles.glowOuter} />
@@ -182,7 +184,7 @@ export default function OrbScreen() {
       </View>
 
       {/* Bottom Sheet */}
-      <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 110 }]}>
 
         {/* Apex Personality */}
         <View style={styles.personalitySection}>
@@ -212,7 +214,7 @@ export default function OrbScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#07070E",
+    backgroundColor: "#0A0918",
     overflow: "hidden",
   },
 
@@ -325,7 +327,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(10,8,24,0.98)",
+    backgroundColor: "rgba(30,26,62,0.62)",
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.07)",
     paddingHorizontal: 24,

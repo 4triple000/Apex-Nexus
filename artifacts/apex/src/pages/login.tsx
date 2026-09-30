@@ -210,7 +210,7 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: "100dvh", width: "100%",
-      background: "linear-gradient(160deg, #07080E 0%, #0D0E18 40%, #0A0814 100%)",
+      background: "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       padding: "24px 16px", position: "relative",
@@ -243,7 +243,7 @@ export default function LoginPage() {
         {/* ── Glass card ── */}
         <div style={{
           borderRadius: 28,
-          background: "rgba(14,15,24,0.80)",
+          background: "rgba(14,12,32,0.55)",
           backdropFilter: "blur(40px) saturate(180%)",
           WebkitBackdropFilter: "blur(40px) saturate(180%)",
           border: "1px solid rgba(255,255,255,0.09)",

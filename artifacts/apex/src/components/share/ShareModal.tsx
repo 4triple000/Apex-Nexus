@@ -111,7 +111,7 @@ export function ShareModal({ prompt, response, provider, responseTime, context =
       }}>
         <div style={{
           width: "100%", maxWidth: 480,
-          background: "#10121D",
+          background: "rgba(30,26,62,0.62)",
           borderRadius: "28px 28px 0 0",
           border: "1px solid rgba(255,255,255,0.08)",
           borderBottom: "none",

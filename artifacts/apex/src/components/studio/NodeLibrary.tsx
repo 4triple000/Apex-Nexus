@@ -29,7 +29,7 @@ export function NodeLibrary({ onAddNode }: NodeLibraryProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#080d18] border-r border-white/8 overflow-hidden">
+    <div className="flex flex-col h-full bg-[transparent] border-r border-white/8 overflow-hidden">
       {/* Header */}
       <div className="p-3 border-b border-white/8">
         <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-white/40 mb-2">Nodes</p>

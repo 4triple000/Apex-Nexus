@@ -218,7 +218,7 @@ export function AIToolbar({
 
   return (
     <div style={{
-      background: "rgba(8,6,18,0.98)",
+      background: "rgba(14,12,32,0.55)",
       borderTop: "1px solid rgba(255,255,255,0.07)",
     }}>
       {/* ── Header label ──────────────────────────────────── */}

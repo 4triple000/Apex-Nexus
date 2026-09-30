@@ -238,3 +238,57 @@ Synthesized answer:`;
 
   return { responses, combined };
 }
+
+// ── Multi-turn chat (mobile app) ──────────────────────────────────────────────
+
+export interface ChatTurn { role: "user" | "assistant"; content: string }
+
+/**
+ * One reply from the chosen provider, given a system prompt and prior turns.
+ * "auto" (or a provider without a key) routes to a connected provider.
+ */
+export async function chatWithHistory(
+  preferred: string | undefined,
+  system: string,
+  history: ChatTurn[],
+  message: string,
+): Promise<AiResponse> {
+  const provider = routeToProvider(message, preferred === "auto" ? undefined : preferred);
+  const start = Date.now();
+  const turns = [...history, { role: "user" as const, content: message }];
+  try {
+    if (provider === "claude") {
+      const client = getAnthropic();
+      if (!client) return { provider, content: "", responseTime: 0, error: "Claude isn't connected yet. Add ANTHROPIC_API_KEY on the server." };
+      const response = await client.beta.messages.create({
+        model: "claude-opus-5-5",
+        max_tokens: 16000,
+        output_config: { effort: "low" },
+        betas: ["server-side-fallback-2026-07-01"],
+        fallbacks: "default",
+        system,
+        messages: turns,
+      });
+      if (response.stop_reason === "refusal") {
+        return { provider, content: "", responseTime: Date.now() - start, error: "Claude declined to answer that one." };
+      }
+      const content = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
+      return { provider, content, responseTime: Date.now() - start };
+    }
+    const client = provider === "perplexity" ? getPerplexity() : isOpenAIConfigured() ? openai : null;
+    if (!client) {
+      const name = provider === "perplexity" ? "Perplexity" : "ChatGPT";
+      const key = provider === "perplexity" ? "PERPLEXITY_API_KEY" : "OPENAI_API_KEY";
+      return { provider, content: "", responseTime: 0, error: `${name} isn't connected yet. Add ${key} on the server.` };
+    }
+    const response = await client.chat.completions.create({
+      model: provider === "perplexity" ? "sonar-pro" : "gpt-5.2",
+      ...(provider === "perplexity" ? {} : { max_completion_tokens: 2048 }),
+      messages: [{ role: "system", content: system }, ...turns],
+    });
+    return { provider, content: response.choices[0]?.message?.content ?? "", responseTime: Date.now() - start };
+  } catch (err) {
+    const msg = err instanceof Anthropic.APIError ? `Claude error ${err.status ?? ""}: ${err.message}` : err instanceof Error ? err.message : "AI error";
+    return { provider, content: "", responseTime: Date.now() - start, error: msg };
+  }
+}

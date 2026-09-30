@@ -348,12 +348,12 @@ export default function AiStudioPage() {
   const autopilotColors: Record<AutopilotMode, string> = {
     off: "#666",
     suggest: "#3b82f6",
-    auto_fix: "#FFCC33",
+    auto_fix: "#A29BFE",
     full_auto: "#ef4444",
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col" style={{ background: "#0F1115" }}>
+    <div className="fixed inset-0 z-40 flex flex-col" style={{ background: "transparent" }}>
 
       {/* ── Deploy Modal ─────────────────────────────────────────────────────── */}
       {deployOpen && (
@@ -370,7 +370,7 @@ export default function AiStudioPage() {
       {/* ── Top Toolbar ──────────────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-3 px-4 py-2.5 flex-shrink-0 border-b"
-        style={{ background: "rgba(15,17,21,0.98)", borderColor: "rgba(255,255,255,0.06)" }}
+        style={{ background: "rgba(14,12,32,0.55)", borderColor: "rgba(255,255,255,0.06)" }}
       >
         {/* Back */}
         <button
@@ -385,7 +385,7 @@ export default function AiStudioPage() {
         {/* Logo */}
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-black flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #FFCC33, #FF8C00)", color: "#000" }}
+          style={{ background: "linear-gradient(135deg, #A29BFE, #FF8C00)", color: "#000" }}
         >
           ⚡
         </div>
@@ -398,7 +398,7 @@ export default function AiStudioPage() {
             onChange={(e) => setTitleDraft(e.target.value)}
             onBlur={handleSaveTitle}
             onKeyDown={(e) => { if (e.key === "Enter") void handleSaveTitle(); if (e.key === "Escape") setIsTitleEditing(false); }}
-            className="bg-transparent text-white text-sm font-bold outline-none border-b border-[#FFCC33]/50 pb-0.5 w-48"
+            className="bg-transparent text-white text-sm font-bold outline-none border-b border-[#A29BFE]/50 pb-0.5 w-48"
           />
         ) : (
           <button
@@ -413,7 +413,7 @@ export default function AiStudioPage() {
         {plan && (
           <span
             className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex-shrink-0 hidden sm:block"
-            style={{ background: "rgba(255,204,51,0.1)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.2)" }}
+            style={{ background: "rgba(162,155,254,0.1)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.2)" }}
           >
             {plan.app_type.replace("_", " ")}
           </span>
@@ -474,7 +474,7 @@ export default function AiStudioPage() {
             onClick={handleDeploy}
             disabled={isGenerating || deployOpen}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all hover:brightness-110 disabled:opacity-40 flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #FFCC33, #FF8C00)", color: "#000" }}
+            style={{ background: "linear-gradient(135deg, #A29BFE, #FF8C00)", color: "#000" }}
             title="Deploy your app"
           >
             🚀 Deploy
@@ -494,7 +494,7 @@ export default function AiStudioPage() {
             <button
               onClick={handleNewProject}
               className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:brightness-110 flex-shrink-0"
-              style={{ background: "rgba(255,204,51,0.1)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.2)" }}
+              style={{ background: "rgba(162,155,254,0.1)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.2)" }}
             >
               + New
             </button>
@@ -535,7 +535,7 @@ export default function AiStudioPage() {
           {/* Tab bar */}
           <div
             className="flex items-center gap-1 px-4 py-2 flex-shrink-0 border-b overflow-x-auto"
-            style={{ background: "#0F1115", borderColor: "rgba(255,255,255,0.06)" }}
+            style={{ background: "transparent", borderColor: "rgba(255,255,255,0.06)" }}
           >
             {tabs.map((tab) => (
               <button
@@ -544,7 +544,7 @@ export default function AiStudioPage() {
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex-shrink-0 whitespace-nowrap"
                 style={
                   rightTab === tab.id
-                    ? { background: "rgba(255,204,51,0.1)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.2)" }
+                    ? { background: "rgba(162,155,254,0.1)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.2)" }
                     : { background: "transparent", color: "rgba(255,255,255,0.35)", border: "1px solid transparent" }
                 }
               >
@@ -553,7 +553,7 @@ export default function AiStudioPage() {
                 {tab.badge != null && tab.badge > 0 && (
                   <span
                     className="px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-                    style={{ background: "rgba(255,204,51,0.2)", color: "#FFCC33" }}
+                    style={{ background: "rgba(162,155,254,0.2)", color: "#A29BFE" }}
                   >
                     {tab.badge}
                   </span>
@@ -640,18 +640,18 @@ function DeployModal({ projectName, stages, currentStage, isDone, deployUrl, onC
     >
       <div
         className="w-full max-w-sm rounded-2xl overflow-hidden"
-        style={{ background: "#0F1115", border: "1px solid rgba(255,255,255,0.08)" }}
+        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.08)" }}
       >
         {/* Header */}
         <div
           className="px-6 py-5 border-b"
-          style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,204,51,0.04)" }}
+          style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(162,155,254,0.04)" }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
                 className="w-9 h-9 rounded-xl flex items-center justify-center text-lg"
-                style={{ background: "linear-gradient(135deg, #FFCC33, #FF8C00)" }}
+                style={{ background: "linear-gradient(135deg, #A29BFE, #FF8C00)" }}
               >
                 🚀
               </div>
@@ -681,8 +681,8 @@ function DeployModal({ projectName, stages, currentStage, isDone, deployUrl, onC
                 {/* Status icon */}
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
                   style={{
-                    background: done ? "rgba(34,197,94,0.12)" : active ? "rgba(255,204,51,0.12)" : "rgba(255,255,255,0.04)",
-                    border: `1px solid ${done ? "rgba(34,197,94,0.25)" : active ? "rgba(255,204,51,0.25)" : "rgba(255,255,255,0.06)"}`,
+                    background: done ? "rgba(34,197,94,0.12)" : active ? "rgba(162,155,254,0.12)" : "rgba(255,255,255,0.04)",
+                    border: `1px solid ${done ? "rgba(34,197,94,0.25)" : active ? "rgba(162,155,254,0.25)" : "rgba(255,255,255,0.06)"}`,
                   }}
                 >
                   {done ? (
@@ -691,7 +691,7 @@ function DeployModal({ projectName, stages, currentStage, isDone, deployUrl, onC
                     </svg>
                   ) : active ? (
                     <div className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
-                      style={{ borderColor: "rgba(255,204,51,0.3)", borderTopColor: "#FFCC33" }} />
+                      style={{ borderColor: "rgba(162,155,254,0.3)", borderTopColor: "#A29BFE" }} />
                   ) : (
                     <span style={{ filter: "grayscale(1)", opacity: 0.3 }}>{stage.icon}</span>
                   )}
@@ -700,7 +700,7 @@ function DeployModal({ projectName, stages, currentStage, isDone, deployUrl, onC
                 {/* Labels */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium"
-                    style={{ color: done ? "#4ade80" : active ? "#FFCC33" : "rgba(255,255,255,0.25)" }}>
+                    style={{ color: done ? "#4ade80" : active ? "#A29BFE" : "rgba(255,255,255,0.25)" }}>
                     {stage.label}
                   </p>
                   {active && (
@@ -743,7 +743,7 @@ function DeployModal({ projectName, stages, currentStage, isDone, deployUrl, onC
               </button>
               <button
                 className="flex-1 py-2 rounded-xl text-xs font-bold transition-all"
-                style={{ background: "linear-gradient(135deg, #FFCC33, #FF8C00)", color: "#000" }}
+                style={{ background: "linear-gradient(135deg, #A29BFE, #FF8C00)", color: "#000" }}
                 onClick={() => window.open(deployUrl, "_blank")}
               >
                 Open App ↗

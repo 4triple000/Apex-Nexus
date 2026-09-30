@@ -21,7 +21,7 @@ import { useVoiceConversation, type VoiceMode } from "@/hooks/useVoiceConversati
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
 const T = {
-  bg:      "#06070D",
+  bg:      "transparent",
   bg2:     "#0D0E18",
   text:    "#E8E8F0",
   muted:   "#6B6B80",
@@ -34,7 +34,7 @@ const MODE_META: Record<VoiceMode, { color: string; label: string; emoji: string
   chat:    { color: "#FD79A8", label: "Chat",    emoji: "💬", desc: "General conversation" },
   builder: { color: "#A29BFE", label: "Builder", emoji: "⚙️", desc: "Code & build commands" },
   game:    { color: "#00D2D3", label: "Game",    emoji: "🎮", desc: "In-game assistant"     },
-  command: { color: "#FFCC33", label: "Command", emoji: "⚡", desc: "Fast execution"        },
+  command: { color: "#A29BFE", label: "Command", emoji: "⚡", desc: "Fast execution"        },
 };
 
 // ── Voice state → avatar state mapping ───────────────────────────────────────

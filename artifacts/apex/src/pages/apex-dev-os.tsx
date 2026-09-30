@@ -37,7 +37,7 @@ function apiFetch(path: string, opts?: RequestInit) {
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 
 const T = {
-  bg:       "#06070D",
+  bg:       "transparent",
   bg2:      "#0D0E18",
   bg3:      "#12131F",
   bg4:      "#1A1B2E",
@@ -48,7 +48,7 @@ const T = {
   cyan:     "#00D2D3",
   cyanD:    "#00A8A8",
   pink:     "#FD79A8",
-  gold:     "#FFCC33",
+  gold:     "#A29BFE",
   red:      "#FF5F6D",
   green:    "#00D2D3",
   border:   "rgba(162,155,254,0.14)",

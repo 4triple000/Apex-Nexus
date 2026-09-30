@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAutopilot, AUTOPILOT_STEPS, type AutopilotResult } from "@/hooks/useAutopilot";
 
-const GOLD = "#ffcc33";
+const GOLD = "#A29BFE";
 
 interface QuickPrompt {
   label: string;
@@ -94,7 +94,7 @@ export function AutopilotPanel({ mode = "inline", onClose, onGenerated }: Autopi
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/85 backdrop-blur-xl p-4">
         <div
           className="w-full max-w-lg rounded-3xl border overflow-hidden"
-          style={{ background: "linear-gradient(180deg, #0a0f1e, #060a15)", borderColor: "rgba(255,204,51,0.15)" }}
+          style={{ background: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))", borderColor: "rgba(162,155,254,0.15)" }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 pt-6 pb-4">
@@ -103,7 +103,7 @@ export function AutopilotPanel({ mode = "inline", onClose, onGenerated }: Autopi
                 <span className="text-xl">✨</span>
                 <h2
                   className="text-lg font-black tracking-[0.08em] uppercase"
-                  style={{ color: GOLD, textShadow: "0 0 20px rgba(255,204,51,0.4)" }}
+                  style={{ color: GOLD, textShadow: "0 0 20px rgba(162,155,254,0.4)" }}
                 >
                   AI Autopilot
                 </h2>
@@ -134,8 +134,8 @@ export function AutopilotPanel({ mode = "inline", onClose, onGenerated }: Autopi
     <div
       className="mx-4 mb-3 rounded-2xl border overflow-hidden"
       style={{
-        background: "linear-gradient(135deg, rgba(255,204,51,0.04), rgba(167,139,250,0.04))",
-        borderColor: "rgba(255,204,51,0.12)",
+        background: "linear-gradient(135deg, rgba(162,155,254,0.04), rgba(167,139,250,0.04))",
+        borderColor: "rgba(162,155,254,0.12)",
       }}
     >
       <div className="px-4 pt-4 pb-1">
@@ -199,7 +199,7 @@ function PromptBody({
           className="w-full pr-[90px] pl-4 py-3 rounded-xl text-sm text-white placeholder:text-white/25 border focus:outline-none transition-all disabled:opacity-50"
           style={{
             background: "rgba(255,255,255,0.04)",
-            borderColor: prompt ? "rgba(255,204,51,0.3)" : "rgba(255,255,255,0.08)",
+            borderColor: prompt ? "rgba(162,155,254,0.3)" : "rgba(255,255,255,0.08)",
             fontSize: compact ? "12px" : "14px",
           }}
         />
@@ -228,7 +228,7 @@ function PromptBody({
                   background: completedSteps.has(i)
                     ? "rgba(74,222,128,0.2)"
                     : activeStep === i
-                    ? "rgba(255,204,51,0.2)"
+                    ? "rgba(162,155,254,0.2)"
                     : "rgba(255,255,255,0.05)",
                   border: `1.5px solid ${completedSteps.has(i) ? "#4ade80" : activeStep === i ? GOLD : "rgba(255,255,255,0.1)"}`,
                 }}

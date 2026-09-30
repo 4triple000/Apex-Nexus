@@ -418,7 +418,7 @@ export function AvatarReengagement({ message, onDismiss }: AvatarReengagementPro
         <div style={{
           position: "relative",
           borderRadius: 28,
-          background: "rgba(10,10,20,0.97)",
+          background: "rgba(14,12,32,0.55)",
           border: `1px solid ${primaryColor}28`,
           backdropFilter: "blur(28px)",
           WebkitBackdropFilter: "blur(28px)",
