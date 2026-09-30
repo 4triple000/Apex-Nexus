@@ -41,6 +41,8 @@ import { getPrefs } from "@/lib/prefs";
 import { recordPrompt, usePromptLibrary } from "@/lib/promptLibrary";
 import { UsagePill } from "@/components/glass/UsagePill";
 import * as ImagePicker from "expo-image-picker";
+import { openCreditsSheet } from "@/components/CreditsSheet";
+import { ApexApiError } from "@/services/api";
 
 type ChatMode = "chat" | "battle" | "hive";
 
@@ -410,9 +412,10 @@ export default function HomeScreen() {
       }
     } catch (e) {
       push({ role: "ai", text: e instanceof Error ? e.message : "Something went wrong. Try again." });
+      if (e instanceof ApexApiError && e.code === "OUT_OF_CREDITS") openCreditsSheet("out", e.message);
     } finally {
       setSending(false);
-      queryClient.invalidateQueries({ queryKey: ["daily-usage"] });
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
     }
   }, [mode, model, conversationId, sending, user?.sessionId, queryClient]);
 
@@ -428,6 +431,7 @@ export default function HomeScreen() {
       push({ role: "ai", text: `${r.analysis}${ideas ? `\n\nReply ideas:\n${ideas}` : ""}` });
     } catch (e) {
       push({ role: "ai", text: e instanceof Error ? e.message : "Couldn't analyze that image." });
+      if (e instanceof ApexApiError && e.code === "OUT_OF_CREDITS") openCreditsSheet("out", e.message);
     } finally {
       setSending(false);
     }

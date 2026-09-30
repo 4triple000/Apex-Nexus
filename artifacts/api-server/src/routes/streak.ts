@@ -8,7 +8,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db, userStreaksTable, type UserStreak } from "@workspace/db";
 import { requireUser } from "../shared/middleware/requireAuth";
-import { grantBonusRequests } from "../lib/usageTracker";
+import { grantBonusCredits } from "../lib/credits";
 import type { ApexRequest } from "../shared/types";
 
 const router: IRouter = Router();
@@ -76,7 +76,7 @@ router.post("/streak/checkin", requireUser, async (req: ApexRequest, res): Promi
   const cycleDay = ((streak - 1) % 7) + 1;
   let earned: "bonus" | "avatar" | null = null;
   if (cycleDay === BONUS_DAY) {
-    await grantBonusRequests(req.sessionId!, BONUS_MESSAGES);
+    await grantBonusCredits(userId, BONUS_MESSAGES);
     earned = "bonus";
   }
   const avatarLook = !!row?.avatarLook || cycleDay === AVATAR_DAY;

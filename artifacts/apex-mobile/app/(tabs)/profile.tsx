@@ -113,6 +113,23 @@ export default function ProfileScreen() {
         <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
       </Pressable>
 
+      {/* Connectors */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Connectors"
+        onPress={() => router.push("/(tabs)/connectors")}
+        style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.8 : 1 }]}
+      >
+        <View style={[styles.avatarCircle, { backgroundColor: "rgba(74,222,128,0.2)" }]}>
+          <Text style={styles.avatarEmoji}>🔌</Text>
+        </View>
+        <View style={styles.userInfo}>
+          <Text style={[styles.username, { color: colors.foreground }]}>Connectors</Text>
+          <Text style={[styles.email, { color: colors.mutedForeground }]}>Use your own AI accounts and apps in Apex</Text>
+        </View>
+        <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+      </Pressable>
+
       {/* Stats row */}
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>

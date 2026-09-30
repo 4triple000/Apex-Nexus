@@ -1,7 +1,10 @@
 import { Router, type IRouter } from "express";
 import { SendChatBody, AnalyzeScreenshotBody } from "@workspace/api-zod";
-import { chatSingle, chatBattle, chatHive, providerStatus } from "../lib/aiRouter";
-import { incrementUsage } from "../lib/usageTracker";
+import { chatSingle, chatBattle, chatHive, providerStatus, pickProvider, battleProviders, hasOwnKey, type AiResponse } from "../lib/aiRouter";
+import { creditUserForSession, creditUserFor, canSpend, outOfCredits, recordUsage, getBalance, creditCost } from "../lib/credits";
+import { getUserKeys, appContextFor } from "../lib/connectors";
+import { requireUser } from "../shared/middleware/requireAuth";
+import type { ApexRequest } from "../shared/types";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { trackInteraction, getUserPersonalization } from "../lib/learningEngine";
 
@@ -20,52 +23,60 @@ router.post("/chat", async (req, res): Promise<void> => {
   }
 
   const { message, mode, sessionId, preferredProvider } = parsed.data;
-  const sid = sessionId ?? "anonymous";
+  const sid = sessionId ?? "";
 
-  const usageResult = await incrementUsage(sid);
-  if (usageResult.exceeded) {
-    res.status(429).json({
-      error: "Free tier limit reached. Upgrade to premium for more requests.",
-      code: "USAGE_LIMIT_EXCEEDED",
-    });
+  // AI costs real money, so chat needs an account (the session ID sent here is the signed-in one)
+  const who = await creditUserForSession(sid);
+  if (!who) {
+    res.status(401).json({ error: "Please sign in to chat with Apex.", code: "SIGN_IN_REQUIRED" });
+    return;
+  }
+  const keys = await getUserKeys(who.userId);
+
+  // Check the person can afford this before asking any model
+  const multi = mode === "battle" || mode === "hive";
+  const providers = multi ? battleProviders(keys) : [pickProvider(message, preferredProvider ?? undefined, keys)];
+  const needed = providers.reduce((sum, p) => sum + (hasOwnKey(keys, p) ? 0 : creditCost(p)), 0);
+  const check = await canSpend(who, needed);
+  if (!check.ok) {
+    res.status(429).json(outOfCredits(check.balance, needed));
     return;
   }
 
-  const usage = usageResult.usage!;
-  const limit = usage.tier === "premium" ? 500 : 20;
-  const remaining = Math.max(0, limit - usage.requestsUsed);
+  const charge = async (responses: AiResponse[]) => {
+    for (const r of responses) {
+      if (r.error || !r.content || r.provider === "hive") continue;
+      await recordUsage(who, { provider: r.provider, ownKey: r.ownKey, inputTokens: r.inputTokens, outputTokens: r.outputTokens }).catch(() => undefined);
+    }
+    return getBalance(who);
+  };
 
   if (mode === "battle") {
-    const responses = await chatBattle(message);
-    res.json({
-      mode: "battle",
-      messages: responses,
-      routedTo: "openai,claude,perplexity",
-      usageRemaining: remaining,
-    });
+    const responses = await chatBattle(message, keys);
+    const credits = await charge(responses);
+    res.json({ mode: "battle", messages: responses, routedTo: providers.join(","), usageRemaining: credits.remaining, credits });
     return;
   }
 
   if (mode === "hive") {
-    const { responses, combined } = await chatHive(message);
-    res.json({
-      mode: "hive",
-      messages: responses,
-      routedTo: "openai,claude,perplexity",
-      combinedAnswer: combined,
-      usageRemaining: remaining,
-    });
+    const { responses, combined } = await chatHive(message, keys);
+    const credits = await charge(responses);
+    res.json({ mode: "hive", messages: responses, routedTo: providers.join(","), combinedAnswer: combined, usageRemaining: credits.remaining, credits });
     return;
   }
 
-  // Inject personalization if available
-  const personalization = await getUserPersonalization(sid).catch(() => null);
-  const personalizationHint = personalization?.systemPromptAddition;
+  // Personalization, plus data from linked apps when the message asks for it
+  const [personalization, appContext] = await Promise.all([
+    getUserPersonalization(sid).catch(() => null),
+    appContextFor(who.userId, message).catch(() => ""),
+  ]);
+  const personalizationHint = [personalization?.systemPromptAddition, appContext].filter(Boolean).join("\n") || undefined;
 
-  const responses = await chatSingle(message, preferredProvider ?? undefined, personalizationHint);
+  const responses = await chatSingle(message, preferredProvider ?? undefined, personalizationHint, keys);
   const routedTo = responses[0]?.provider ?? "openai";
   const aiOutput = responses[0]?.content ?? "";
   const responseTimeMs = responses[0]?.responseTime;
+  const credits = await charge(responses);
 
   // Auto-track the interaction (fire and forget)
   trackInteraction({
@@ -83,13 +94,14 @@ router.post("/chat", async (req, res): Promise<void> => {
     mode: "chat",
     messages: responses,
     routedTo,
-    usageRemaining: remaining,
-    personalizationActive: !!personalizationHint,
+    usageRemaining: credits.remaining,
+    credits,
+    personalizationActive: !!personalization?.systemPromptAddition,
     preferredTone: personalization?.preferredTone,
   });
 });
 
-router.post("/chat/analyze-screenshot", async (req, res): Promise<void> => {
+router.post("/chat/analyze-screenshot", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const { content, context, imageBase64 } = req.body as {
     content?: string;
     context?: string;
@@ -100,6 +112,10 @@ router.post("/chat/analyze-screenshot", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Provide either content text or an image." });
     return;
   }
+  const who = await creditUserFor(req.userId!);
+  if (!who) { res.status(401).json({ error: "Please sign in." }); return; }
+  const check = await canSpend(who, creditCost("openai"));
+  if (!check.ok) { res.status(429).json(outOfCredits(check.balance, creditCost("openai"))); return; }
 
   const systemPrompt = `You are an expert conversation analyst. Analyze the conversation or screenshot and provide:
 1. A brief analysis of the situation/content
@@ -149,6 +165,7 @@ ${context ? `Context: ${context}\n\n` : ""}Respond ONLY in valid JSON format:
       messages,
     });
 
+    await recordUsage(who, { provider: "openai", inputTokens: response.usage?.prompt_tokens, outputTokens: response.usage?.completion_tokens }).catch(() => undefined);
     const rawContent = response.choices[0]?.message?.content ?? "{}";
 
     let parsed2: { analysis: string; suggestions: string[] };

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageBubble, MessageSkeleton, HiveBubble, PROVIDER_CONFIG } from "@/components/chat/message-bubble";
 import { ApexLogo, ApexLogoToggle } from "@/components/ui/ApexLogo";
-import { useSendChat, useCastVote } from "@workspace/api-client-react";
+import { useSendChat, useCastVote, ApiError } from "@workspace/api-client-react";
+import { openCreditsSheet } from "@/hooks/useCredits";
 import { useSession } from "@/hooks/use-session";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { buildPersonalityPrompt } from "@/lib/personalityEngine";
@@ -233,7 +234,14 @@ export default function Home() {
         avatar.setEmotion(aiEmotion);
         triggerGesture(aiEmotion);
       }
-    } catch {
+    } catch (err) {
+      // Out of credits or signed out: explain instead of a generic failure
+      if (err instanceof ApiError && (err.code === "OUT_OF_CREDITS" || err.status === 401)) {
+        const outMsg: Message = { id: crypto.randomUUID(), role: "ai", content: err.message, error: err.code === "OUT_OF_CREDITS" ? "Out of credits" : "Sign in", timestamp: Date.now() };
+        setMessages((prev) => [...prev, outMsg]);
+        if (err.code === "OUT_OF_CREDITS") openCreditsSheet("out", err.message);
+        return;
+      }
       const errorMsg: Message = { id: crypto.randomUUID(), role: "ai", content: "Failed to connect to AI routing core.", error: "Connection Error", timestamp: Date.now() };
       setMessages((prev) => [...prev, errorMsg]);
       lastEmotionRef.current = "concerned";
@@ -241,7 +249,7 @@ export default function Home() {
       triggerGesture("concerned");
     } finally {
       avatar.setIsThinking(false);
-      queryClient.invalidateQueries({ queryKey: ["daily-usage"] });
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
     }
   };
 

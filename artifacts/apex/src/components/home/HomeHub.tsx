@@ -6,7 +6,7 @@ import { RiOpenaiFill } from "react-icons/ri";
 import { SiClaude, SiPerplexity, SiGooglegemini, SiX, SiDeepseek, SiMistralai, SiMeta } from "react-icons/si";
 import { ApexLogo } from "@/components/ui/ApexLogo";
 import { usePromptLibrary } from "@/lib/promptLibrary";
-import { useDailyUsage } from "@/hooks/useDailyUsage";
+import { useCredits, openCreditsSheet, resetsIn } from "@/hooks/useCredits";
 
 // ── Models ─────────────────────────────────────────────────────────────────────
 
@@ -116,6 +116,7 @@ const TOOL_ITEMS = [
   { href: "/dm",         label: "Messages",       sub: "Instagram and Messenger inbox",   emoji: "💬", aliases: ["messages", "dm", "instagram", "facebook", "messenger", "inbox"] },
   { href: "/screenshot", label: "Screenshot AI",  sub: "Explain anything on screen",      emoji: "📸", aliases: ["screenshot", "image", "photo"] },
   { href: "/feed",       label: "Social",         sub: "Creators and what they're making", emoji: "👥", aliases: ["social", "feed", "explore", "community", "creators", "follow"] },
+  { href: "/connectors", label: "Connectors",     sub: "Your own AI keys and apps",       emoji: "🔌", aliases: ["connect", "connector", "key", "api", "account", "github", "google", "spotify", "notion"] },
   { href: "/workflows",  label: "AI Coach",       sub: "Workflows and coaching",          emoji: "🔁", aliases: ["coach", "workflow", "automation"] },
 ];
 
@@ -292,26 +293,31 @@ export function ModeChips({ mode, onChange }: { mode: ChatMode; onChange: (m: Ch
   );
 }
 
-// ── Today's usage ──────────────────────────────────────────────────────────────
+// ── Today's credits ────────────────────────────────────────────────────────────
 
-/** "12 / 20 today" with a small progress ring. Hidden until the numbers load. */
+/** "18 credits left" with a small ring; tap for the credits sheet. Hidden until the numbers load. */
 export function UsagePill() {
-  const { data } = useDailyUsage();
+  const { data } = useCredits();
   if (!data) return null;
-  const pct = Math.min(1, data.requestsUsed / Math.max(1, data.requestsLimit));
-  const warn = pct >= 0.8;
+  const pct = data.unlimited ? 0 : Math.min(1, data.used / Math.max(1, data.limit));
+  const warn = !data.unlimited && pct >= 0.8;
   const r = 7, c = 2 * Math.PI * r;
+  const left = data.unlimited ? 1 : 1 - pct;
   return (
-    <span
-      title={`AI messages used today. Resets ${new Date(data.resetAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.`}
-      style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 26, padding: "0 10px 0 6px", borderRadius: 13, fontSize: 11.5, fontWeight: 700, color: warn ? "#FFD479" : "var(--mg-ink-2)", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", whiteSpace: "nowrap" }}
+    <button
+      type="button"
+      onClick={() => openCreditsSheet("info")}
+      aria-label={data.unlimited ? "Unlimited AI credits" : `${data.remaining} AI credits left today. Tap for details.`}
+      title={data.unlimited ? "Unlimited AI credits" : `Credits reset ${resetsIn(data.resetsAt)}`}
+      className="mg-press mg-focus"
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 26, padding: "0 10px 0 6px", borderRadius: 13, fontSize: 11.5, fontWeight: 700, color: warn ? "#FFD479" : "var(--mg-ink-2)", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", whiteSpace: "nowrap", cursor: "pointer" }}
     >
       <svg width={18} height={18} viewBox="0 0 18 18" aria-hidden>
         <circle cx={9} cy={9} r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2.5} />
-        <circle cx={9} cy={9} r={r} fill="none" stroke={warn ? "#FFD479" : "#8B7BFF"} strokeWidth={2.5} strokeDasharray={`${c * pct} ${c}`} strokeLinecap="round" transform="rotate(-90 9 9)" />
+        <circle cx={9} cy={9} r={r} fill="none" stroke={warn ? "#FFD479" : "#8B7BFF"} strokeWidth={2.5} strokeDasharray={`${c * left} ${c}`} strokeLinecap="round" transform="rotate(-90 9 9)" />
       </svg>
-      {data.requestsUsed} / {data.requestsLimit} today
-    </span>
+      {data.unlimited ? "Unlimited" : `${data.remaining} credit${data.remaining === 1 ? "" : "s"} left`}
+    </button>
   );
 }
 
@@ -350,6 +356,7 @@ export function ModelCarousel({
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { data: credits } = useCredits();
   const index = Math.max(0, MODELS.findIndex((m) => m.id === value));
   // The dot follows the card under your finger while swiping, before the model is picked
   const [live, setLive] = useState(index);
@@ -397,7 +404,14 @@ export function ModelCarousel({
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
                 <div className="mg-display" style={{ fontSize: 24, fontWeight: 700, color: "var(--mg-ink)" }}>{m.name}</div>
-                <StatusPill connected={status?.[m.id]} />
+                <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+                  {m.id !== "auto" && credits?.costs[m.id] !== undefined && (
+                    <span style={{ fontSize: 11.5, fontWeight: 600, padding: "4px 9px", borderRadius: 99, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--mg-ink-2)" }}>
+                      {credits.ownKeys?.includes(m.id) ? "Your key · free" : `${credits.costs[m.id]} credit${credits.costs[m.id] === 1 ? "" : "s"}`}
+                    </span>
+                  )}
+                  <StatusPill connected={status?.[m.id] === undefined ? undefined : status[m.id] || !!credits?.ownKeys?.includes(m.id)} />
+                </span>
               </div>
               <div style={{ fontSize: 13.5, color: "var(--mg-ink-2)" }}>
                 <span style={{ color: "var(--mg-ink-3)" }}>{m.maker} · </span>{m.tagline}

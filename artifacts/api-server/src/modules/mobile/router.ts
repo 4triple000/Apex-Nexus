@@ -26,8 +26,9 @@ import {
   mobileMemoryTable,
 } from "@workspace/db";
 import { hashPassword, verifyPassword } from "./crypto";
-import { chatWithHistory } from "../../lib/aiRouter";
-import { incrementUsage } from "../../lib/usageTracker";
+import { chatWithHistory, pickProvider, hasOwnKey } from "../../lib/aiRouter";
+import { creditUserFor, canSpend, outOfCredits, recordUsage, getBalance, creditCost } from "../../lib/credits";
+import { getUserKeys, appContextFor } from "../../lib/connectors";
 import { extractMemoryFromMessage, buildMemorySystemPrompt } from "../memory/extractor";
 import { success, badRequest, notFound, serverError, unauthorized, forbidden } from "../../shared/utils/response";
 import { requireUser } from "../../shared/middleware/requireAuth";
@@ -175,11 +176,15 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
     return;
   }
 
-  // Same daily limit as web chat, counted against the signed-in session
-  const usageKey = req.header("x-apex-auth") || `user_${userId}`;
-  const usageResult = await incrementUsage(usageKey);
-  if (usageResult.exceeded) {
-    res.status(429).json({ ok: false, error: "You've used today's free AI messages. They reset tomorrow." });
+  // Same daily credits as web chat, counted per account
+  const who = await creditUserFor(userId);
+  if (!who) { res.status(401).json({ ok: false, error: "Please sign in." }); return; }
+  const keys = await getUserKeys(userId);
+  const target = pickProvider(message, provider === "auto" ? undefined : provider, keys);
+  const needed = hasOwnKey(keys, target) ? 0 : creditCost(target);
+  const check = await canSpend(who, needed);
+  if (!check.ok) {
+    res.status(429).json(outOfCredits(check.balance, needed));
     return;
   }
 
@@ -205,21 +210,29 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
     }));
 
     // 3. Build structured memory system prompt (AI-extracted, grouped by category)
-    const memorySection = memory === false ? "" : await buildMemorySystemPrompt(userId);
+    const [memorySection, appContext] = await Promise.all([
+      memory === false ? "" : buildMemorySystemPrompt(userId),
+      appContextFor(userId, message).catch(() => ""),
+    ]);
 
     // 4. Compose system prompt
     const systemPrompt =
       `You are Apex, a personalized AI assistant. You are intelligent, warm, and deeply attuned to the user's context. ` +
       `Be direct, helpful, and conversational. Keep responses focused and clear.` +
       (tone ? ` ${TONES[tone]}` : "") +
-      memorySection;
+      memorySection +
+      appContext;
 
     // 5. Ask the chosen model
-    const reply = await chatWithHistory(provider, systemPrompt, historyMessages, message);
+    const reply = await chatWithHistory(provider, systemPrompt, historyMessages, message, keys);
     if (reply.error) {
       res.status(503).json({ ok: false, error: reply.error });
       return;
     }
+    if (reply.provider !== "hive") {
+      await recordUsage(who, { provider: reply.provider, ownKey: reply.ownKey, inputTokens: reply.inputTokens, outputTokens: reply.outputTokens }).catch(() => undefined);
+    }
+    const credits = await getBalance(who);
     const aiContent = reply.content || "I'm having trouble responding right now. Please try again.";
 
     // 6. Store both messages
@@ -237,6 +250,7 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
       content: aiContent,
       conversationId,
       provider: reply.provider,
+      credits,
     });
   } catch (err) {
     logger.error({ err }, "Mobile chat error");

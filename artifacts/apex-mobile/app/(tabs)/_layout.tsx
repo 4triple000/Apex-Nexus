@@ -8,6 +8,7 @@ import { Glass } from "@/components/glass/Glass";
 import { TabIcon, type TabIconName } from "@/components/glass/TabIcons";
 import { MG } from "@/constants/colors";
 import { checkInToday } from "@/lib/streak";
+import { CreditsSheetHost } from "@/components/CreditsSheet";
 
 type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
@@ -25,7 +26,7 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   // The Engine screens live under Games; AI Models opens from Home
   const current = state.routes[state.index]?.name;
-  const activeName = current === "engine" || current === "engine-project" ? "games" : current === "models" ? "index" : current;
+  const activeName = current === "engine" || current === "engine-project" ? "games" : current === "models" ? "index" : current === "connectors" ? "profile" : current;
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { paddingBottom: 16 + (Platform.OS === "web" ? 0 : insets.bottom) }]}>
       <Glass radius={32} intensity={50} style={styles.bar}>
@@ -74,7 +75,9 @@ export default function TabLayout() {
       <Tabs.Screen name="engine" options={{ title: "Apex Engine", href: null }} />
       <Tabs.Screen name="engine-project" options={{ title: "Game", href: null }} />
       <Tabs.Screen name="models" options={{ title: "AI Models", href: null }} />
+      <Tabs.Screen name="connectors" options={{ title: "Connectors", href: null }} />
     </Tabs>
+    <CreditsSheetHost />
     </View>
   );
 }

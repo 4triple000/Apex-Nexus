@@ -1,18 +1,27 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { openai, isOpenAIConfigured } from "@workspace/integrations-openai-ai-server";
+import { openRouterClient, openRouterModel } from "./openRouter";
 
 // Real provider clients. Each is created on first use, so the server starts without keys;
 // a provider with no key answers with a clear "not connected" error instead of pretending.
+// A person's own key (from Connectors) gets a client of its own; otherwise the server's shared client is used.
 let anthropicClient: Anthropic | null = null;
-function getAnthropic(): Anthropic | null {
+function getAnthropic(userKey?: string): Anthropic | null {
+  if (userKey) return new Anthropic({ apiKey: userKey });
   if (!process.env.ANTHROPIC_API_KEY) return null;
   anthropicClient ??= new Anthropic();
   return anthropicClient;
 }
 
+function getOpenAI(userKey?: string): OpenAI | null {
+  if (userKey) return new OpenAI({ apiKey: userKey });
+  return isOpenAIConfigured() ? openai : null;
+}
+
 let perplexityClient: OpenAI | null = null;
-function getPerplexity(): OpenAI | null {
+function getPerplexity(userKey?: string): OpenAI | null {
+  if (userKey) return new OpenAI({ apiKey: userKey, baseURL: "https://api.perplexity.ai" });
   if (!process.env.PERPLEXITY_API_KEY) return null;
   // Perplexity serves an OpenAI-compatible chat completions API
   perplexityClient ??= new OpenAI({ apiKey: process.env.PERPLEXITY_API_KEY, baseURL: "https://api.perplexity.ai" });
@@ -31,8 +40,9 @@ const COMPAT: Record<CompatProvider, { name: string; envKey: string; baseURL: st
 const isCompat = (p: string): p is CompatProvider => p in COMPAT;
 
 const compatClients: Partial<Record<CompatProvider, OpenAI>> = {};
-function getCompat(p: CompatProvider): OpenAI | null {
+function getCompat(p: CompatProvider, userKey?: string): OpenAI | null {
   const cfg = COMPAT[p];
+  if (userKey) return new OpenAI({ apiKey: userKey, baseURL: cfg.baseURL });
   const apiKey = process.env[cfg.envKey];
   if (!apiKey) return null;
   compatClients[p] ??= new OpenAI({ apiKey, baseURL: cfg.baseURL });
@@ -40,9 +50,9 @@ function getCompat(p: CompatProvider): OpenAI | null {
 }
 const compatModel = (p: CompatProvider) => process.env[COMPAT[p].modelEnv] || COMPAT[p].model;
 
-/** Which chat providers have credentials on this server. */
-export function providerStatus(): Record<AiProvider, boolean> {
-  return {
+/** Which chat providers can answer: the server has a key, or this person linked their own. */
+export function providerStatus(keys?: UserKeys): Record<AiProvider, boolean> {
+  const server: Record<AiProvider, boolean> = {
     openai:     isOpenAIConfigured(),
     claude:     !!process.env.ANTHROPIC_API_KEY,
     perplexity: !!process.env.PERPLEXITY_API_KEY,
@@ -52,6 +62,8 @@ export function providerStatus(): Record<AiProvider, boolean> {
     mistral:    !!process.env.MISTRAL_API_KEY,
     llama:      !!process.env.GROQ_API_KEY,
   };
+  if (!keys) return server;
+  return Object.fromEntries(AI_PROVIDERS.map((p) => [p, server[p] || hasOwnKey(keys, p)])) as Record<AiProvider, boolean>;
 }
 
 // ── Human voice layer ─────────────────────────────────────────────────────────
@@ -77,7 +89,56 @@ export interface AiResponse {
   content: string;
   responseTime: number;
   error?: string;
+  /** Answered with the person's own linked key (costs them no credits) */
+  ownKey?: boolean;
+  inputTokens?: number;
+  outputTokens?: number;
 }
+
+/** A person's own API keys from Connectors, by provider. `openrouter` covers every provider. */
+export type UserKeys = Partial<Record<AiProvider | "openrouter", string>>;
+
+/** Whether this provider would run on the person's own account (a direct key or OpenRouter). */
+export function hasOwnKey(keys: UserKeys | undefined, provider: string): boolean {
+  return !!keys && (!!keys[provider as AiProvider] || (!!keys.openrouter && (AI_PROVIDERS as string[]).includes(provider)));
+}
+
+const SYSTEM_BY_PROVIDER: Record<AiProvider, string> = {
+  openai: "You are Apex, an intelligent AI assistant. Be helpful, concise, and accurate.",
+  claude: "You are Apex (Claude mode) — thoughtful, analytical, great at nuanced reasoning and long-form writing. Provide detailed, well-structured responses.",
+  perplexity: "You are Apex (Research mode) — specialized in factual information, current events, and research. Provide accurate, well-cited reasoning with clarity.",
+  gemini: "You are Apex (Gemini mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  grok: "You are Apex (Grok mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  deepseek: "You are Apex (DeepSeek mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  mistral: "You are Apex (Mistral mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  llama: "You are Apex (Llama mode), a helpful AI assistant. Be clear, accurate and friendly.",
+};
+
+/** Ask a provider's model through the person's OpenRouter account. */
+async function callViaOpenRouter(provider: AiProvider, key: string, system: string, turns: ChatTurn[]): Promise<AiResponse> {
+  const start = Date.now();
+  try {
+    const response = await openRouterClient(key).chat.completions.create({
+      model: await openRouterModel(provider),
+      messages: [{ role: "system", content: system }, ...turns],
+    });
+    return { provider, content: response.choices[0]?.message?.content ?? "No response", responseTime: Date.now() - start, ownKey: true, ...oaiTokens(response.usage) };
+  } catch (err) {
+    return { provider, content: "", responseTime: Date.now() - start, error: err instanceof Error ? `OpenRouter: ${err.message}` : "OpenRouter error" };
+  }
+}
+
+/** One message to a provider: the person's direct key, then their OpenRouter account, then the server's key. */
+function ask(provider: AiProvider, message: string, hint: string | undefined, keys: UserKeys | undefined): Promise<AiResponse> {
+  if (!keys?.[provider] && keys?.openrouter) {
+    const base = `${SYSTEM_BY_PROVIDER[provider]}\n\n${HUMAN_VOICE_RULES}`;
+    return callViaOpenRouter(provider, keys.openrouter, hint ? `${base}\n${hint}` : base, [{ role: "user", content: message }]);
+  }
+  return CALLERS[provider](message, hint, keys?.[provider]);
+}
+
+type Usage = { prompt_tokens?: number; completion_tokens?: number } | null | undefined;
+const oaiTokens = (u: Usage) => ({ inputTokens: u?.prompt_tokens ?? 0, outputTokens: u?.completion_tokens ?? 0 });
 
 const FREE_TIER_LIMIT = 20;
 const PREMIUM_TIER_LIMIT = 500;
@@ -86,7 +147,7 @@ export function getTierLimit(tier: string): number {
   return tier === "premium" ? PREMIUM_TIER_LIMIT : FREE_TIER_LIMIT;
 }
 
-function routeToProvider(message: string, preferredProvider?: string): AiProvider {
+function routeToProvider(message: string, preferredProvider?: string, keys?: UserKeys): AiProvider {
   if (preferredProvider && preferredProvider !== "auto" && (AI_PROVIDERS as string[]).includes(preferredProvider)) {
     return preferredProvider as AiProvider;
   }
@@ -100,34 +161,37 @@ function routeToProvider(message: string, preferredProvider?: string): AiProvide
   const isComplex = complexKeywords.some(k => lower.includes(k));
 
   const ideal: AiProvider = isFactual ? "perplexity" : isComplex ? "claude" : "openai";
-  // Auto-route only to providers that are actually connected
+  // The person's own keys come first (they cost the app nothing), then connected providers
+  if (hasOwnKey(keys, ideal)) return ideal;
+  const own = AI_PROVIDERS.find((p) => keys?.[p]);
+  if (own) return own;
   const status = providerStatus();
   if (status[ideal]) return ideal;
   return (Object.keys(status) as AiProvider[]).find((p) => status[p]) ?? ideal;
 }
 
-const CALLERS: Record<AiProvider, (message: string, hint?: string) => Promise<AiResponse>> = {
-  openai:     (m, h) => callOpenAI(m, h),
-  claude:     (m, h) => callClaude(m, h),
-  perplexity: (m, h) => callPerplexity(m, h),
-  gemini:     (m, h) => callCompat("gemini", m, h),
-  grok:       (m, h) => callCompat("grok", m, h),
-  deepseek:   (m, h) => callCompat("deepseek", m, h),
-  mistral:    (m, h) => callCompat("mistral", m, h),
-  llama:      (m, h) => callCompat("llama", m, h),
+const CALLERS: Record<AiProvider, (message: string, hint?: string, key?: string) => Promise<AiResponse>> = {
+  openai:     (m, h, k) => callOpenAI(m, h, k),
+  claude:     (m, h, k) => callClaude(m, h, k),
+  perplexity: (m, h, k) => callPerplexity(m, h, k),
+  gemini:     (m, h, k) => callCompat("gemini", m, h, k),
+  grok:       (m, h, k) => callCompat("grok", m, h, k),
+  deepseek:   (m, h, k) => callCompat("deepseek", m, h, k),
+  mistral:    (m, h, k) => callCompat("mistral", m, h, k),
+  llama:      (m, h, k) => callCompat("llama", m, h, k),
 };
 
 // Battle and Hive use every connected provider (the original three if none are, so the errors explain why)
-function activeProviders(): AiProvider[] {
-  const status = providerStatus();
+function activeProviders(keys?: UserKeys): AiProvider[] {
+  const status = providerStatus(keys);
   const connected = AI_PROVIDERS.filter((p) => status[p]);
   return connected.length ? connected : ["openai", "claude", "perplexity"];
 }
 
-async function callCompat(provider: CompatProvider, message: string, personalizationHint?: string): Promise<AiResponse> {
+async function callCompat(provider: CompatProvider, message: string, personalizationHint?: string, userKey?: string): Promise<AiResponse> {
   const start = Date.now();
   const cfg = COMPAT[provider];
-  const client = getCompat(provider);
+  const client = getCompat(provider, userKey);
   if (!client) {
     return { provider, content: "", responseTime: 0, error: `${cfg.name} isn't connected yet. Add ${cfg.envKey} on the server.` };
   }
@@ -140,18 +204,22 @@ async function callCompat(provider: CompatProvider, message: string, personaliza
         { role: "user", content: message },
       ],
     });
-    return { provider, content: response.choices[0]?.message?.content ?? "No response", responseTime: Date.now() - start };
+    return { provider, content: response.choices[0]?.message?.content ?? "No response", responseTime: Date.now() - start, ownKey: !!userKey, ...oaiTokens(response.usage) };
   } catch (err) {
     return { provider, content: "", responseTime: Date.now() - start, error: err instanceof Error ? `${cfg.name}: ${err.message}` : `${cfg.name} error` };
   }
 }
 
-async function callOpenAI(message: string, personalizationHint?: string): Promise<AiResponse> {
+async function callOpenAI(message: string, personalizationHint?: string, userKey?: string): Promise<AiResponse> {
   const start = Date.now();
+  const client = getOpenAI(userKey);
+  if (!client) {
+    return { provider: "openai", content: "", responseTime: 0, error: "ChatGPT isn't connected yet. Add OPENAI_API_KEY on the server." };
+  }
   const baseSystem = `You are Apex, an intelligent AI assistant. Be helpful, concise, and accurate.\n\n${HUMAN_VOICE_RULES}`;
   const systemContent = personalizationHint ? `${baseSystem}\n${personalizationHint}` : baseSystem;
   try {
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-5.2",
       max_completion_tokens: 8192,
       messages: [
@@ -163,6 +231,8 @@ async function callOpenAI(message: string, personalizationHint?: string): Promis
       provider: "openai",
       content: response.choices[0]?.message?.content ?? "No response",
       responseTime: Date.now() - start,
+      ownKey: !!userKey,
+      ...oaiTokens(response.usage),
     };
   } catch (err) {
     return {
@@ -174,11 +244,11 @@ async function callOpenAI(message: string, personalizationHint?: string): Promis
   }
 }
 
-async function callClaude(message: string, personalizationHint?: string): Promise<AiResponse> {
+async function callClaude(message: string, personalizationHint?: string, userKey?: string): Promise<AiResponse> {
   const start = Date.now();
   const baseSystem = `You are Apex (Claude mode) — thoughtful, analytical, great at nuanced reasoning and long-form writing. Provide detailed, well-structured responses.\n\n${HUMAN_VOICE_RULES}`;
   const systemContent = personalizationHint ? `${baseSystem}\n${personalizationHint}` : baseSystem;
-  const client = getAnthropic();
+  const client = getAnthropic(userKey);
   if (!client) {
     return { provider: "claude", content: "", responseTime: 0, error: "Claude isn't connected yet. Add ANTHROPIC_API_KEY on the server." };
   }
@@ -199,7 +269,7 @@ async function callClaude(message: string, personalizationHint?: string): Promis
     const content = response.content
       .flatMap((block) => (block.type === "text" ? [block.text] : []))
       .join("");
-    return { provider: "claude", content: content || "No response", responseTime: Date.now() - start };
+    return { provider: "claude", content: content || "No response", responseTime: Date.now() - start, ownKey: !!userKey, inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens };
   } catch (err) {
     return {
       provider: "claude",
@@ -210,11 +280,11 @@ async function callClaude(message: string, personalizationHint?: string): Promis
   }
 }
 
-async function callPerplexity(message: string, personalizationHint?: string): Promise<AiResponse> {
+async function callPerplexity(message: string, personalizationHint?: string, userKey?: string): Promise<AiResponse> {
   const start = Date.now();
   const baseSystem = `You are Apex (Research mode) — specialized in factual information, current events, and research. Provide accurate, well-cited reasoning with clarity.\n\n${HUMAN_VOICE_RULES}`;
   const systemContent = personalizationHint ? `${baseSystem}\n${personalizationHint}` : baseSystem;
-  const client = getPerplexity();
+  const client = getPerplexity(userKey);
   if (!client) {
     return { provider: "perplexity", content: "", responseTime: 0, error: "Perplexity isn't connected yet. Add PERPLEXITY_API_KEY on the server." };
   }
@@ -230,6 +300,8 @@ async function callPerplexity(message: string, personalizationHint?: string): Pr
       provider: "perplexity",
       content: response.choices[0]?.message?.content ?? "No response",
       responseTime: Date.now() - start,
+      ownKey: !!userKey,
+      ...oaiTokens(response.usage),
     };
   } catch (err) {
     return {
@@ -241,17 +313,27 @@ async function callPerplexity(message: string, personalizationHint?: string): Pr
   }
 }
 
-export async function chatSingle(message: string, preferredProvider?: string, personalizationHint?: string): Promise<AiResponse[]> {
-  const provider = routeToProvider(message, preferredProvider);
-  return [await CALLERS[provider](message, personalizationHint)];
+/** The provider a message would go to, so the caller can check credits before asking it. */
+export function pickProvider(message: string, preferredProvider?: string, keys?: UserKeys): AiProvider {
+  return routeToProvider(message, preferredProvider, keys);
 }
 
-export async function chatBattle(message: string): Promise<AiResponse[]> {
-  return Promise.all(activeProviders().map((p) => CALLERS[p](message)));
+/** The providers Battle and Hive would ask. */
+export function battleProviders(keys?: UserKeys): AiProvider[] {
+  return activeProviders(keys);
 }
 
-export async function chatHive(message: string): Promise<{ responses: AiResponse[]; combined: string }> {
-  const responses = await Promise.all(activeProviders().map((p) => CALLERS[p](message)));
+export async function chatSingle(message: string, preferredProvider?: string, personalizationHint?: string, keys?: UserKeys): Promise<AiResponse[]> {
+  const provider = routeToProvider(message, preferredProvider, keys);
+  return [await ask(provider, message, personalizationHint, keys)];
+}
+
+export async function chatBattle(message: string, keys?: UserKeys): Promise<AiResponse[]> {
+  return Promise.all(activeProviders(keys).map((p) => ask(p, message, undefined, keys)));
+}
+
+export async function chatHive(message: string, keys?: UserKeys): Promise<{ responses: AiResponse[]; combined: string }> {
+  const responses = await Promise.all(activeProviders(keys).map((p) => ask(p, message, undefined, keys)));
   const validResponses = responses.filter(r => !r.error && r.content);
   const NAMES: Record<string, string> = { openai: "ChatGPT", claude: "Claude", perplexity: "Perplexity", ...Object.fromEntries(Object.entries(COMPAT).map(([k, v]) => [k, v.name])) };
 
@@ -296,13 +378,17 @@ export async function chatWithHistory(
   system: string,
   history: ChatTurn[],
   message: string,
+  keys?: UserKeys,
 ): Promise<AiResponse> {
-  const provider = routeToProvider(message, preferred === "auto" ? undefined : preferred);
+  const provider = routeToProvider(message, preferred === "auto" ? undefined : preferred, keys);
+  const userKey = keys?.[provider];
+  const ownKey = !!userKey;
   const start = Date.now();
   const turns = [...history, { role: "user" as const, content: message }];
+  if (!userKey && keys?.openrouter) return callViaOpenRouter(provider, keys.openrouter, system, turns);
   try {
     if (provider === "claude") {
-      const client = getAnthropic();
+      const client = getAnthropic(userKey);
       if (!client) return { provider, content: "", responseTime: 0, error: "Claude isn't connected yet. Add ANTHROPIC_API_KEY on the server." };
       const response = await client.beta.messages.create({
         model: "claude-opus-5-5",
@@ -317,16 +403,16 @@ export async function chatWithHistory(
         return { provider, content: "", responseTime: Date.now() - start, error: "Claude declined to answer that one." };
       }
       const content = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
-      return { provider, content, responseTime: Date.now() - start };
+      return { provider, content, responseTime: Date.now() - start, ownKey, inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens };
     }
     if (isCompat(provider)) {
       const cfg = COMPAT[provider];
-      const compat = getCompat(provider);
+      const compat = getCompat(provider, userKey);
       if (!compat) return { provider, content: "", responseTime: 0, error: `${cfg.name} isn't connected yet. Add ${cfg.envKey} on the server.` };
       const response = await compat.chat.completions.create({ model: compatModel(provider), messages: [{ role: "system", content: system }, ...turns] });
-      return { provider, content: response.choices[0]?.message?.content ?? "", responseTime: Date.now() - start };
+      return { provider, content: response.choices[0]?.message?.content ?? "", responseTime: Date.now() - start, ownKey, ...oaiTokens(response.usage) };
     }
-    const client = provider === "perplexity" ? getPerplexity() : isOpenAIConfigured() ? openai : null;
+    const client = provider === "perplexity" ? getPerplexity(userKey) : getOpenAI(userKey);
     if (!client) {
       const name = provider === "perplexity" ? "Perplexity" : "ChatGPT";
       const key = provider === "perplexity" ? "PERPLEXITY_API_KEY" : "OPENAI_API_KEY";
@@ -337,7 +423,7 @@ export async function chatWithHistory(
       ...(provider === "perplexity" ? {} : { max_completion_tokens: 2048 }),
       messages: [{ role: "system", content: system }, ...turns],
     });
-    return { provider, content: response.choices[0]?.message?.content ?? "", responseTime: Date.now() - start };
+    return { provider, content: response.choices[0]?.message?.content ?? "", responseTime: Date.now() - start, ownKey, ...oaiTokens(response.usage) };
   } catch (err) {
     const msg = err instanceof Anthropic.APIError ? `Claude error ${err.status ?? ""}: ${err.message}` : err instanceof Error ? err.message : "AI error";
     return { provider, content: "", responseTime: Date.now() - start, error: msg };

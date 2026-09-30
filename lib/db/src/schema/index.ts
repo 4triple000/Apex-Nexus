@@ -40,3 +40,4 @@ export * from "./devos";
 export * from "./domains";
 export * from "./deployments";export * from "./streaks";
 export * from "./game_projects";
+export * from "./credits";

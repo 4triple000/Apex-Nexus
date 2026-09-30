@@ -1,32 +1,33 @@
 /**
- * Google OAuth 2.0 Routes
- * Flow: /auth/google → Google consent → /auth/google/callback → session
- * Also accepts: POST /auth/google/token (for mobile / one-tap ID tokens)
+ * Sign in with Google.
+ *
+ *   GET  /auth/google?returnTo=<app url>  → Google's consent screen
+ *   GET  /auth/google/callback            → back from Google; sends the browser to returnTo#google_code=…
+ *   POST /auth/google/exchange {code}     → the app trades that one-time code for a session
+ *   POST /auth/google/token {idToken}     → sign in with a Google ID token (one-tap / native)
+ *   GET  /auth/google/status              → whether it's set up, and the redirect URI to register with Google
+ *
+ * Setup (owner): create an OAuth client (Web application) in Google Cloud Console, add the redirect URI
+ * from /auth/google/status, and set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on the server.
  */
 import { Router } from "express";
 import { randomBytes } from "node:crypto";
-import { OAuth2Client } from "google-auth-library";
+import { OAuth2Client, type TokenPayload } from "google-auth-library";
 import { db, usersTable } from "@workspace/db";
 import { eq, or } from "drizzle-orm";
 import { issueTokenPair } from "../shared/lib/jwt";
 import { isOwnerEmail } from "../shared/lib/owner";
+import { authLimiter } from "../shared/middleware/rateLimiter";
+import { success, badRequest, unauthorized } from "../shared/utils/response";
+import { publicApiUrl, signState, verifyState, isAllowedReturn, defaultReturnUrl } from "../lib/secureLinks";
+import { logger } from "../lib/logger";
 
 const router = Router();
 
-const GOOGLE_CLIENT_ID     = process.env.GOOGLE_CLIENT_ID     ?? "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET ?? "";
-const BASE_URL             = process.env.REPLIT_DEV_DOMAIN
-  ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-  : "http://localhost:8080";
-const REDIRECT_URI = `${BASE_URL}/api/auth/google/callback`;
-const FRONTEND_URL = process.env.REPLIT_DEV_DOMAIN
-  ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-  : "http://localhost:23095";
-
-const oauthClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, REDIRECT_URI);
-
-// State store (in-memory; safe because short-lived)
-const pendingStates = new Map<string, number>();
+const clientId = () => process.env.GOOGLE_CLIENT_ID ?? "";
+const clientSecret = () => process.env.GOOGLE_CLIENT_SECRET ?? "";
+const redirectUri = () => `${publicApiUrl()}/api/auth/google/callback`;
+const oauthClient = () => new OAuth2Client(clientId(), clientSecret(), redirectUri());
 
 function randomUsername(): string {
   const adj  = ["Apex","Neon","Swift","Ultra","Nova","Cyber","Storm","Sharp"];
@@ -39,146 +40,134 @@ function sanitize(u: typeof usersTable.$inferSelect) {
   return { ...safe, isOwner: isOwnerEmail(u.email) };
 }
 
-// ── GET /auth/google — redirect to Google consent page ────────────────────────
+function tierOf(user: typeof usersTable.$inferSelect): "free" | "pro" | "creator_pro" | "enterprise" {
+  const t = user.subscriptionTier;
+  return t === "pro" || t === "creator_pro" || t === "enterprise" ? t : "free";
+}
+
+/** Find the account for this Google identity, link it to an existing email account, or create one. */
+async function upsertGoogleUser(payload: TokenPayload): Promise<typeof usersTable.$inferSelect> {
+  const { sub: googleId, email, name, picture, email_verified } = payload;
+  if (!googleId || !email) throw new Error("Google didn't share an email address");
+
+  const [existing] = await db.select().from(usersTable)
+    .where(or(eq(usersTable.googleId, googleId), eq(usersTable.email, email)))
+    .limit(1);
+
+  if (existing) {
+    // Only link to an email/password account when Google has verified the address
+    if (existing.googleId !== googleId && !email_verified) throw new Error("Verify your Google email address first");
+    const updates: Partial<typeof usersTable.$inferInsert> = {};
+    if (!existing.googleId) updates.googleId = googleId;
+    if (!existing.avatarUrl && picture) updates.avatarUrl = picture;
+    if (!Object.keys(updates).length) return existing;
+    const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, existing.id)).returning();
+    return updated!;
+  }
+
+  const base = (name ?? "").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 24);
+  let username = base.length >= 2 ? base : randomUsername();
+  const [taken] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.username, username)).limit(1);
+  if (taken) username = `${username.slice(0, 20)}${Math.floor(Math.random() * 9000) + 1000}`;
+
+  const [created] = await db.insert(usersTable).values({
+    sessionId: randomBytes(32).toString("hex"),
+    email,
+    username,
+    googleId,
+    avatarUrl: picture,
+    avatarEmoji: "🙂",
+  }).returning();
+  return created!;
+}
+
+function sessionResponse(user: typeof usersTable.$inferSelect) {
+  return { user: sanitize(user), sessionId: user.sessionId, ...issueTokenPair(user.id, user.sessionId, tierOf(user)) };
+}
+
+function withHash(url: string, params: Record<string, string>): string {
+  const u = new URL(url);
+  u.hash = new URLSearchParams(params).toString();
+  return u.toString();
+}
+
+// ── Browser flow ──────────────────────────────────────────────────────────────
+
 router.get("/auth/google", (req, res) => {
-  if (!GOOGLE_CLIENT_ID) {
-    res.status(503).json({ error: "Google OAuth not configured. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET." });
+  const requested = typeof req.query.returnTo === "string" ? req.query.returnTo : "";
+  const returnTo = requested && isAllowedReturn(requested) ? requested : `${defaultReturnUrl()}/login`;
+  if (!clientId() || !clientSecret()) {
+    res.redirect(withHash(returnTo, { google_error: "not_configured" }));
     return;
   }
-  const state = randomBytes(16).toString("hex");
-  pendingStates.set(state, Date.now());
-
-  const url = oauthClient.generateAuthUrl({
-    access_type: "offline",
+  const url = oauthClient().generateAuthUrl({
     scope: ["openid", "email", "profile"],
-    state,
+    state: signState({ r: returnTo }),
+    prompt: "select_account",
   });
   res.redirect(url);
 });
 
-// ── GET /auth/google/callback — Google redirects here after consent ───────────
 router.get("/auth/google/callback", async (req, res): Promise<void> => {
-  const { code, state, error } = req.query as Record<string, string>;
-
-  if (error) {
-    res.redirect(`${FRONTEND_URL}/?oauth_error=${encodeURIComponent(error)}`);
+  const { code, state, error } = req.query as Record<string, string | undefined>;
+  const data = verifyState<{ r: string }>(state);
+  if (!data || !isAllowedReturn(data.r)) {
+    res.status(400).send("This sign-in link expired. Go back to Apex and tap Continue with Google again.");
     return;
   }
-  if (!code || !state || !pendingStates.has(state)) {
-    res.redirect(`${FRONTEND_URL}/?oauth_error=invalid_state`);
+  if (error || !code) {
+    res.redirect(withHash(data.r, { google_error: error === "access_denied" ? "cancelled" : "failed" }));
     return;
   }
-  pendingStates.delete(state);
-
   try {
-    const { tokens: oauthTokens } = await oauthClient.getToken(code);
-    oauthClient.setCredentials(oauthTokens);
-
-    // Decode the ID token to get user info
-    const ticket = await oauthClient.verifyIdToken({
-      idToken: oauthTokens.id_token!,
-      audience: GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload()!;
-    const { sub: googleId, email, name, picture } = payload;
-
-    // Upsert user: find by googleId or email
-    const [existing] = await db.select().from(usersTable)
-      .where(or(eq(usersTable.googleId, googleId!), eq(usersTable.email, email!)))
-      .limit(1);
-
-    let user: typeof usersTable.$inferSelect;
-
-    if (existing) {
-      // Update Google fields if not set
-      const updates: Partial<typeof usersTable.$inferInsert> = {};
-      if (!existing.googleId) updates.googleId = googleId;
-      if (!existing.avatarUrl && picture) updates.avatarUrl = picture;
-      if (Object.keys(updates).length > 0) {
-        [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, existing.id)).returning();
-      } else {
-        user = existing;
-      }
-    } else {
-      // Create new user
-      const sessionId = randomBytes(32).toString("hex");
-      [user] = await db.insert(usersTable).values({
-        sessionId,
-        email: email!,
-        username: name ?? randomUsername(),
-        googleId: googleId,
-        avatarUrl: picture,
-        avatarEmoji: "🔑",
-      }).returning();
-    }
-
-    // Issue JWT tokens for the user
-    const tier = (user.subscriptionTier === "pro" || user.subscriptionTier === "creator_pro" || user.subscriptionTier === "enterprise")
-      ? user.subscriptionTier as "pro" | "creator_pro" | "enterprise"
-      : "free";
-    const jwtTokens = issueTokenPair(user.id, user.sessionId, tier);
-
-    // Redirect to frontend with session + tokens (Base64-encoded for URL safety)
-    const tokenParam = Buffer.from(JSON.stringify(jwtTokens)).toString("base64url");
-    res.redirect(`${FRONTEND_URL}/?oauth_session=${user.sessionId}&oauth_success=1&oauth_tokens=${tokenParam}`);
+    const client = oauthClient();
+    const { tokens } = await client.getToken(code);
+    const ticket = await client.verifyIdToken({ idToken: tokens.id_token!, audience: clientId() });
+    const user = await upsertGoogleUser(ticket.getPayload()!);
+    // A one-time code (valid 2 minutes) in the URL fragment, which browsers never send to servers
+    res.redirect(withHash(data.r, { google_code: signState({ u: user.id, k: "google-login" }, 120) }));
   } catch (err) {
-    console.error("[Google OAuth] callback error:", err);
-    res.redirect(`${FRONTEND_URL}/?oauth_error=server_error`);
+    logger.error({ err }, "[Google sign-in] callback error");
+    res.redirect(withHash(data.r, { google_error: "failed" }));
   }
 });
 
-// ── POST /auth/google/token — verify Google ID token (one-tap / mobile) ───────
-router.post("/auth/google/token", async (req, res): Promise<void> => {
+const usedCodes = new Map<string, number>();
+
+router.post("/auth/google/exchange", authLimiter, async (req, res): Promise<void> => {
+  const code = typeof req.body?.code === "string" ? req.body.code : "";
+  const data = verifyState<{ u: number; k: string }>(code);
+  if (!data || data.k !== "google-login" || usedCodes.has(code)) {
+    unauthorized(res, "That sign-in link expired. Try Continue with Google again.");
+    return;
+  }
+  // Each code works once
+  usedCodes.set(code, Date.now());
+  for (const [c, at] of usedCodes) if (Date.now() - at > 5 * 60_000) usedCodes.delete(c);
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, data.u)).limit(1);
+  if (!user) { unauthorized(res, "Account not found."); return; }
+  success(res, sessionResponse(user));
+});
+
+// ── ID token flow (one-tap / native) ──────────────────────────────────────────
+
+router.post("/auth/google/token", authLimiter, async (req, res): Promise<void> => {
   const { idToken } = req.body ?? {};
-  if (!idToken) { res.status(400).json({ error: "idToken required" }); return; }
-  if (!GOOGLE_CLIENT_ID) { res.status(503).json({ error: "Google OAuth not configured" }); return; }
-
+  if (!idToken) { badRequest(res, "idToken required"); return; }
+  if (!clientId()) { res.status(503).json({ ok: false, error: "Google sign-in isn't set up yet." }); return; }
   try {
-    const client = new OAuth2Client(GOOGLE_CLIENT_ID);
-    const ticket = await client.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
-    const payload = ticket.getPayload()!;
-    const { sub: googleId, email, name, picture } = payload;
-
-    const [existing] = await db.select().from(usersTable)
-      .where(or(eq(usersTable.googleId, googleId!), eq(usersTable.email, email!)))
-      .limit(1);
-
-    let user: typeof usersTable.$inferSelect;
-    if (existing) {
-      const updates: Partial<typeof usersTable.$inferInsert> = {};
-      if (!existing.googleId) updates.googleId = googleId;
-      if (!existing.avatarUrl && picture) updates.avatarUrl = picture;
-      if (Object.keys(updates).length > 0) {
-        [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, existing.id)).returning();
-      } else {
-        user = existing;
-      }
-    } else {
-      const sessionId = randomBytes(32).toString("hex");
-      [user] = await db.insert(usersTable).values({
-        sessionId, email: email!,
-        username: name ?? randomUsername(),
-        googleId: googleId, avatarUrl: picture, avatarEmoji: "🔑",
-      }).returning();
-    }
-
-    const userTier = (user.subscriptionTier === "pro" || user.subscriptionTier === "creator_pro" || user.subscriptionTier === "enterprise")
-      ? user.subscriptionTier as "pro" | "creator_pro" | "enterprise"
-      : "free";
-    const jwtPair = issueTokenPair(user.id, user.sessionId, userTier);
-    res.json({ user: sanitize(user), sessionId: user.sessionId, ...jwtPair });
+    const ticket = await new OAuth2Client(clientId()).verifyIdToken({ idToken, audience: clientId() });
+    const user = await upsertGoogleUser(ticket.getPayload()!);
+    success(res, sessionResponse(user));
   } catch (err) {
-    console.error("[Google OAuth] token verify error:", err);
-    res.status(401).json({ error: "Invalid Google token" });
+    logger.warn({ err }, "[Google sign-in] token verify error");
+    unauthorized(res, "Couldn't sign in with that Google account.");
   }
 });
 
-// ── GET /auth/google/status — check if Google OAuth is configured ─────────────
 router.get("/auth/google/status", (_req, res) => {
-  res.json({
-    configured: !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET),
-    redirectUri: REDIRECT_URI,
-  });
+  res.json({ configured: !!(clientId() && clientSecret()), redirectUri: redirectUri() });
 });
 
 export default router;

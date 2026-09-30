@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Swords, Zap, Trophy, RotateCcw, Flame, Share2 } from "lucide-react";
 import { ShareModal } from "@/components/share/ShareModal";
+import { authHeaders } from "@/lib/authSession";
+import { openCreditsSheet } from "@/hooks/useCredits";
 
 // ── Easing ──────────────────────────────────────────────────────────────────
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
@@ -523,7 +525,7 @@ function ArenaPageInner() {
     try {
       const res = await fetch(api("/battle/round"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({
           prompt: prompt.trim(),
           providerA: matchup[0],
@@ -532,6 +534,11 @@ function ArenaPageInner() {
         }),
       });
 
+      if (res.status === 429) {
+        const body = await res.json().catch(() => null) as { error?: string } | null;
+        openCreditsSheet("out", body?.error);
+        throw new Error(body?.error ?? "Out of credits");
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 

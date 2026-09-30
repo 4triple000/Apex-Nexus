@@ -27,11 +27,25 @@ export const ChatMessage = z.object({
 });
 export type ChatMessage = z.infer<typeof ChatMessage>;
 
+/** Today's AI credits (-1 = unlimited) */
+export const CreditBalance = z.object({
+  tier: z.string(),
+  used: z.number(),
+  limit: z.number(),
+  bonus: z.number(),
+  remaining: z.number(),
+  unlimited: z.boolean(),
+  resetsAt: z.string(),
+  costs: z.record(z.number()),
+});
+export type CreditBalance = z.infer<typeof CreditBalance>;
+
 export const SendChatResponse = z.object({
   mode: z.enum(["chat", "battle", "hive"]),
   messages: z.array(ChatMessage),
   routedTo: z.string(),
   usageRemaining: z.number(),
+  credits: CreditBalance.optional(),
   combinedAnswer: z.string().optional(),
   personalizationActive: z.boolean().optional(),
   preferredTone: z.string().optional(),
