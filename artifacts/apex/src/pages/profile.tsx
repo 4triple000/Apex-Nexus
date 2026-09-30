@@ -341,7 +341,7 @@ function MyGamesSection({ nav }: { nav: (path: string) => void }) {
 
   function handlePlay(cfg: GameConfig) {
     queueGameForPlay(cfg);
-    nav("/game-engine");
+    nav("/games");
   }
 
   function handleEdit(cfg: GameConfig) {

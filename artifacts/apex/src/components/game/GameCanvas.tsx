@@ -48,12 +48,21 @@ const LOADOUT_MODES = new Set(["fps", "openworld", "gta"]);
 
 type Phase = "customizing" | "loadout" | "playing";
 
+// The controls screen shows the first time someone plays each kind of game, then Play goes straight in
+const controlsKey = (mode: string) => `apex_controls_seen_${mode}`;
+function controlsSeen(mode: string) {
+  try { return localStorage.getItem(controlsKey(mode)) === "1"; } catch { return false; }
+}
+function markControlsSeen(mode: string) {
+  try { localStorage.setItem(controlsKey(mode), "1"); } catch { /* private mode */ }
+}
+
 export function GameCanvas({ config, remotePlayers = [], onGameEnd, onPlayerMove, onBack }: GameCanvasProps) {
   const mode    = config.gameMode ?? "platformer";
   const schema  = getSchemaForMode(mode);
   const hasLoadout = LOADOUT_MODES.has(mode);
 
-  const [phase,   setPhase]   = useState<Phase>("customizing");
+  const [phase,   setPhase]   = useState<Phase>(() => (controlsSeen(mode) ? (hasLoadout ? "loadout" : "playing") : "customizing"));
   const [loadout, setLoadout] = useState<Loadout>(() => getLoadoutById(loadActiveLoadoutId()));
 
   // ── 1. Pre-game HUD customiser ────────────────────────────────────────────
@@ -62,7 +71,7 @@ export function GameCanvas({ config, remotePlayers = [], onGameEnd, onPlayerMove
       <GameHUDCustomizer
         schema={schema}
         gameMode={mode}
-        onPlay={() => setPhase(hasLoadout ? "loadout" : "playing")}
+        onPlay={() => { markControlsSeen(mode); setPhase(hasLoadout ? "loadout" : "playing"); }}
         onBack={onBack}
       />
     );

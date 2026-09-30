@@ -17,6 +17,59 @@ export function setAuthSession(sessionId: string | null): void {
   authSessionId = sessionId;
 }
 
+// ── Apex Engine projects (plan on the phone, build on the computer) ─────────
+export type EngineTarget = "apex" | "mobile" | "pc";
+export type EngineKind = "apex" | "unity" | "unreal";
+export type EngineTemplate = "fps" | "topdown" | "platformer" | "sports" | "openworld" | "survival";
+export type CameraStyle = "First person" | "Third person" | "Top-down" | "Side view";
+
+export interface GamePlan {
+  pitch: string;
+  genre: string;
+  camera: CameraStyle;
+  platforms: string[];
+  coreLoop: string;
+  controls: string[];
+  mechanics: string[];
+  levels: { name: string; goal: string }[];
+  characters: { name: string; role: string }[];
+  artStyle: string;
+  audio: string;
+  checklist: { id: string; label: string; done: boolean }[];
+}
+
+export interface GameProject {
+  id: number;
+  title: string;
+  target: EngineTarget;
+  engine: EngineKind;
+  template: EngineTemplate | null;
+  prompt: string | null;
+  plan: GamePlan | null;
+  updatedAt: string;
+}
+
+export interface ProjectSummary {
+  id: number;
+  title: string;
+  target: EngineTarget;
+  engine: EngineKind;
+  progress: { done: number; total: number };
+  updatedAt: string;
+}
+
+export const engineApi = {
+  list: () => apexFetch<{ projects: ProjectSummary[] }>("/engine/projects").then((d) => d.projects),
+  get: (id: number) => apexFetch<{ project: GameProject; aiConnected: boolean }>(`/engine/projects/${id}`),
+  create: (body: { prompt?: string; target: EngineTarget; engine?: EngineKind; template?: EngineTemplate }) =>
+    apexFetch<{ project: GameProject; aiPlan: boolean }>("/engine/projects", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: number, body: Partial<Pick<GameProject, "title" | "target" | "engine" | "plan">>) =>
+    apexFetch<{ project: GameProject }>(`/engine/projects/${id}`, { method: "PATCH", body: JSON.stringify(body) }).then((d) => d.project),
+  remove: (id: number) => apexFetch<{ deleted: boolean }>(`/engine/projects/${id}`, { method: "DELETE" }),
+  askPlan: (id: number, message: string) =>
+    apexFetch<{ project: GameProject; reply: string }>(`/engine/projects/${id}/plan`, { method: "POST", body: JSON.stringify({ message }) }),
+};
+
 // ── 7-day streak ──────────────────────────────────────────────────────────────
 export interface StreakState {
   streak: number;
