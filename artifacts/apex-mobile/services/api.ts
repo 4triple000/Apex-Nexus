@@ -295,8 +295,9 @@ export const creditsApi = {
 export interface Connector {
   id: string;
   name: string;
-  kind: "key" | "oauth";
+  kind: "key" | "oauth" | "signin";
   category: "ai" | "voice" | "apps";
+  featured?: boolean;
   description: string;
   unlocks: string;
   color: string;

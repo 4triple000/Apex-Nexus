@@ -4,7 +4,7 @@
  */
 import { useEffect, useState, type ComponentType } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ExternalLink, KeyRound, Link2, Loader2, ShieldCheck, Unlink } from "lucide-react";
+import { Check, ChevronDown, ExternalLink, KeyRound, Link2, Loader2, LogIn, ShieldCheck, Sparkles, Unlink } from "lucide-react";
 import { RiOpenaiFill } from "react-icons/ri";
 import { SiAnthropic, SiGooglegemini, SiX, SiPerplexity, SiDeepseek, SiMistralai, SiMeta, SiElevenlabs, SiGoogle, SiGithub, SiSpotify, SiNotion, SiDiscord } from "react-icons/si";
 import { authHeaders } from "@/lib/authSession";
@@ -14,8 +14,9 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 interface Connector {
   id: string;
   name: string;
-  kind: "key" | "oauth";
+  kind: "key" | "oauth" | "signin";
   category: "ai" | "voice" | "apps";
+  featured?: boolean;
   description: string;
   unlocks: string;
   color: string;
@@ -34,7 +35,7 @@ const LOGOS: Record<string, ComponentType<{ size?: number; color?: string }>> = 
 };
 
 const SECTIONS: { id: Connector["category"]; title: string; sub: string }[] = [
-  { id: "ai", title: "Your AI accounts", sub: "Paste an API key from your own account. Replies on that model then run on your key: free and unlimited here, billed by the provider." },
+  { id: "ai", title: "Your AI accounts", sub: "Chat on your own AI account instead of Apex credits: no daily limits, billed by the provider." },
   { id: "voice", title: "Voice", sub: "Use your own voice plan for game characters." },
   { id: "apps", title: "Apps", sub: "Let Apex read from your accounts when you ask it something about them." },
 ];
@@ -48,6 +49,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 export default function ConnectorsPage() {
   const qc = useQueryClient();
+  const [showKeys, setShowKeys] = useState(false);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const list = useQuery({ queryKey: ["connectors"], queryFn: () => call<{ connectors: Connector[] }>("/connectors") });
 
@@ -97,6 +99,11 @@ export default function ConnectorsPage() {
         {SECTIONS.map((section) => {
           const items = connectors.filter((c) => c.category === section.id);
           if (!items.length) return null;
+          const featured = items.filter((c) => c.featured);
+          const keys = items.filter((c) => !c.featured);
+          // AI keys fold away behind the one-tap sign-in (open when one is already linked)
+          const fold = section.id === "ai" && featured.length > 0;
+          const keysOpen = showKeys || keys.some((c) => c.linked);
           return (
             <section key={section.id} style={{ display: "grid", gap: 10 }}>
               <div>
@@ -104,15 +111,23 @@ export default function ConnectorsPage() {
                 <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--mg-ink-2)", lineHeight: 1.45 }}>{section.sub}</p>
               </div>
               <div style={{ display: "grid", gap: 10 }}>
-                {items.map((c) => <ConnectorCard key={c.id} c={c} onChange={refresh} onNotice={setNotice} />)}
+                {featured.map((c) => <ConnectorCard key={c.id} c={c} onChange={refresh} onNotice={setNotice} />)}
+                {fold && (
+                  <button onClick={() => setShowKeys((v) => !v)} aria-expanded={keysOpen} className="mg-focus"
+                    style={{ display: "flex", alignItems: "center", gap: 6, justifySelf: "start", background: "none", border: 0, padding: "4px 2px", fontSize: 13, fontWeight: 600, color: "var(--mg-ink-2)", cursor: "pointer" }}>
+                    <KeyRound size={14} /> Or paste an API key from one provider
+                    <ChevronDown size={14} style={{ transform: keysOpen ? "rotate(180deg)" : undefined, transition: "transform .2s" }} />
+                  </button>
+                )}
+                {(!fold || keysOpen) && keys.map((c) => <ConnectorCard key={c.id} c={c} onChange={refresh} onNotice={setNotice} />)}
               </div>
             </section>
           );
         })}
 
         <p style={{ margin: 0, fontSize: 12.5, color: "var(--mg-ink-3)", lineHeight: 1.5 }}>
-          Why an API key and not your ChatGPT Plus or Claude Pro login? Those plans only work inside the providers' own apps.
-          Other apps can only use an API key, which is billed separately (usually a few cents per chat).
+          Why not your ChatGPT Plus or Claude Pro login? Those plans only work inside OpenAI's and Anthropic's own apps; they don't let
+          other apps use them. OpenRouter and API keys are pay-as-you-go instead, usually a few cents per chat.
         </p>
       </div>
     </div>
@@ -164,7 +179,7 @@ function ConnectorCard({ c, onChange, onNotice }: { c: Connector; onChange: () =
   };
 
   return (
-    <div className="mg-cc-card" style={{ borderWidth: 1, borderRadius: 22, padding: 14, display: "grid", gap: 10 }}>
+    <div className="mg-cc-card" style={{ borderWidth: 1, borderRadius: 22, padding: 14, display: "grid", gap: 10, ...(c.featured ? { background: "linear-gradient(135deg, rgba(139,123,255,0.28), rgba(0,194,255,0.12))", borderColor: "rgba(139,123,255,0.55)" } : {}) }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ width: 44, height: 44, borderRadius: 14, display: "grid", placeItems: "center", flexShrink: 0, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)" }}>
           {Logo ? <Logo size={22} color={c.color} /> : <Link2 size={20} />}
@@ -175,6 +190,11 @@ function ConnectorCard({ c, onChange, onNotice }: { c: Connector; onChange: () =
             {c.linked && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 700, padding: "3px 8px", borderRadius: 99, color: "#86EFAC", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)" }}>
                 <Check size={12} /> Linked{c.accountLabel ? ` · ${c.accountLabel}` : ""}
+              </span>
+            )}
+            {c.featured && !c.linked && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11.5, fontWeight: 700, padding: "3px 8px", borderRadius: 99, color: "#1C1640", background: "#FFD479" }}>
+                <Sparkles size={11} /> Recommended
               </span>
             )}
             {!c.available && !c.linked && (
@@ -192,12 +212,12 @@ function ConnectorCard({ c, onChange, onNotice }: { c: Connector; onChange: () =
           </button>
         ) : (
           <button onClick={linkApp} disabled={busy || !c.available} className="mg-press mg-focus" style={{ ...btn(true), opacity: c.available ? 1 : 0.45, cursor: c.available ? "pointer" : "not-allowed" }}>
-            {busy ? <Loader2 size={15} className="animate-spin" /> : <Link2 size={15} />} Connect
+            {busy ? <Loader2 size={15} className="animate-spin" /> : c.kind === "signin" ? <LogIn size={15} /> : <Link2 size={15} />} {c.kind === "signin" ? "Sign in" : "Connect"}
           </button>
         )}
       </div>
 
-      {!c.linked && c.kind === "oauth" && c.available && (
+      {!c.linked && c.kind !== "key" && c.available && (
         <div style={{ fontSize: 12.5, color: "var(--mg-ink-3)" }}>{c.unlocks}</div>
       )}
 

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { openai, isOpenAIConfigured } from "@workspace/integrations-openai-ai-server";
+import { openRouterClient, openRouterModel } from "./openRouter";
 
 // Real provider clients. Each is created on first use, so the server starts without keys;
 // a provider with no key answers with a clear "not connected" error instead of pretending.
@@ -62,7 +63,7 @@ export function providerStatus(keys?: UserKeys): Record<AiProvider, boolean> {
     llama:      !!process.env.GROQ_API_KEY,
   };
   if (!keys) return server;
-  return Object.fromEntries(AI_PROVIDERS.map((p) => [p, server[p] || !!keys[p]])) as Record<AiProvider, boolean>;
+  return Object.fromEntries(AI_PROVIDERS.map((p) => [p, server[p] || hasOwnKey(keys, p)])) as Record<AiProvider, boolean>;
 }
 
 // ── Human voice layer ─────────────────────────────────────────────────────────
@@ -94,8 +95,47 @@ export interface AiResponse {
   outputTokens?: number;
 }
 
-/** A person's own API keys from Connectors, by provider. */
-export type UserKeys = Partial<Record<AiProvider, string>>;
+/** A person's own API keys from Connectors, by provider. `openrouter` covers every provider. */
+export type UserKeys = Partial<Record<AiProvider | "openrouter", string>>;
+
+/** Whether this provider would run on the person's own account (a direct key or OpenRouter). */
+export function hasOwnKey(keys: UserKeys | undefined, provider: string): boolean {
+  return !!keys && (!!keys[provider as AiProvider] || (!!keys.openrouter && (AI_PROVIDERS as string[]).includes(provider)));
+}
+
+const SYSTEM_BY_PROVIDER: Record<AiProvider, string> = {
+  openai: "You are Apex, an intelligent AI assistant. Be helpful, concise, and accurate.",
+  claude: "You are Apex (Claude mode) — thoughtful, analytical, great at nuanced reasoning and long-form writing. Provide detailed, well-structured responses.",
+  perplexity: "You are Apex (Research mode) — specialized in factual information, current events, and research. Provide accurate, well-cited reasoning with clarity.",
+  gemini: "You are Apex (Gemini mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  grok: "You are Apex (Grok mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  deepseek: "You are Apex (DeepSeek mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  mistral: "You are Apex (Mistral mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  llama: "You are Apex (Llama mode), a helpful AI assistant. Be clear, accurate and friendly.",
+};
+
+/** Ask a provider's model through the person's OpenRouter account. */
+async function callViaOpenRouter(provider: AiProvider, key: string, system: string, turns: ChatTurn[]): Promise<AiResponse> {
+  const start = Date.now();
+  try {
+    const response = await openRouterClient(key).chat.completions.create({
+      model: await openRouterModel(provider),
+      messages: [{ role: "system", content: system }, ...turns],
+    });
+    return { provider, content: response.choices[0]?.message?.content ?? "No response", responseTime: Date.now() - start, ownKey: true, ...oaiTokens(response.usage) };
+  } catch (err) {
+    return { provider, content: "", responseTime: Date.now() - start, error: err instanceof Error ? `OpenRouter: ${err.message}` : "OpenRouter error" };
+  }
+}
+
+/** One message to a provider: the person's direct key, then their OpenRouter account, then the server's key. */
+function ask(provider: AiProvider, message: string, hint: string | undefined, keys: UserKeys | undefined): Promise<AiResponse> {
+  if (!keys?.[provider] && keys?.openrouter) {
+    const base = `${SYSTEM_BY_PROVIDER[provider]}\n\n${HUMAN_VOICE_RULES}`;
+    return callViaOpenRouter(provider, keys.openrouter, hint ? `${base}\n${hint}` : base, [{ role: "user", content: message }]);
+  }
+  return CALLERS[provider](message, hint, keys?.[provider]);
+}
 
 type Usage = { prompt_tokens?: number; completion_tokens?: number } | null | undefined;
 const oaiTokens = (u: Usage) => ({ inputTokens: u?.prompt_tokens ?? 0, outputTokens: u?.completion_tokens ?? 0 });
@@ -122,7 +162,7 @@ function routeToProvider(message: string, preferredProvider?: string, keys?: Use
 
   const ideal: AiProvider = isFactual ? "perplexity" : isComplex ? "claude" : "openai";
   // The person's own keys come first (they cost the app nothing), then connected providers
-  if (keys?.[ideal]) return ideal;
+  if (hasOwnKey(keys, ideal)) return ideal;
   const own = AI_PROVIDERS.find((p) => keys?.[p]);
   if (own) return own;
   const status = providerStatus();
@@ -285,15 +325,15 @@ export function battleProviders(keys?: UserKeys): AiProvider[] {
 
 export async function chatSingle(message: string, preferredProvider?: string, personalizationHint?: string, keys?: UserKeys): Promise<AiResponse[]> {
   const provider = routeToProvider(message, preferredProvider, keys);
-  return [await CALLERS[provider](message, personalizationHint, keys?.[provider])];
+  return [await ask(provider, message, personalizationHint, keys)];
 }
 
 export async function chatBattle(message: string, keys?: UserKeys): Promise<AiResponse[]> {
-  return Promise.all(activeProviders(keys).map((p) => CALLERS[p](message, undefined, keys?.[p])));
+  return Promise.all(activeProviders(keys).map((p) => ask(p, message, undefined, keys)));
 }
 
 export async function chatHive(message: string, keys?: UserKeys): Promise<{ responses: AiResponse[]; combined: string }> {
-  const responses = await Promise.all(activeProviders(keys).map((p) => CALLERS[p](message, undefined, keys?.[p])));
+  const responses = await Promise.all(activeProviders(keys).map((p) => ask(p, message, undefined, keys)));
   const validResponses = responses.filter(r => !r.error && r.content);
   const NAMES: Record<string, string> = { openai: "ChatGPT", claude: "Claude", perplexity: "Perplexity", ...Object.fromEntries(Object.entries(COMPAT).map(([k, v]) => [k, v.name])) };
 
@@ -345,6 +385,7 @@ export async function chatWithHistory(
   const ownKey = !!userKey;
   const start = Date.now();
   const turns = [...history, { role: "user" as const, content: message }];
+  if (!userKey && keys?.openrouter) return callViaOpenRouter(provider, keys.openrouter, system, turns);
   try {
     if (provider === "claude") {
       const client = getAnthropic(userKey);

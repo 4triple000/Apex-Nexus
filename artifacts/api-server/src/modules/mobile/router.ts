@@ -26,7 +26,7 @@ import {
   mobileMemoryTable,
 } from "@workspace/db";
 import { hashPassword, verifyPassword } from "./crypto";
-import { chatWithHistory, pickProvider } from "../../lib/aiRouter";
+import { chatWithHistory, pickProvider, hasOwnKey } from "../../lib/aiRouter";
 import { creditUserFor, canSpend, outOfCredits, recordUsage, getBalance, creditCost } from "../../lib/credits";
 import { getUserKeys, appContextFor } from "../../lib/connectors";
 import { extractMemoryFromMessage, buildMemorySystemPrompt } from "../memory/extractor";
@@ -181,7 +181,7 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
   if (!who) { res.status(401).json({ ok: false, error: "Please sign in." }); return; }
   const keys = await getUserKeys(userId);
   const target = pickProvider(message, provider === "auto" ? undefined : provider, keys);
-  const needed = keys[target] ? 0 : creditCost(target);
+  const needed = hasOwnKey(keys, target) ? 0 : creditCost(target);
   const check = await canSpend(who, needed);
   if (!check.ok) {
     res.status(429).json(outOfCredits(check.balance, needed));

@@ -22,7 +22,8 @@ import { logger } from "./logger";
 export interface ConnectorInfo {
   id: string;
   name: string;
-  kind: "key" | "oauth";
+  /** "signin": sign in with the provider and it hands Apex a key (no copying keys) */
+  kind: "key" | "oauth" | "signin";
   category: "ai" | "voice" | "apps";
   description: string;
   /** What linking lets Apex do, in plain words */
@@ -33,9 +34,13 @@ export interface ConnectorInfo {
   keyHint?: string;
   /** Chat model this key powers */
   provider?: AiProvider;
+  /** Shown first, with a "Recommended" badge */
+  featured?: boolean;
 }
 
 export const CONNECTORS: ConnectorInfo[] = [
+  // One sign-in for every model, billed to the person's own OpenRouter credits
+  { id: "openrouter", name: "OpenRouter", kind: "signin", category: "ai", featured: true, color: "#8B7BFF", description: "Sign in once to use ChatGPT, Claude, Gemini, Grok, Llama and more on your own account.", unlocks: "Every model in Apex runs on your OpenRouter credits: no daily limits and no keys to copy." },
   // AI accounts: use your own subscription's API key
   { id: "openai", name: "OpenAI (ChatGPT)", kind: "key", category: "ai", provider: "openai", color: "#10A37F", keyUrl: "https://platform.openai.com/api-keys", keyHint: "sk-…", description: "Use your own OpenAI account for ChatGPT replies.", unlocks: "Unlimited ChatGPT in Apex, billed to your OpenAI account instead of your credits." },
   { id: "anthropic", name: "Anthropic (Claude)", kind: "key", category: "ai", provider: "claude", color: "#D97757", keyUrl: "https://console.anthropic.com/settings/keys", keyHint: "sk-ant-…", description: "Use your own Anthropic account for Claude replies.", unlocks: "Unlimited Claude in Apex, billed to your Anthropic account." },
@@ -131,7 +136,7 @@ export const oauthCallbackUrl = () => `${publicApiUrl()}/api/connectors/oauth/ca
 export function isAvailable(id: string): boolean {
   const c = connectorById(id);
   if (!c) return false;
-  if (c.kind === "key") return true;
+  if (c.kind === "key" || c.kind === "signin") return true;
   const app = OAUTH[id];
   return !!app && !!clientId(app) && !!clientSecret(app);
 }
@@ -257,6 +262,11 @@ export async function getUserKeys(userId: number): Promise<UserKeys> {
   const rows = await db.select().from(userConnectorsTable).where(and(eq(userConnectorsTable.userId, userId), eq(userConnectorsTable.kind, "key")));
   const keys: UserKeys = {};
   for (const row of rows) {
+    if (row.connectorId === "openrouter") {
+      const key = decrypt(row.secret);
+      if (key) keys.openrouter = key;
+      continue;
+    }
     const provider = connectorById(row.connectorId)?.provider;
     const key = decrypt(row.secret);
     if (provider && key) keys[provider] = key;

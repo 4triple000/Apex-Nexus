@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { SendChatBody, AnalyzeScreenshotBody } from "@workspace/api-zod";
-import { chatSingle, chatBattle, chatHive, providerStatus, pickProvider, battleProviders, type AiResponse } from "../lib/aiRouter";
+import { chatSingle, chatBattle, chatHive, providerStatus, pickProvider, battleProviders, hasOwnKey, type AiResponse } from "../lib/aiRouter";
 import { creditUserForSession, creditUserFor, canSpend, outOfCredits, recordUsage, getBalance, creditCost } from "../lib/credits";
 import { getUserKeys, appContextFor } from "../lib/connectors";
 import { requireUser } from "../shared/middleware/requireAuth";
@@ -36,7 +36,7 @@ router.post("/chat", async (req, res): Promise<void> => {
   // Check the person can afford this before asking any model
   const multi = mode === "battle" || mode === "hive";
   const providers = multi ? battleProviders(keys) : [pickProvider(message, preferredProvider ?? undefined, keys)];
-  const needed = providers.reduce((sum, p) => sum + (keys[p] ? 0 : creditCost(p)), 0);
+  const needed = providers.reduce((sum, p) => sum + (hasOwnKey(keys, p) ? 0 : creditCost(p)), 0);
   const check = await canSpend(who, needed);
   if (!check.ok) {
     res.status(429).json(outOfCredits(check.balance, needed));

@@ -78,7 +78,7 @@ export function CreditsSheetHost() {
           {!isPaid && !data?.isOwner && (
             <Option icon={<Crown size={18} />} accent="#FFD479" title="Upgrade to Pro" sub="20x the credits every day, plus the premium features." onClick={() => go("/pricing")} primary />
           )}
-          <Option icon={<KeyRound size={18} />} accent="#86EFAC" title="Use your own AI account" sub="Link your OpenAI, Claude, Gemini or other API key. Replies on it are free and unlimited here." onClick={() => go("/connectors")} />
+          <Option icon={<KeyRound size={18} />} accent="#86EFAC" title="Use your own AI account" sub="Sign in with OpenRouter (or add an API key) and chat on your own account with no daily limit." onClick={() => go("/connectors")} />
           {out && (
             <Option icon={<Zap size={18} />} accent="#8B7BFF" title="Try a lighter model" sub="Llama, DeepSeek and Gemini cost 1 credit per reply." onClick={() => setOpen(null)} />
           )}

@@ -21,7 +21,9 @@ import {
   saveConnector, removeConnector, listLinked, checkKey, maskKey, oauthCallbackUrl,
 } from "../lib/connectors";
 import { creditUserFor, getBalance, spendingReport } from "../lib/credits";
-import { signState, verifyState, isAllowedReturn, defaultReturnUrl } from "../lib/secureLinks";
+import { signState, verifyState, isAllowedReturn, defaultReturnUrl, encrypt, decrypt, publicApiUrl } from "../lib/secureLinks";
+import { newPkce, openRouterAuthUrl, exchangeOpenRouterCode } from "../lib/openRouter";
+import { AI_PROVIDERS } from "../lib/aiRouter";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -68,7 +70,17 @@ const AuthorizeBody = z.object({ returnTo: z.string().url().optional() });
 
 router.post("/connectors/:id/authorize", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const connector = connectorById(String(req.params.id));
-  if (!connector || connector.kind !== "oauth") { res.status(404).json({ ok: false, error: "Unknown connector." }); return; }
+  if (!connector || connector.kind === "key") { res.status(404).json({ ok: false, error: "Unknown connector." }); return; }
+  if (connector.kind === "signin") {
+    // OpenRouter sign-in (PKCE): the verifier travels encrypted inside the signed state
+    const body = AuthorizeBody.safeParse(req.body ?? {});
+    const returnTo = body.success && body.data.returnTo && isAllowedReturn(body.data.returnTo) ? body.data.returnTo : `${defaultReturnUrl()}/connectors`;
+    const { verifier, challenge } = newPkce();
+    const state = signState({ u: req.userId!, c: connector.id, r: returnTo, v: encrypt(verifier) });
+    const callback = `${publicApiUrl()}/api/connectors/openrouter/callback?state=${encodeURIComponent(state)}`;
+    res.json({ ok: true, data: { url: openRouterAuthUrl(callback, challenge) } });
+    return;
+  }
   if (!isAvailable(connector.id)) { res.status(503).json({ ok: false, error: `${connector.name} isn't available yet. The app owner needs to finish setting it up.` }); return; }
   const parsed = AuthorizeBody.safeParse(req.body ?? {});
   const returnTo = parsed.success && parsed.data.returnTo && isAllowedReturn(parsed.data.returnTo) ? parsed.data.returnTo : `${defaultReturnUrl()}/connectors`;
@@ -102,6 +114,29 @@ router.get("/connectors/oauth/callback", async (req, res): Promise<void> => {
   }
 });
 
+// OpenRouter sends people back here with ?code=… (plus our state in the callback URL)
+router.get("/connectors/openrouter/callback", async (req, res): Promise<void> => {
+  const { code, state } = req.query as Record<string, string | undefined>;
+  const data = verifyState<{ u: number; c: string; r: string; v: string }>(state);
+  if (!data || data.c !== "openrouter" || !isAllowedReturn(data.r)) {
+    res.status(400).send("This link expired. Go back to Apex and try connecting again.");
+    return;
+  }
+  const verifier = decrypt(data.v);
+  if (!code || !verifier) {
+    res.redirect(backTo(data.r, { connect_error: code ? "failed" : "cancelled", connector: "openrouter" }));
+    return;
+  }
+  try {
+    const key = await exchangeOpenRouterCode(code, verifier);
+    await saveConnector(data.u, "openrouter", "key", key, { label: "Signed in" });
+    res.redirect(backTo(data.r, { connected: "openrouter" }));
+  } catch (err) {
+    logger.warn({ err }, "OpenRouter sign-in failed");
+    res.redirect(backTo(data.r, { connect_error: "failed", connector: "openrouter" }));
+  }
+});
+
 router.delete("/connectors/:id", requireUser, async (req: ApexRequest, res): Promise<void> => {
   if (!connectorById(String(req.params.id))) { res.status(404).json({ ok: false, error: "Unknown connector." }); return; }
   await removeConnector(req.userId!, String(req.params.id));
@@ -114,7 +149,10 @@ router.get("/credits", requireUser, async (req: ApexRequest, res): Promise<void>
   const who = await creditUserFor(req.userId!);
   if (!who) { res.status(401).json({ ok: false, error: "Please sign in." }); return; }
   const [balance, linked] = await Promise.all([getBalance(who), listLinked(who.userId)]);
-  const ownKeys = linked.map((l) => connectorById(l.connectorId)?.provider).filter(Boolean);
+  const viaOpenRouter = linked.some((l) => l.connectorId === "openrouter");
+  const ownKeys = viaOpenRouter
+    ? [...AI_PROVIDERS]
+    : linked.map((l) => connectorById(l.connectorId)?.provider).filter(Boolean);
   res.json({ ok: true, data: { ...balance, isOwner: who.isOwner, ownKeys } });
 });
 

@@ -15,7 +15,7 @@ import { MG, MGFont } from "@/constants/colors";
 import { connectorsApi, type Connector } from "@/services/api";
 
 const SECTIONS: { id: Connector["category"]; title: string; sub: string }[] = [
-  { id: "ai", title: "YOUR AI ACCOUNTS", sub: "Paste an API key from your own account. Replies on that model then run on your key: free and unlimited here." },
+  { id: "ai", title: "YOUR AI ACCOUNTS", sub: "Chat on your own AI account instead of Apex credits: no daily limits, billed by the provider." },
   { id: "voice", title: "VOICE", sub: "Use your own voice plan for game characters." },
   { id: "apps", title: "APPS", sub: "Let Apex read from your accounts when you ask about them." },
 ];
@@ -25,6 +25,7 @@ export default function ConnectorsScreen() {
   const router = useRouter();
   const qc = useQueryClient();
   const [notice, setNotice] = useState<string | null>(null);
+  const [showKeys, setShowKeys] = useState(false);
   const { data, isLoading, error } = useQuery({ queryKey: ["connectors"], queryFn: connectorsApi.list });
 
   const refresh = () => {
@@ -66,19 +67,31 @@ export default function ConnectorsScreen() {
         {SECTIONS.map((section) => {
           const items = (data ?? []).filter((c) => c.category === section.id);
           if (!items.length) return null;
+          const featured = items.filter((c) => c.featured);
+          const keys = items.filter((c) => !c.featured);
+          const fold = section.id === "ai" && featured.length > 0;
+          const keysOpen = showKeys || keys.some((c) => c.linked);
           return (
             <View key={section.id} style={{ gap: 10 }}>
               <View>
                 <Text style={s.label}>{section.title}</Text>
                 <Text style={s.sectionSub}>{section.sub}</Text>
               </View>
-              {items.map((c) => <ConnectorCard key={c.id} c={c} onChange={refresh} />)}
+              {featured.map((c) => <ConnectorCard key={c.id} c={c} onChange={refresh} />)}
+              {fold && (
+                <Pressable onPress={() => setShowKeys((v) => !v)} accessibilityState={{ expanded: keysOpen }} style={s.foldBtn}>
+                  <Feather name="key" size={14} color={MG.ink2} />
+                  <Text style={s.foldText}>Or paste an API key from one provider</Text>
+                  <Feather name={keysOpen ? "chevron-up" : "chevron-down"} size={14} color={MG.ink2} />
+                </Pressable>
+              )}
+              {(!fold || keysOpen) && keys.map((c) => <ConnectorCard key={c.id} c={c} onChange={refresh} />)}
             </View>
           );
         })}
 
         <Text style={s.footnote}>
-          Why an API key and not your ChatGPT Plus or Claude Pro login? Those plans only work inside the providers' own apps. Other apps can only use an API key, billed separately (usually a few cents per chat).
+          Why not your ChatGPT Plus or Claude Pro login? Those plans only work inside OpenAI's and Anthropic's own apps; they don't let other apps use them. OpenRouter and API keys are pay-as-you-go instead, usually a few cents per chat.
         </Text>
       </ScrollView>
     </View>
@@ -132,12 +145,13 @@ function ConnectorCard({ c, onChange }: { c: Connector; onChange: () => void }) 
   };
 
   return (
-    <View style={s.card}>
+    <View style={[s.card, c.featured && s.cardFeatured]}>
       <View style={s.row}>
         <View style={[s.dot, { borderColor: c.color }]}><Text style={[s.dotText, { color: c.color }]}>{c.name[0]}</Text></View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={s.name}>{c.name}</Text>
           {c.linked && <Text style={s.linked}>✓ Linked{c.accountLabel ? ` · ${c.accountLabel}` : ""}</Text>}
+          {c.featured && !c.linked && <Text style={s.recommended}>★ Recommended</Text>}
           {!c.available && !c.linked && <Text style={s.soon}>Coming soon</Text>}
           <Text style={s.desc}>{c.linked ? c.unlocks : c.description}</Text>
         </View>
@@ -151,7 +165,7 @@ function ConnectorCard({ c, onChange }: { c: Connector; onChange: () => void }) 
           </Pressable>
         ) : (
           <Pressable onPress={linkApp} disabled={busy || !c.available} style={[s.btn, !c.available && { opacity: 0.45 }]}>
-            {busy ? <ActivityIndicator size="small" color="#1C1640" /> : <Text style={s.btnText}>Connect</Text>}
+            {busy ? <ActivityIndicator size="small" color="#1C1640" /> : <Text style={s.btnText}>{c.kind === "signin" ? "Sign in" : "Connect"}</Text>}
           </Pressable>
         )}
       </View>
@@ -189,6 +203,10 @@ const s = StyleSheet.create({
   notice: { color: "#86EFAC", fontFamily: MGFont.semi, fontSize: 13.5 },
   label: { color: MG.ink3, fontFamily: MGFont.bold, fontSize: 10.5, letterSpacing: 1.2 },
   sectionSub: { color: MG.ink2, fontFamily: MGFont.body, fontSize: 13, marginTop: 4, lineHeight: 18 },
+  cardFeatured: { backgroundColor: "rgba(139,123,255,0.22)", borderColor: "rgba(139,123,255,0.55)" },
+  recommended: { color: "#FFD479", fontFamily: MGFont.bold, fontSize: 12 },
+  foldBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4 },
+  foldText: { color: MG.ink2, fontFamily: MGFont.semi, fontSize: 13 },
   card: { borderRadius: 22, padding: 14, gap: 10, backgroundColor: MG.glassFill, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   dot: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 1.5, backgroundColor: "rgba(255,255,255,0.06)" },

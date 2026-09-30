@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { chatSingle } from "../lib/aiRouter";
+import { chatSingle, hasOwnKey } from "../lib/aiRouter";
 import { requireUser } from "../shared/middleware/requireAuth";
 import type { ApexRequest } from "../shared/types";
 import { creditUserFor, canSpend, outOfCredits, recordUsage, creditCost } from "../lib/credits";
@@ -118,7 +118,7 @@ router.post("/battle/round", requireUser, async (req: ApexRequest, res): Promise
   const who = await creditUserFor(req.userId!);
   if (!who) { res.status(401).json({ error: "Please sign in." }); return; }
   const keys = await getUserKeys(who.userId);
-  const needed = [providerA, providerB].reduce((sum, p) => sum + (keys[p] ? 0 : creditCost(p)), 0);
+  const needed = [providerA, providerB].reduce((sum, p) => sum + (hasOwnKey(keys, p) ? 0 : creditCost(p)), 0);
   const check = await canSpend(who, needed);
   if (!check.ok) { res.status(429).json(outOfCredits(check.balance, needed)); return; }
 

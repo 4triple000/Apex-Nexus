@@ -84,7 +84,7 @@ export function CreditsSheetHost() {
                 <Option icon="award" accent="#FFD479" primary title="Upgrade to Pro" sub="20x the credits every day, plus the premium features."
                   onPress={() => { close(); void WebBrowser.openBrowserAsync(`${WEB_APP_URL}/pricing`); }} />
               )}
-              <Option icon="key" accent="#86EFAC" title="Use your own AI account" sub="Link your OpenAI, Claude, Gemini or other API key. Replies on it are free and unlimited here."
+              <Option icon="key" accent="#86EFAC" title="Use your own AI account" sub="Sign in with OpenRouter (or add an API key) and chat on your own account with no daily limit."
                 onPress={() => { close(); router.push("/(tabs)/connectors"); }} />
               {out && <Option icon="zap" accent={MG.violet} title="Try a lighter model" sub="Llama, DeepSeek and Gemini cost 1 credit per reply." onPress={close} />}
               <Option icon="trending-up" accent="#FF8A4C" title="Keep your streak going" sub="Day 3 of your 7-day streak adds +10 bonus credits." onPress={close} />
