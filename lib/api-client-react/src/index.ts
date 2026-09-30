@@ -30,10 +30,20 @@ export class ApiError extends Error {
   }
 }
 
+/** The signed-in session (stored by the web app on login), so the API knows whose credits to use. */
+function authHeader(): Record<string, string> {
+  try {
+    const session = globalThis.localStorage?.getItem("apex_session_id");
+    return session ? { "x-apex-auth": session } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: { "Content-Type": "application/json", ...authHeader(), ...init?.headers },
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) {

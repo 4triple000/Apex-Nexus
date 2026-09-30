@@ -110,7 +110,7 @@ function StreakCard() {
   }, [lit, pop]);
 
   useEffect(() => {
-    if (st?.earned === "bonus") void qc.invalidateQueries({ queryKey: ["daily-usage"] });
+    if (st?.earned === "bonus") void qc.invalidateQueries({ queryKey: ["credits"] });
   }, [st?.earned, qc]);
 
   if (!st) {

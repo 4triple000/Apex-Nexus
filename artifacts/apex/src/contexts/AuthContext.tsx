@@ -41,7 +41,14 @@ interface AuthContextValue {
   user:            AuthUser | null;
   login:           (email: string, password: string) => Promise<void>;
   signup:          (email: string, password: string, username?: string) => Promise<void>;
+  /** Finish "Continue with Google" with the one-time code the API sent back */
+  loginWithGoogleCode: (code: string) => Promise<void>;
   logout:          () => void;
+}
+
+/** Where "Continue with Google" starts; Google sends the person back to `returnTo`. */
+export function googleSignInUrl(returnTo: string): string {
+  return `${api("/auth/google")}?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
@@ -103,6 +110,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user);
   }, []);
 
+  const loginWithGoogleCode = useCallback(async (code: string) => {
+    const { user, sessionId } = await req<{ user: AuthUser; sessionId: string }>(
+      api("/auth/google/exchange"),
+      { method: "POST", body: JSON.stringify({ code }) }
+    );
+    localStorage.setItem(SESSION_KEY, sessionId);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    setUser(user);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(USER_KEY);
@@ -118,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       login,
       signup,
+      loginWithGoogleCode,
       logout,
     }}>
       {children}

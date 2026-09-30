@@ -4,7 +4,7 @@
  */
 import { useRef, type ReactNode } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, ChevronRight, Moon, Mic, Brain, Speech, Volume2, FastForward, UserRound, Gauge, Shield, LogOut, Globe, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Moon, Mic, Brain, Speech, Volume2, FastForward, UserRound, Gauge, Shield, LogOut, Globe, Plug, type LucideIcon } from "lucide-react";
 import { useApexState } from "@/contexts/ApexStateContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { planLabel } from "@/components/layout/topbar";
@@ -90,6 +90,7 @@ export default function SettingsPage() {
           <div className="mg-cc-card mg-rows" style={{ overflow: "hidden" }}>
             <Row icon={UserRound} title={user?.username ?? "Profile"} note={planLabel(user?.subscriptionTier, user?.isOwner)} onClick={() => nav("/profile")} />
             <Row icon={Gauge} title="Usage & plan" onClick={() => nav("/usage")} />
+            <Row icon={Plug} title="Connectors" note="Your AI accounts and apps" onClick={() => nav("/connectors")} />
             <Row icon={Shield} title="Privacy & notifications" onClick={() => nav("/profile")} />
             <Row icon={Globe} title="Custom domain" onClick={() => nav("/domain-settings")} />
             {user && <Row icon={LogOut} title="Sign out" danger onClick={() => { logout(); nav("/login"); }} />}

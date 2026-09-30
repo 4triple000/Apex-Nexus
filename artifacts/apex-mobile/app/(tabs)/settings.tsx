@@ -15,6 +15,7 @@ import { MG, MGFont } from "@/constants/colors";
 import { useAuth } from "@/context/AuthContext";
 import { setPref, usePrefs, type ApexPrefs } from "@/lib/prefs";
 import { WEB_APP_URL } from "@/services/api";
+import { openCreditsSheet } from "@/components/CreditsSheet";
 
 const TONES: { id: ApexPrefs["personality"]; label: string; emoji: string }[] = [
   { id: "friend",    label: "Friend",    emoji: "👋" },
@@ -85,7 +86,8 @@ export default function SettingsScreen() {
         <Text style={s.label}>ACCOUNT</Text>
         <View style={s.card}>
           <Row icon="user" title={user?.username ?? "Profile"} onPress={() => router.navigate("/(tabs)/profile")} first />
-          <Row icon="activity" title="Usage & plan" onPress={() => void WebBrowser.openBrowserAsync(`${WEB_APP_URL}/usage`)} />
+          <Row icon="activity" title="Usage & plan" onPress={() => openCreditsSheet("info")} />
+          <Row icon="link" title="Connectors" onPress={() => router.push("/(tabs)/connectors")} />
           <Row icon="shield" title="Privacy & notifications" onPress={() => router.navigate("/(tabs)/profile")} />
           <Row icon="log-out" title="Sign out" danger onPress={() => void logout()} />
         </View>

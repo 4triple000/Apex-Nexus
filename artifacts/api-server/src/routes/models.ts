@@ -9,6 +9,9 @@ import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { MODEL_CATALOG, CATEGORY_LABELS, isConnected } from "../lib/modelCatalog";
 import { requireUser } from "../shared/middleware/requireAuth";
+import type { ApexRequest } from "../shared/types";
+import { getUserSecret } from "../lib/connectors";
+import { canSpend, creditUserFor, outOfCredits, recordUsage, creditCost } from "../lib/credits";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -50,16 +53,24 @@ const PreviewBody = z.object({
   text: z.string().min(1).max(300),
 });
 
-router.post("/voices/preview", requireUser, async (req, res): Promise<void> => {
-  const key = process.env.ELEVENLABS_API_KEY;
+router.post("/voices/preview", requireUser, async (req: ApexRequest, res): Promise<void> => {
+  // The person's own ElevenLabs account (Connectors) first, then the app's key
+  const ownKey = await getUserSecret(req.userId!, "elevenlabs");
+  const key = ownKey ?? process.env.ELEVENLABS_API_KEY;
   if (!key) {
-    res.status(503).json({ ok: false, error: "ElevenLabs isn't connected yet. Add ELEVENLABS_API_KEY on the server." });
+    res.status(503).json({ ok: false, error: "ElevenLabs isn't connected yet. Link your ElevenLabs account in Connectors, or the owner can add ELEVENLABS_API_KEY." });
     return;
   }
   const parsed = PreviewBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ ok: false, error: "Pick a voice and write a line (up to 300 characters)." });
     return;
+  }
+  const who = await creditUserFor(req.userId!);
+  if (!who) { res.status(401).json({ ok: false, error: "Please sign in." }); return; }
+  if (!ownKey) {
+    const check = await canSpend(who, creditCost("elevenlabs"));
+    if (!check.ok) { res.status(429).json(outOfCredits(check.balance, creditCost("elevenlabs"))); return; }
   }
   try {
     const upstream = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${parsed.data.voiceId}?output_format=mp3_44100_128`, {
@@ -73,6 +84,7 @@ router.post("/voices/preview", requireUser, async (req, res): Promise<void> => {
       return;
     }
     const audio = Buffer.from(await upstream.arrayBuffer());
+    await recordUsage(who, { provider: "elevenlabs", ownKey: !!ownKey, outputTokens: parsed.data.text.length }).catch(() => undefined);
     res.set({ "Content-Type": "audio/mpeg", "Content-Length": String(audio.byteLength), "Cache-Control": "private, max-age=300" });
     res.send(audio);
   } catch (err) {

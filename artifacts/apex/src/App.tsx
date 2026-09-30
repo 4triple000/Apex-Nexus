@@ -9,6 +9,7 @@ import { AvatarProvider } from "@/contexts/AvatarContext";
 import { PersonalityProvider } from "@/contexts/PersonalityContext";
 import { CharacterProvider } from "@/contexts/CharacterContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { CreditsSheetHost } from "@/components/credits/CreditsSheet";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
 import { ApexStateProvider } from "@/contexts/ApexStateContext";
 import { PaywallProvider } from "@/contexts/PaywallContext";
@@ -33,6 +34,7 @@ const StudioPage = lazy(() => import("@/pages/studio"));
 const StudioProjectPage = lazy(() => import("@/pages/studio").then((m) => ({ default: m.StudioProjectPage })));
 const MarketplacePage = lazy(() => import("@/pages/marketplace"));
 const SocialPage = lazy(() => import("@/pages/social"));
+const ConnectorsPage = lazy(() => import("@/pages/connectors"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const PricingPage = lazy(() => import("@/pages/pricing"));
 const CreatorDashboardPage = lazy(() => import("@/pages/creator-dashboard"));
@@ -158,6 +160,7 @@ function Router() {
               <Route path="/studio" component={StudioPage} />
               <Route path="/marketplace" component={MarketplacePage} />
               <Route path="/feed" component={SocialPage} />
+              <Route path="/connectors" component={ConnectorsPage} />
               <Route path="/profile" component={ProfilePage} />
               <Route path="/profile/:userId" component={ProfilePage} />
               <Route path="/explore"><Redirect to="/feed" replace /></Route>
@@ -198,6 +201,7 @@ function App() {
                         <Suspense fallback={<FullScreenLoader />}>
                           <Router />
                         </Suspense>
+                        <CreditsSheetHost />
                       </PaywallProvider>
                     </WouterRouter>
                   </EngineProvider>

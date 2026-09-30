@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Eye, EyeOff, Mail, Lock, User, Zap, ArrowRight, Loader2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, googleSignInUrl } from "@/contexts/AuthContext";
 
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
@@ -141,7 +141,7 @@ function PasswordInput({ placeholder, value, onChange, error, autoComplete }: {
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function LoginPage() {
   const [, nav]  = useLocation();
-  const { login, signup, isAuthenticated } = useAuth();
+  const { login, signup, loginWithGoogleCode, isAuthenticated } = useAuth();
 
   const [mode, setMode]   = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -159,6 +159,28 @@ export default function LoginPage() {
   useEffect(() => {
     if (isAuthenticated) nav("/");
   }, [isAuthenticated, nav]);
+
+  // Back from Google: #google_code=… (or #google_error=…)
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const code = hash.get("google_code");
+    const googleError = hash.get("google_error");
+    if (!code && !googleError) return;
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    if (googleError) {
+      setError(googleError === "cancelled" ? "Google sign-in was cancelled." : googleError === "not_configured" ? "Google sign-in isn't set up yet. Use email for now." : "Google sign-in didn't work. Try again.");
+      return;
+    }
+    setLoading(true);
+    loginWithGoogleCode(code!)
+      .then(() => nav("/"))
+      .catch((err: Error) => setError(err.message || "Google sign-in didn't work. Try again."))
+      .finally(() => setLoading(false));
+  }, [loginWithGoogleCode, nav]);
+
+  const continueWithGoogle = () => {
+    window.location.href = googleSignInUrl(`${window.location.origin}${BASE}/login`);
+  };
 
   // Shake animation on error
   useEffect(() => {
@@ -408,9 +430,11 @@ export default function LoginPage() {
             <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
           </div>
 
-          {/* ── Google SSO (UI only) ── */}
+          {/* ── Google sign-in ── */}
           <button
             type="button"
+            onClick={continueWithGoogle}
+            disabled={loading}
             style={{
               width: "100%", height: 50, borderRadius: 14,
               background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)",

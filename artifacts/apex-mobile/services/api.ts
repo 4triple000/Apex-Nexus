@@ -106,6 +106,14 @@ export const promptsApi = {
   signedIn: () => !!authSessionId,
 };
 
+/** An API error that keeps the server's code (e.g. OUT_OF_CREDITS) so screens can react to it. */
+export class ApexApiError extends Error {
+  constructor(message: string, readonly status: number, readonly code?: string) {
+    super(message);
+    this.name = "ApexApiError";
+  }
+}
+
 async function apexFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const url = `${getBaseUrl()}/api${path}`;
   const res = await fetch(url, {
@@ -117,13 +125,13 @@ async function apexFetch<T>(path: string, options?: RequestInit): Promise<T> {
     },
   });
 
-  let json: { ok: boolean; data?: T; error?: string };
+  let json: { ok: boolean; data?: T; error?: string; code?: string };
   try {
     json = (await res.json()) as typeof json;
   } catch {
-    throw new Error(`Server error (${res.status})`);
+    throw new ApexApiError(`Server error (${res.status})`, res.status);
   }
-  if (!json.ok) throw new Error(json.error ?? "API error");
+  if (!json.ok) throw new ApexApiError(json.error ?? "API error", res.status, json.code);
   return json.data as T;
 }
 
@@ -145,7 +153,32 @@ export const authApi = {
 
   login: (data: LoginInput) =>
     apexFetch<AuthResponse>("/mobile/auth/login", { method: "POST", body: JSON.stringify(data) }),
+
+  /** Where "Continue with Google" starts; Google sends the person back to `returnTo#google_code=…`. */
+  googleUrl: (returnTo: string) => `${getBaseUrl()}/api/auth/google?returnTo=${encodeURIComponent(returnTo)}`,
+
+  /** Trade the one-time code from Google sign-in for a session. */
+  googleExchange: async (code: string): Promise<AuthResponse> => {
+    const data = await apexFetch<{ sessionId: string; user: { id: number; email: string; username: string; avatarEmoji?: string | null; bio?: string | null } }>(
+      "/auth/google/exchange",
+      { method: "POST", body: JSON.stringify({ code }) },
+    );
+    return { userId: data.user.id, sessionId: data.sessionId, email: data.user.email, username: data.user.username, avatarEmoji: data.user.avatarEmoji ?? "🙂", bio: data.user.bio };
+  },
 };
+
+/** Reads #google_code / #google_error from a URL we were sent back to. */
+export function parseGoogleReturn(url: string): { code?: string; error?: string } {
+  const hash = url.includes("#") ? url.slice(url.indexOf("#") + 1) : "";
+  const params = new URLSearchParams(hash);
+  return { code: params.get("google_code") ?? undefined, error: params.get("google_error") ?? undefined };
+}
+
+export function googleErrorText(error: string): string {
+  if (error === "cancelled") return "Google sign-in was cancelled.";
+  if (error === "not_configured") return "Google sign-in isn't set up yet. Use email for now.";
+  return "Google sign-in didn't work. Try again.";
+}
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
 export type ProviderId = "auto" | "openai" | "claude" | "perplexity" | "gemini" | "grok" | "deepseek" | "mistral" | "llama";
@@ -171,11 +204,11 @@ export const chatApi = {
   group: async (message: string, mode: "battle" | "hive", sessionId?: string): Promise<GroupChatResponse> => {
     const res = await fetch(`${getBaseUrl()}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(authSessionId ? { "x-apex-auth": authSessionId } : {}) },
       body: JSON.stringify({ message, mode, sessionId }),
     });
-    const json = (await res.json().catch(() => null)) as (GroupChatResponse & { error?: string }) | null;
-    if (!res.ok || !json) throw new Error(json?.error ?? `Server error (${res.status})`);
+    const json = (await res.json().catch(() => null)) as (GroupChatResponse & { error?: string; code?: string }) | null;
+    if (!res.ok || !json) throw new ApexApiError(json?.error ?? `Server error (${res.status})`, res.status, json?.code);
     return json;
   },
 
@@ -239,14 +272,47 @@ export const gamesApi = {
 export const WEB_APP_URL = (process.env.EXPO_PUBLIC_WEB_URL ?? "https://apex-nexus-apex.vercel.app").replace(/\/$/, "");
 
 // ── Daily usage ───────────────────────────────────────────────────────────────
-export interface DailyUsage { requestsUsed: number; requestsLimit: number; tier: string; resetAt: string }
+export interface Credits {
+  tier: string;
+  used: number;
+  /** Daily allowance plus today's bonus; -1 = unlimited */
+  limit: number;
+  bonus: number;
+  /** -1 = unlimited */
+  remaining: number;
+  unlimited: boolean;
+  resetsAt: string;
+  costs: Record<string, number>;
+  isOwner?: boolean;
+  ownKeys?: string[];
+}
 
-export const usageApi = {
-  today: async (sessionId: string): Promise<DailyUsage> => {
-    const res = await fetch(`${getBaseUrl()}/api/usage?sessionId=${encodeURIComponent(sessionId)}`);
-    if (!res.ok) throw new Error(`Server error (${res.status})`);
-    return (await res.json()) as DailyUsage;
-  },
+export const creditsApi = {
+  today: () => apexFetch<Credits>("/credits"),
+};
+
+// ── Connectors ────────────────────────────────────────────────────────────────
+export interface Connector {
+  id: string;
+  name: string;
+  kind: "key" | "oauth";
+  category: "ai" | "voice" | "apps";
+  description: string;
+  unlocks: string;
+  color: string;
+  keyUrl?: string;
+  keyHint?: string;
+  available: boolean;
+  linked: boolean;
+  accountLabel: string | null;
+}
+
+export const connectorsApi = {
+  list: () => apexFetch<{ connectors: Connector[] }>("/connectors").then((d) => d.connectors),
+  addKey: (id: string, key: string) => apexFetch<{ linked: boolean }>(`/connectors/${id}/key`, { method: "POST", body: JSON.stringify({ key }) }),
+  authorize: (id: string, returnTo: string) =>
+    apexFetch<{ url: string }>(`/connectors/${id}/authorize`, { method: "POST", body: JSON.stringify({ returnTo }) }).then((d) => d.url),
+  remove: (id: string) => apexFetch<{ linked: boolean }>(`/connectors/${id}`, { method: "DELETE" }),
 };
 
 // ── Builder (AI Studio) ───────────────────────────────────────────────────────
@@ -286,11 +352,11 @@ export const screenshotApi = {
   analyze: async (imageBase64: string): Promise<{ analysis: string; suggestions: string[] }> => {
     const res = await fetch(`${getBaseUrl()}/api/chat/analyze-screenshot`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(authSessionId ? { "x-apex-auth": authSessionId } : {}) },
       body: JSON.stringify({ imageBase64 }),
     });
-    const json = (await res.json().catch(() => null)) as { analysis?: string; suggestions?: string[]; error?: string } | null;
-    if (!res.ok || !json) throw new Error(json?.error ?? `Server error (${res.status})`);
+    const json = (await res.json().catch(() => null)) as { analysis?: string; suggestions?: string[]; error?: string; code?: string } | null;
+    if (!res.ok || !json) throw new ApexApiError(json?.error ?? `Server error (${res.status})`, res.status, json?.code);
     return { analysis: json.analysis ?? "", suggestions: json.suggestions ?? [] };
   },
 };

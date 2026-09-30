@@ -38,7 +38,7 @@ const PLANS: PlanDef[] = [
     priceSub: "forever",
     icon: <Sparkles size={16} />,
     features: [
-      "Chat (limited — 20 msgs/day)",
+      "30 AI credits a day (about 10–30 chats)",
       "Preview features only",
       "Basic referrals & waitlist",
       "Browse Marketplace",
@@ -57,7 +57,7 @@ const PLANS: PlanDef[] = [
     priceSub: "per month",
     icon: <Zap size={16} />,
     features: [
-      "Higher AI limits (200 msgs/day)",
+      "600 AI credits a day (20x Free)",
       "Early feature access",
       "Full Workflows engine",
       "Priority support",

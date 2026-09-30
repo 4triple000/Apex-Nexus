@@ -5,7 +5,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { setAuthSession } from "@/services/api";
+import { Platform } from "react-native";
+import { setAuthSession, authApi, parseGoogleReturn } from "@/services/api";
 
 const AUTH_KEY = "apex_mobile_user";
 
@@ -37,6 +38,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Website version: back from "Continue with Google" (#google_code=…). Finish signing in first.
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      const { code, error } = parseGoogleReturn(window.location.href);
+      if (code || error) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        if (error) (window as unknown as { __apexGoogleError?: string }).__apexGoogleError = error;
+        if (code) {
+          authApi.googleExchange(code)
+            .then(async (u) => {
+              await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(u));
+              setAuthSession(u.sessionId);
+              setUser(u);
+            })
+            .catch(() => { (window as unknown as { __apexGoogleError?: string }).__apexGoogleError = "failed"; })
+            .finally(() => setIsLoading(false));
+          return;
+        }
+      }
+    }
     AsyncStorage.getItem(AUTH_KEY)
       .then((raw) => {
         if (raw) {

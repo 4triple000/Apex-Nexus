@@ -1,5 +1,9 @@
 import { Router, type IRouter } from "express";
 import { chatSingle } from "../lib/aiRouter";
+import { requireUser } from "../shared/middleware/requireAuth";
+import type { ApexRequest } from "../shared/types";
+import { creditUserFor, canSpend, outOfCredits, recordUsage, creditCost } from "../lib/credits";
+import { getUserKeys } from "../lib/connectors";
 import { z } from "zod";
 
 const router: IRouter = Router();
@@ -100,7 +104,7 @@ const BattleRoundBody = z.object({
 });
 
 // ── POST /battle/round ────────────────────────────────────────────────────────
-router.post("/battle/round", async (req, res): Promise<void> => {
+router.post("/battle/round", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const parsed = BattleRoundBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -111,15 +115,27 @@ router.post("/battle/round", async (req, res): Promise<void> => {
   const sysPrompt = BATTLE_SYSTEM_PROMPTS[battleMode] ?? BATTLE_SYSTEM_PROMPTS.logic;
   const enhancedPrompt = `${sysPrompt}\n\n--- BATTLE TOPIC ---\n${prompt}`;
 
+  const who = await creditUserFor(req.userId!);
+  if (!who) { res.status(401).json({ error: "Please sign in." }); return; }
+  const keys = await getUserKeys(who.userId);
+  const needed = [providerA, providerB].reduce((sum, p) => sum + (keys[p] ? 0 : creditCost(p)), 0);
+  const check = await canSpend(who, needed);
+  if (!check.ok) { res.status(429).json(outOfCredits(check.balance, needed)); return; }
+
   try {
     // Call both AIs in parallel for the round
     const [responsesA, responsesB] = await Promise.all([
-      chatSingle(enhancedPrompt, providerA),
-      chatSingle(enhancedPrompt, providerB),
+      chatSingle(enhancedPrompt, providerA, undefined, keys),
+      chatSingle(enhancedPrompt, providerB, undefined, keys),
     ]);
 
     const a = responsesA[0];
     const b = responsesB[0];
+    for (const r of [a, b]) {
+      if (r && !r.error && r.content && r.provider !== "hive") {
+        await recordUsage(who, { provider: r.provider, ownKey: r.ownKey, inputTokens: r.inputTokens, outputTokens: r.outputTokens }).catch(() => undefined);
+      }
+    }
 
     const scoreA = scoreResponse(a.content, prompt, a.responseTime, battleMode);
     const scoreB = scoreResponse(b.content, prompt, b.responseTime, battleMode);
