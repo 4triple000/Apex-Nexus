@@ -27,6 +27,7 @@ import {
 } from "@workspace/db";
 import { hashPassword, verifyPassword } from "./crypto";
 import { chatWithHistory } from "../../lib/aiRouter";
+import { incrementUsage } from "../../lib/usageTracker";
 import { extractMemoryFromMessage, buildMemorySystemPrompt } from "../memory/extractor";
 import { success, badRequest, notFound, serverError, unauthorized, forbidden } from "../../shared/utils/response";
 import { requireUser } from "../../shared/middleware/requireAuth";
@@ -161,6 +162,14 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
   const { message, conversationId: existingConvId, provider } = parsed.data;
   if (existingConvId && !(await ownsConversation(userId, existingConvId))) {
     notFound(res, "Conversation not found");
+    return;
+  }
+
+  // Same daily limit as web chat, counted against the signed-in session
+  const usageKey = req.header("x-apex-auth") || `user_${userId}`;
+  const usageResult = await incrementUsage(usageKey);
+  if (usageResult.exceeded) {
+    res.status(429).json({ ok: false, error: "You've used today's free AI messages. They reset tomorrow." });
     return;
   }
 

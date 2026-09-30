@@ -14,7 +14,7 @@ type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs
 const TABS: { name: string; title: string; icon: TabIconName }[] = [
   { name: "index",    title: "Home",      icon: "home" },
   { name: "messages", title: "Chat",      icon: "chat" },
-  { name: "builder",  title: "AI Studio", icon: "studio" },
+  { name: "builder",  title: "Builder",   icon: "studio" },
   { name: "games",    title: "Games",     icon: "games" },
   { name: "profile",  title: "You",       icon: "you" },
 ];

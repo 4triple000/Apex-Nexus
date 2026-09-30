@@ -37,7 +37,7 @@ export function Layout({ children }: { children: ReactNode }) {
           MOBILE layout — hidden on lg+ screens
       ══════════════════════════════════════════════ */}
       <div
-        className="mg-font lg:hidden min-h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
+        className="mg-font lg:hidden h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
         style={{ background: "transparent", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
       >
         <ApexControlPanel />

@@ -18,7 +18,9 @@ import { usePrivacy } from "@/contexts/PrivacyContext";
 import { useCharacterSwitch } from "@/contexts/CharacterContext";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { HubHeader, ModelSearch, ModeChips, ModelCarousel, ModeCard, ModelLogo, modelById, useProviderStatus } from "@/components/home/HomeHub";
+import { HubHeader, ModelSearch, ModeChips, ModelCarousel, ModeCard, ModelLogo, modelById, useProviderStatus, UsagePill } from "@/components/home/HomeHub";
+import { recordPrompt } from "@/lib/promptLibrary";
+import { useQueryClient } from "@tanstack/react-query";
 import { Volume2, VolumeX, ShieldOff } from "lucide-react";
 import { ApexAvatar3D } from "@/components/avatar/ApexAvatar3D";
 import { useSpeechOutput } from "@/hooks/useSpeechOutput";
@@ -81,6 +83,7 @@ export default function Home() {
 
   const sendChat  = useSendChat();
   const { user }  = useAuth();
+  const queryClient = useQueryClient();
   const providerStatus = useProviderStatus();
   const castVote  = useCastVote();
   const tts       = useSpeechOutput();
@@ -173,6 +176,7 @@ export default function Home() {
 
   const handleSend = async (content: string) => {
     if (!content.trim() || !sessionId) return;
+    recordPrompt(content, "chat");
     avatar.setIsThinking(true);
     avatar.setEmotion("thinking");
     const contextMode = detectContextPersonality(content);
@@ -237,6 +241,7 @@ export default function Home() {
       triggerGesture("concerned");
     } finally {
       avatar.setIsThinking(false);
+      queryClient.invalidateQueries({ queryKey: ["daily-usage"] });
     }
   };
 
@@ -324,9 +329,12 @@ export default function Home() {
               <div style={{ fontSize: 13, color: "var(--mg-ink-3)", fontWeight: 500 }}>
                 {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
               </div>
-              <h2 style={{ fontSize: 26, fontWeight: 700, color: "var(--mg-ink)", letterSpacing: "-0.03em", margin: "2px 0 0" }}>
-                Hey, {user?.username?.trim() || "Creator"}
-              </h2>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <h2 className="mg-display" style={{ fontSize: 26, fontWeight: 700, color: "var(--mg-ink)", margin: "2px 0 0" }}>
+                  Hey, {user?.username?.trim() || "Creator"}
+                </h2>
+                <UsagePill />
+              </div>
             </div>
             <ModelSearch
               onPickModel={(id) => { setMode("chat"); setAiPreference(id); }}
@@ -623,6 +631,7 @@ export default function Home() {
         {/* Empty state: the home hub */}
         {messages.length === 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 4, paddingBottom: 150 }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -8, marginBottom: -6 }}><UsagePill /></div>
             <ModelSearch
               onPickModel={(id) => { setMode("chat"); setAiPreference(id); }}
               onPickMode={setMode}

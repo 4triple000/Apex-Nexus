@@ -10,7 +10,7 @@ import { ApexLogo } from "@/components/ui/ApexLogo";
 const NAV_ITEMS = [
   { href: "/",               icon: Home,          label: "Home"           },
   { href: "/dm",             icon: MessageSquare, label: "Messages"       },
-  { href: "/ai-studio",      icon: Hammer,        label: "AI Studio"      },
+  { href: "/builder",        icon: Hammer,        label: "Builder"        },
   { href: "/games",          icon: Gamepad2,      label: "Apex Games"     },
   { href: "/studio",         icon: Network,       label: "Hive Mode"      },
   { href: "/screenshot",     icon: Camera,        label: "Screenshot AI"  },

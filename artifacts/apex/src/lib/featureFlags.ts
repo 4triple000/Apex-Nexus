@@ -76,7 +76,11 @@ function getActivePhase(): LaunchPhase {
  * Folds cumulative access: a feature enabled in phase_1 stays enabled in phase_2+.
  * Unknown feature IDs default to OPEN (new features don't get accidentally locked).
  */
+const ALL_FEATURES_UNLOCKED = true;
+
 export function isFeatureEnabled(featureId: string): boolean {
+  // Testing: every feature is unlocked. Delete this line to bring back phased launch gating.
+  if (ALL_FEATURES_UNLOCKED) return true;
   const phase      = getActivePhase();
   const phaseIndex = PHASE_ORDER.indexOf(phase);
 

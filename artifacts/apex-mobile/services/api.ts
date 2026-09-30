@@ -146,3 +146,53 @@ export const gamesApi = {
 
 /** The Apex website, where games are played. */
 export const WEB_APP_URL = (process.env.EXPO_PUBLIC_WEB_URL ?? "https://apex-nexus-apex.vercel.app").replace(/\/$/, "");
+
+// ── Daily usage ───────────────────────────────────────────────────────────────
+export interface DailyUsage { requestsUsed: number; requestsLimit: number; tier: string; resetAt: string }
+
+export const usageApi = {
+  today: async (sessionId: string): Promise<DailyUsage> => {
+    const res = await fetch(`${getBaseUrl()}/api/usage?sessionId=${encodeURIComponent(sessionId)}`);
+    if (!res.ok) throw new Error(`Server error (${res.status})`);
+    return (await res.json()) as DailyUsage;
+  },
+};
+
+// ── Builder (AI Studio) ───────────────────────────────────────────────────────
+export interface StudioProject { id: number; title: string; appType?: string | null; updatedAt: string }
+export interface StudioBuild {
+  projectId: number;
+  plan: { project_name: string; description?: string };
+  files: { path: string }[];
+  summary: string;
+}
+
+async function studioFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${getBaseUrl()}/api${path}`, { ...init, headers: { "Content-Type": "application/json", ...init?.headers } });
+  const json = (await res.json().catch(() => null)) as { ok: boolean; data?: T; error?: string } | null;
+  if (!res.ok || !json?.ok) throw new Error(json?.error ?? `Server error (${res.status})`);
+  return json.data as T;
+}
+
+export const studioApi = {
+  generate: (prompt: string, sessionId: string) =>
+    studioFetch<StudioBuild>("/studio/ai/generate", { method: "POST", body: JSON.stringify({ prompt, sessionId }) }),
+  edit: (projectId: number, request: string) =>
+    studioFetch<{ summary: string; changedFiles: string[] }>("/studio/ai/edit", { method: "POST", body: JSON.stringify({ projectId, request }) }),
+  projects: (sessionId: string) =>
+    studioFetch<{ projects: StudioProject[] }>(`/studio/ai/projects?sessionId=${encodeURIComponent(sessionId)}`).then((d) => d.projects),
+};
+
+// ── Screenshot analysis ───────────────────────────────────────────────────────
+export const screenshotApi = {
+  analyze: async (imageBase64: string): Promise<{ analysis: string; suggestions: string[] }> => {
+    const res = await fetch(`${getBaseUrl()}/api/chat/analyze-screenshot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64 }),
+    });
+    const json = (await res.json().catch(() => null)) as { analysis?: string; suggestions?: string[]; error?: string } | null;
+    if (!res.ok || !json) throw new Error(json?.error ?? `Server error (${res.status})`);
+    return { analysis: json.analysis ?? "", suggestions: json.suggestions ?? [] };
+  },
+};

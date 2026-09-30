@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles, Star, Clock, ScanText } from "lucide-react";
 import { RiOpenaiFill } from "react-icons/ri";
 import { SiClaude, SiPerplexity } from "react-icons/si";
 import { ApexLogo } from "@/components/ui/ApexLogo";
+import { usePromptLibrary } from "@/lib/promptLibrary";
+import { useDailyUsage } from "@/hooks/useDailyUsage";
 
 // ── Models ─────────────────────────────────────────────────────────────────────
 
@@ -89,11 +91,13 @@ export function HubHeader({ name, onAvatar }: { name?: string; onAvatar: () => v
 
 // ── Search: models, modes, tools, or just ask ─────────────────────────────────
 
-type SearchItem =
+type SearchItem = { section?: string } & (
+  | { kind: "prompt"; text: string; label: string; sub: string; saved: boolean }
   | { kind: "model"; id: ModelId; label: string; sub: string }
   | { kind: "mode"; id: ChatMode; label: string; sub: string }
   | { kind: "tool"; href: string; label: string; sub: string; emoji: string }
-  | { kind: "ask"; label: string; sub: string };
+  | { kind: "ask"; label: string; sub: string }
+);
 
 const MODE_ITEMS: { id: ChatMode; label: string; sub: string; aliases: string[] }[] = [
   { id: "chat",   label: "Chat",   sub: "One model answers",             aliases: ["chat", "single"] },
@@ -102,7 +106,7 @@ const MODE_ITEMS: { id: ChatMode; label: string; sub: string; aliases: string[] 
 ];
 
 const TOOL_ITEMS = [
-  { href: "/ai-studio",  label: "AI Studio",      sub: "Build an app from a description", emoji: "🧠", aliases: ["studio", "build", "app", "builder"] },
+  { href: "/builder",    label: "Builder",        sub: "Build an app from a description", emoji: "🧠", aliases: ["studio", "build", "app", "builder"] },
   { href: "/games",      label: "Apex Games",     sub: "Play and remix games",            emoji: "🎮", aliases: ["games", "game", "play"] },
   { href: "/dm",         label: "Messages",       sub: "Instagram and Messenger inbox",   emoji: "💬", aliases: ["messages", "dm", "instagram", "facebook", "messenger", "inbox"] },
   { href: "/screenshot", label: "Screenshot AI",  sub: "Explain anything on screen",      emoji: "📸", aliases: ["screenshot", "image", "photo"] },
@@ -123,18 +127,26 @@ export function ModelSearch({
   const [active, setActive] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
 
+  const prompts = usePromptLibrary("chat");
+
   const items = useMemo<SearchItem[]>(() => {
     const q = query.trim().toLowerCase();
     const hit = (label: string, aliases: string[]) =>
       !q || label.toLowerCase().includes(q) || aliases.some((a) => a.includes(q) || q.includes(a));
+    const matches = (t: string) => !q || t.toLowerCase().includes(q);
+    const saved = prompts.saved.filter((p) => matches(p.text)).slice(0, q ? 3 : 4);
+    const recent = prompts.history.filter((p) => matches(p.text) && !prompts.isSaved(p.text)).slice(0, q ? 3 : 4);
+    const models = MODELS.filter((m) => hit(m.name, m.aliases)).map((m, i) => ({ kind: "model" as const, id: m.id, label: m.name, sub: m.tagline, section: i === 0 ? "Models" : undefined }));
     const list: SearchItem[] = [
-      ...MODELS.filter((m) => hit(m.name, m.aliases)).map((m) => ({ kind: "model" as const, id: m.id, label: m.name, sub: m.tagline })),
+      ...saved.map((p, i) => ({ kind: "prompt" as const, text: p.text, label: p.text, sub: "Saved prompt · tap to send", saved: true, section: i === 0 ? "Saved" : undefined })),
+      ...recent.map((p, i) => ({ kind: "prompt" as const, text: p.text, label: p.text, sub: "Recent · tap to send again", saved: false, section: i === 0 ? "Recent" : undefined })),
+      ...models,
       ...MODE_ITEMS.filter((m) => q && hit(m.label, m.aliases)).map((m) => ({ kind: "mode" as const, id: m.id, label: `${m.label} mode`, sub: m.sub })),
       ...TOOL_ITEMS.filter((t) => q && hit(t.label, t.aliases)).map((t) => ({ kind: "tool" as const, href: t.href, label: t.label, sub: t.sub, emoji: t.emoji })),
     ];
     if (q) list.push({ kind: "ask", label: `Ask Apex “${query.trim()}”`, sub: "Send as a message" });
     return list;
-  }, [query]);
+  }, [query, prompts.saved, prompts.history, prompts.isSaved]);
 
   useEffect(() => setActive(0), [query]);
 
@@ -149,7 +161,8 @@ export function ModelSearch({
   }, [open]);
 
   const choose = (item: SearchItem) => {
-    if (item.kind === "model") onPickModel(item.id);
+    if (item.kind === "prompt") onAsk(item.text);
+    else if (item.kind === "model") onPickModel(item.id);
     else if (item.kind === "mode") onPickMode(item.id);
     else if (item.kind === "tool") nav(item.href);
     else onAsk(query.trim());
@@ -185,14 +198,14 @@ export function ModelSearch({
           className="mg-glass"
           style={{ position: "absolute", top: 54, left: 0, right: 0, borderRadius: 22, padding: 6, background: "rgba(22,19,44,0.97)", maxHeight: 320, overflowY: "auto" }}
         >
-          {!query.trim() && (
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--mg-ink-3)", padding: "8px 12px 4px" }}>
-              Models
-            </div>
-          )}
           {items.map((item, i) => (
+            <div key={`${item.kind}-${item.label}`}>
+            {item.section && (
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--mg-ink-3)", padding: "8px 12px 4px" }}>
+                {item.section}
+              </div>
+            )}
             <button
-              key={`${item.kind}-${item.label}`}
               role="option"
               aria-selected={i === active}
               onPointerEnter={() => setActive(i)}
@@ -200,7 +213,8 @@ export function ModelSearch({
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 16, border: "none", cursor: "pointer", textAlign: "left", color: "var(--mg-ink)", background: i === active ? "rgba(255,255,255,0.09)" : "transparent" }}
             >
               <span style={{ width: 32, height: 32, borderRadius: 10, display: "grid", placeItems: "center", background: "rgba(255,255,255,0.07)", flexShrink: 0, fontSize: 16 }}>
-                {item.kind === "model" ? <ModelLogo id={item.id} size={18} />
+                {item.kind === "prompt" ? (item.saved ? <Star size={15} style={{ color: "#FFD479" }} fill="#FFD479" /> : <Clock size={15} style={{ color: "var(--mg-ink-2)" }} />)
+                  : item.kind === "model" ? <ModelLogo id={item.id} size={18} />
                   : item.kind === "tool" ? item.emoji
                   : item.kind === "mode" ? (item.id === "battle" ? "⚔️" : item.id === "hive" ? "🐝" : "💬")
                   : <Sparkles size={16} style={{ color: "var(--mg-violet)" }} />}
@@ -210,7 +224,20 @@ export function ModelSearch({
                 <span style={{ display: "block", fontSize: 12, color: "var(--mg-ink-3)" }}>{item.sub}</span>
               </span>
               {item.kind === "tool" && <ArrowUpRight size={15} style={{ color: "var(--mg-ink-3)" }} />}
+              {item.kind === "prompt" && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-label={item.saved ? "Remove from saved" : "Save prompt"}
+                  onClick={(e) => { e.stopPropagation(); prompts.toggleSaved(item.text); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); prompts.toggleSaved(item.text); } }}
+                  style={{ padding: 6, borderRadius: 10, display: "grid", placeItems: "center" }}
+                >
+                  <Star size={15} style={{ color: item.saved ? "#FFD479" : "var(--mg-ink-3)" }} fill={item.saved ? "#FFD479" : "none"} />
+                </span>
+              )}
             </button>
+            </div>
           ))}
         </div>
       )}
@@ -221,8 +248,10 @@ export function ModelSearch({
 // ── Mode chips: Chat · Battle · Hive ───────────────────────────────────────────
 
 export function ModeChips({ mode, onChange }: { mode: ChatMode; onChange: (m: ChatMode) => void }) {
+  const [, nav] = useLocation();
   return (
-    <div role="tablist" aria-label="Chat mode" style={{ display: "flex", gap: 8 }}>
+    <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+    <div role="tablist" aria-label="Chat mode" style={{ display: "flex", gap: 8, flexShrink: 0 }}>
       {MODE_ITEMS.map((m) => {
         const on = m.id === mode;
         return (
@@ -247,6 +276,37 @@ export function ModeChips({ mode, onChange }: { mode: ChatMode; onChange: (m: Ch
         );
       })}
     </div>
+    <button
+      onClick={() => nav("/screenshot")}
+      className="mg-press mg-focus"
+      style={{ flexShrink: 0, height: 36, padding: "0 14px", borderRadius: 18, fontSize: 13.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: "var(--mg-ink-2)", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
+    >
+      <ScanText size={15} /> Screenshot
+    </button>
+    </div>
+  );
+}
+
+// ── Today's usage ──────────────────────────────────────────────────────────────
+
+/** "12 / 20 today" with a small progress ring. Hidden until the numbers load. */
+export function UsagePill() {
+  const { data } = useDailyUsage();
+  if (!data) return null;
+  const pct = Math.min(1, data.requestsUsed / Math.max(1, data.requestsLimit));
+  const warn = pct >= 0.8;
+  const r = 7, c = 2 * Math.PI * r;
+  return (
+    <span
+      title={`AI messages used today. Resets ${new Date(data.resetAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.`}
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 26, padding: "0 10px 0 6px", borderRadius: 13, fontSize: 11.5, fontWeight: 700, color: warn ? "#FFD479" : "var(--mg-ink-2)", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", whiteSpace: "nowrap" }}
+    >
+      <svg width={18} height={18} viewBox="0 0 18 18" aria-hidden>
+        <circle cx={9} cy={9} r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={2.5} />
+        <circle cx={9} cy={9} r={r} fill="none" stroke={warn ? "#FFD479" : "#8B7BFF"} strokeWidth={2.5} strokeDasharray={`${c * pct} ${c}`} strokeLinecap="round" transform="rotate(-90 9 9)" />
+      </svg>
+      {data.requestsUsed} / {data.requestsLimit} today
+    </span>
   );
 }
 

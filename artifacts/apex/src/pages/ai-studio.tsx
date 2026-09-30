@@ -159,6 +159,40 @@ export default function AiStudioPage() {
 
   // ── Send message (generate or edit) ──────────────────────────────────────
 
+  // ── Deep links from the Builder page: ?prompt=… builds, ?project=… reopens ──
+  const startedFromLink = useRef(false);
+  useEffect(() => {
+    if (!sessionId || startedFromLink.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const linkPrompt = params.get("prompt");
+    const linkProject = params.get("project");
+    if (!linkPrompt && !linkProject) return;
+    startedFromLink.current = true;
+    // Drop the query so a refresh doesn't build again
+    window.history.replaceState(window.history.state, "", window.location.pathname);
+    if (linkProject) {
+      fetch(apiUrl(`/studio/ai/projects/${encodeURIComponent(linkProject)}?sessionId=${encodeURIComponent(sessionId)}`))
+        .then((r) => r.json())
+        .then((json: { ok: boolean; data?: { project: { id: number; title: string; plan: AiStudioPlan | null; files: ProjectFile[]; previewHtml: string | null; chatHistory: ChatMessage[]; buildCount: number | null; editCount: number | null } } }) => {
+          const p = json.data?.project;
+          if (!json.ok || !p) { toast({ title: "Couldn't open that project", variant: "destructive" }); return; }
+          setProjectId(p.id);
+          setPlan(p.plan);
+          setFiles(p.files ?? []);
+          setPreviewHtml(p.previewHtml ?? "");
+          setProjectTitle(p.title);
+          setMessages(p.chatHistory ?? []);
+          setBuildCount(p.buildCount ?? 1);
+          setEditCount(p.editCount ?? 0);
+          setRightTab("preview");
+        })
+        .catch(() => toast({ title: "Couldn't open that project", variant: "destructive" }));
+    } else if (linkPrompt) {
+      handleSendRef.current?.(linkPrompt);
+    }
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const handleSendRef = useRef<((m: string) => void) | null>(null);
+
   const handleSend = useCallback(async (message: string) => {
     if (isGenerating) return;
     const isEdit = !!projectId;
@@ -177,7 +211,10 @@ export default function AiStudioPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: message, sessionId }),
         });
-        if (!res.ok) throw new Error(`Generation failed: ${res.status}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => null) as { error?: string } | null;
+          throw new Error(err?.error ?? `Generation failed (${res.status})`);
+        }
         const { data } = await res.json() as {
           data: {
             projectId: number;
@@ -211,7 +248,10 @@ export default function AiStudioPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ projectId, request: message }),
         });
-        if (!res.ok) throw new Error(`Edit failed: ${res.status}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => null) as { error?: string } | null;
+          throw new Error(err?.error ?? `Edit failed (${res.status})`);
+        }
         const { data } = await res.json() as {
           data: {
             files: ProjectFile[];
@@ -238,7 +278,7 @@ export default function AiStudioPage() {
       completeSteps(false);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Sorry, something went wrong: ${errMsg}. Please try again.`, timestamp: new Date().toISOString() },
+        { role: "assistant", content: errMsg, timestamp: new Date().toISOString() },
       ]);
       toast({ title: "Error", description: errMsg, variant: "destructive" });
     } finally {
@@ -246,6 +286,7 @@ export default function AiStudioPage() {
       setTimeout(() => setBuildSteps([]), 2200);
     }
   }, [isGenerating, projectId, sessionId, startSteps, completeSteps, toast]);
+  handleSendRef.current = handleSend;
 
   // ── Run handler ────────────────────────────────────────────────────────────
 

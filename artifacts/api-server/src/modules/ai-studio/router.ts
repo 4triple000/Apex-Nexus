@@ -16,7 +16,8 @@
 
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { eq, desc } from "drizzle-orm";
+import { and, eq, desc } from "drizzle-orm";
+import { isOpenAIConfigured } from "@workspace/integrations-openai-ai-server";
 import { db, aiStudioProjectsTable } from "@workspace/db";
 import type { AiStudioChatMessage, AiStudioInteractionLog } from "@workspace/db";
 import { generateApp, editApp } from "./generator";
@@ -28,6 +29,10 @@ const router: IRouter = Router();
 
 // ── POST /studio/ai/generate ───────────────────────────────────────────────────
 router.post("/studio/ai/generate", async (req, res): Promise<void> => {
+  if (!isOpenAIConfigured()) {
+    res.status(503).json({ ok: false, error: "The builder's AI isn't connected yet. Add OPENAI_API_KEY on the server." });
+    return;
+  }
   const schema = z.object({
     prompt: z.string().min(3, "Prompt too short").max(2000),
     sessionId: z.string().optional(),
@@ -97,6 +102,10 @@ router.post("/studio/ai/generate", async (req, res): Promise<void> => {
 
 // ── POST /studio/ai/edit ───────────────────────────────────────────────────────
 router.post("/studio/ai/edit", async (req, res): Promise<void> => {
+  if (!isOpenAIConfigured()) {
+    res.status(503).json({ ok: false, error: "The builder's AI isn't connected yet. Add OPENAI_API_KEY on the server." });
+    return;
+  }
   const schema = z.object({
     projectId: z.number().int().positive(),
     request: z.string().min(1).max(2000),
@@ -397,15 +406,18 @@ router.get("/studio/ai/projects", async (req, res): Promise<void> => {
 // ── GET /studio/ai/projects/:id ────────────────────────────────────────────────
 router.get("/studio/ai/projects/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
+  const sessionId = req.query.sessionId as string | undefined;
   if (isNaN(id)) { badRequest(res, "Invalid project ID"); return; }
+  if (!sessionId) { badRequest(res, "sessionId query param required"); return; }
 
   try {
     const [project] = await db
       .select()
       .from(aiStudioProjectsTable)
-      .where(eq(aiStudioProjectsTable.id, id))
+      .where(and(eq(aiStudioProjectsTable.id, id), eq(aiStudioProjectsTable.sessionId, sessionId)))
       .limit(1);
 
+    // Someone else's project looks the same as a missing one
     if (!project) { notFound(res, "Project not found"); return; }
     success(res, { project });
   } catch (err) {
@@ -417,10 +429,13 @@ router.get("/studio/ai/projects/:id", async (req, res): Promise<void> => {
 // ── DELETE /studio/ai/projects/:id ────────────────────────────────────────────
 router.delete("/studio/ai/projects/:id", async (req, res): Promise<void> => {
   const id = parseInt(req.params.id);
+  const sessionId = req.query.sessionId as string | undefined;
   if (isNaN(id)) { badRequest(res, "Invalid project ID"); return; }
+  if (!sessionId) { badRequest(res, "sessionId query param required"); return; }
 
   try {
-    await db.delete(aiStudioProjectsTable).where(eq(aiStudioProjectsTable.id, id));
+    await db.delete(aiStudioProjectsTable)
+      .where(and(eq(aiStudioProjectsTable.id, id), eq(aiStudioProjectsTable.sessionId, sessionId)));
     success(res, { deleted: true, projectId: id });
   } catch (err) {
     logger.error({ err }, "AI Studio delete project error");

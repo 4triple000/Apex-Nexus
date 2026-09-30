@@ -20,6 +20,7 @@ import { EngineProvider } from "@/engine/EngineContext";
 const Home = lazy(() => import("@/pages/home"));
 const WorkflowBuilderPage = lazy(() => import("@/pages/workflow-builder"));
 const AiStudioPage = lazy(() => import("@/pages/ai-studio"));
+const BuilderPage = lazy(() => import("@/pages/builder"));
 const ArenaPage = lazy(() => import("@/pages/arena"));
 const ApexOSPage = lazy(() => import("@/pages/apex-os"));
 const LoginPage = lazy(() => import("@/pages/login"));
@@ -38,7 +39,6 @@ const PricingPage = lazy(() => import("@/pages/pricing"));
 const CreatorDashboardPage = lazy(() => import("@/pages/creator-dashboard"));
 const InsightsPage = lazy(() => import("@/pages/insights"));
 const MultiplayerPage = lazy(() => import("@/pages/multiplayer"));
-const ApexFeaturesPage = lazy(() => import("@/pages/apex-features").then((m) => ({ default: m.ApexFeaturesPage })));
 const LandingPage = lazy(() => import("@/pages/landing"));
 const GameEnginePage = lazy(() => import("@/pages/game-engine"));
 const GameEcosystemPage = lazy(() => import("@/pages/game-ecosystem"));
@@ -119,10 +119,10 @@ function Router() {
       </Route>
       {/* Apex Builder and Nexus Builder were merged into AI Studio */}
       <Route path="/apex-builder">
-        <Redirect to="/ai-studio" replace />
+        <Redirect to="/builder" replace />
       </Route>
       <Route path="/nexus-builder">
-        <Redirect to="/ai-studio" replace />
+        <Redirect to="/builder" replace />
       </Route>
       <Route path="/domain-settings">
         <DomainSettingsPage />
@@ -150,6 +150,7 @@ function Router() {
             <Suspense fallback={null}>
             <Switch>
               <Route path="/" component={Home} />
+              <Route path="/builder" component={BuilderPage} />
               <Route path="/screenshot" component={Screenshot} />
               <Route path="/usage" component={Usage} />
               <Route path="/avatar" component={AvatarPage} />
@@ -165,7 +166,7 @@ function Router() {
               <Route path="/creator-dashboard" component={CreatorDashboardPage} />
               <Route path="/insights" component={InsightsPage} />
               <Route path="/multiplayer" component={MultiplayerPage} />
-              <Route path="/apex-features" component={ApexFeaturesPage} />
+              <Route path="/apex-features"><Redirect to="/" replace /></Route>
               <Route component={NotFound} />
             </Switch>
             </Suspense>
