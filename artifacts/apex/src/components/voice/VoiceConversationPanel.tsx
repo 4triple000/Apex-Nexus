@@ -22,7 +22,7 @@ const MODE_CONFIG: Record<VoiceMode, { color: string; glow: string; label: strin
   builder: { color: "#A29BFE", glow: "rgba(162,155,254,0.2)", label: "Builder",  emoji: "⚙️", desc: "Code & build commands" },
   game:    { color: "#00D2D3", glow: "rgba(0,210,211,0.2)",   label: "Game",     emoji: "🎮", desc: "In-game actions"       },
   chat:    { color: "#FD79A8", glow: "rgba(253,121,168,0.2)", label: "Chat",     emoji: "💬", desc: "General conversation"  },
-  command: { color: "#FFCC33", glow: "rgba(255,204,51,0.2)",  label: "Command",  emoji: "⚡", desc: "Fast execution"        },
+  command: { color: "#A29BFE", glow: "rgba(162,155,254,0.2)",  label: "Command",  emoji: "⚡", desc: "Fast execution"        },
 };
 
 const INTENT_LABELS: Record<string, string> = {
@@ -174,7 +174,7 @@ export function VoiceConversationPanel({
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div style={{
-        background:    "linear-gradient(180deg, #0d0e18 0%, #06070D 100%)",
+        background:    "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
         borderRadius:  "24px 24px 0 0",
         border:        "1px solid rgba(255,255,255,0.08)",
         borderBottom:  "none",
@@ -378,10 +378,10 @@ export function VoiceConversationPanel({
                   padding:     "0 12px",
                   height:      38,
                   borderRadius: 20,
-                  background:  pushToTalk ? "rgba(255,204,51,0.1)" : "rgba(255,255,255,0.05)",
-                  border:      `1px solid ${pushToTalk ? "#FFCC3366" : "rgba(255,255,255,0.1)"}`,
+                  background:  pushToTalk ? "rgba(162,155,254,0.1)" : "rgba(255,255,255,0.05)",
+                  border:      `1px solid ${pushToTalk ? "#A29BFE66" : "rgba(255,255,255,0.1)"}`,
                   cursor:      "pointer",
-                  color:       pushToTalk ? "#FFCC33" : "#666",
+                  color:       pushToTalk ? "#A29BFE" : "#666",
                   fontSize:    11,
                   fontWeight:  700,
                 }}>

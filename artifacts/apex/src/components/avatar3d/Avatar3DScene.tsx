@@ -47,16 +47,16 @@ function NoWebGLPlaceholder() {
     <div className="w-full h-full flex flex-col items-center justify-center gap-4 px-4">
       {/* Human silhouette icon */}
       <svg viewBox="0 0 64 120" width="72" fill="none" style={{ opacity: 0.35 }}>
-        <circle cx="32" cy="14" r="12" fill="#ffcc33" />
+        <circle cx="32" cy="14" r="12" fill="#A29BFE" />
         <path d="M16 36 Q20 28 32 28 Q44 28 48 36 L52 68 H40 L38 100 H26 L24 68 H12 Z"
-              fill="#ffcc33" />
-        <path d="M12 40 L4 70 M52 40 L60 70" stroke="#ffcc33" strokeWidth="6"
+              fill="#A29BFE" />
+        <path d="M12 40 L4 70 M52 40 L60 70" stroke="#A29BFE" strokeWidth="6"
               strokeLinecap="round" />
       </svg>
 
       <div className="text-center space-y-1">
         <p className="text-[12px] font-mono font-bold tracking-wider uppercase"
-           style={{ color: '#ffcc33' }}>
+           style={{ color: '#A29BFE' }}>
           Ready Player Me
         </p>
         <p className="text-[10px] font-mono text-white/40 leading-relaxed">
@@ -67,7 +67,7 @@ function NoWebGLPlaceholder() {
 
       <div
         className="px-3 py-1.5 rounded-lg text-[9px] font-mono text-center break-all"
-        style={{ background: 'rgba(255,204,51,0.06)', border: '1px solid rgba(255,204,51,0.15)', color: 'rgba(255,204,51,0.55)', maxWidth: 260 }}
+        style={{ background: 'rgba(162,155,254,0.06)', border: '1px solid rgba(162,155,254,0.15)', color: 'rgba(162,155,254,0.55)', maxWidth: 260 }}
       >
         {RPM_URL}
       </div>
@@ -81,10 +81,10 @@ function LoadingFallback() {
     <div className="w-full h-full flex flex-col items-center justify-center gap-3">
       <div
         className="w-10 h-10 rounded-full border-2 animate-spin"
-        style={{ borderColor: 'rgba(255,204,51,0.25)', borderTopColor: '#ffcc33' }}
+        style={{ borderColor: 'rgba(162,155,254,0.25)', borderTopColor: '#A29BFE' }}
       />
       <p className="text-[10px] font-mono tracking-widest uppercase"
-         style={{ color: 'rgba(255,204,51,0.4)' }}>
+         style={{ color: 'rgba(162,155,254,0.4)' }}>
         Loading Model…
       </p>
     </div>
@@ -113,7 +113,7 @@ function RPMScene({ avatarState, isThinking, emotion, fullBody }: {
     >
       <ambientLight intensity={0.6} />
       <directionalLight position={[-2, 3.5, 2]} intensity={1.4} color="#fff8e8" castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight position={[3, 1.5, -2]} intensity={0.9} color="#ffcc33" />
+      <directionalLight position={[3, 1.5, -2]} intensity={0.9} color="#A29BFE" />
       <pointLight position={[-3, 1, 1]} intensity={0.5} color="#8899ff" />
       <pointLight position={[0, -0.5, 1.5]} intensity={0.25} color="#ffeecc" />
 

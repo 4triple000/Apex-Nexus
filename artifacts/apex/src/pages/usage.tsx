@@ -41,8 +41,8 @@ export default function Usage() {
   const winner = sortedProviders[0];
 
   return (
-    <div className="flex flex-col h-full bg-background overflow-y-auto pb-24">
-      <div className="p-4 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-10 flex justify-between items-center">
+    <div className="flex flex-col h-full bg-transparent overflow-y-auto pb-24">
+      <div className="p-4 border-b border-border/50 sticky top-0 bg-[rgba(14,12,32,0.5)] backdrop-blur-md z-10 flex justify-between items-center">
         <div>
           <h1 className="font-mono font-bold text-xl tracking-tight flex items-center gap-2">
             <span className="text-primary">/</span>
@@ -95,7 +95,7 @@ export default function Usage() {
                   className="h-2 bg-muted mb-6"
                 />
 
-                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background/50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-[rgba(14,12,32,0.5)] rounded-lg p-3">
                   <RefreshCw className="w-4 h-4" />
                   <span>Resets at {new Date(usage.resetAt).toLocaleString()}</span>
                 </div>

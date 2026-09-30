@@ -12,7 +12,7 @@ import { Gamepad2, Zap, ChevronRight, Copy, Download, RotateCcw, Crosshair, Shie
 
 const SPRING = "cubic-bezier(0.34, 1.56, 0.64, 1)";
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
-const GOLD   = "#ffcc33";
+const GOLD   = "#A29BFE";
 const BASE   = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
@@ -999,7 +999,7 @@ function FileItem({ file, selected, onClick }: {
       style={{
         width: "100%", textAlign: "left", padding: "6px 12px",
         paddingLeft: 12 + depth * 10,
-        background: selected ? "rgba(255,204,51,0.10)" : "transparent",
+        background: selected ? "rgba(162,155,254,0.10)" : "transparent",
         border: "none", borderLeft: selected ? `2px solid ${GOLD}` : "2px solid transparent",
         cursor: "pointer",
         display: "flex", alignItems: "center", gap: 7,
@@ -1307,7 +1307,7 @@ export function GameForge() {
   const progress   = running ? (totalDone / agents.length) * 100 : result ? 100 : 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#04080f", overflow: "hidden" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "transparent", overflow: "hidden" }}>
       <style>{CSS}</style>
 
       {/* ── Top panel ────────────────────────────────────────────────────────── */}
@@ -1568,7 +1568,7 @@ export function GameForge() {
               <div style={{
                 flex: 1, overflowY: "auto", overflowX: "auto",
                 padding: "14px 16px",
-                background: "#0d1117",
+                background: "rgba(30,26,62,0.62)",
               }}>
                 <div
                   className="gf-code-block"
@@ -1693,7 +1693,7 @@ export function GameForge() {
           position: "absolute", inset: 0, zIndex: 100,
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
-          background: "rgba(7,8,14,0.92)",
+          background: "rgba(14,12,32,0.55)",
           backdropFilter: "blur(24px)",
           animation: `gf-fade-in 0.30s ${IOS} both`,
         }}>
@@ -1844,7 +1844,7 @@ export function GameForge() {
           position: "absolute", inset: 0, zIndex: 120,
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
-          background: "rgba(7,8,14,0.96)",
+          background: "rgba(14,12,32,0.55)",
           backdropFilter: "blur(28px)",
         }}>
           {/* Close */}
@@ -2076,8 +2076,8 @@ export function GameForge() {
                     <div key={idx} style={{
                       display: "flex", alignItems: "center", gap: 12,
                       padding: "10px 12px", borderRadius: 10,
-                      background: "rgba(255,204,51,0.04)",
-                      border: "1px solid rgba(255,204,51,0.14)",
+                      background: "rgba(162,155,254,0.04)",
+                      border: "1px solid rgba(162,155,254,0.14)",
                     }}>
                       <span style={{ fontSize: 18 }}>{prod.emoji}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -2095,8 +2095,8 @@ export function GameForge() {
                             rel="noreferrer"
                             style={{
                               fontSize: 9, padding: "3px 9px", borderRadius: 5,
-                              background: "rgba(255,204,51,0.15)",
-                              border: "1px solid rgba(255,204,51,0.35)",
+                              background: "rgba(162,155,254,0.15)",
+                              border: "1px solid rgba(162,155,254,0.35)",
                               color: GOLD, fontWeight: 700, textDecoration: "none",
                               display: "flex", alignItems: "center", gap: 3,
                             }}

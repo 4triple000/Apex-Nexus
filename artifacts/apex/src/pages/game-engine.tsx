@@ -26,7 +26,7 @@ function api(p: string) { return `${BASE}${p}`; }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 
-const BG     = "#07080E";
+const BG = "transparent";
 const CARD   = "rgba(255,255,255,0.04)";
 const BORDER = "rgba(255,255,255,0.08)";
 const GRAD   = "linear-gradient(135deg,#6C5CE7,#A29BFE,#FD79A8)";
@@ -345,7 +345,7 @@ export default function GameEnginePage() {
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
         padding: "16px 20px", borderBottom: `1px solid ${BORDER}`,
-        background: "rgba(7,8,14,0.9)", backdropFilter: "blur(14px)",
+        background: "rgba(14,12,32,0.55)", backdropFilter: "blur(14px)",
         position: "sticky", top: 0, zIndex: 50,
       }}>
         <button
@@ -375,7 +375,7 @@ export default function GameEnginePage() {
             background: tab === t ? "rgba(108,92,231,0.12)" : "transparent",
             color: tab === t ? "#A29BFE" : "#555",
             borderBottom: tab === t
-              ? t === "builder"    ? "2px solid #ffcc33"
+              ? t === "builder"    ? "2px solid #A29BFE"
               : t === "ai-studio"  ? "2px solid #00b894"
               : "2px solid #6C5CE7"
               : "2px solid transparent",
@@ -807,7 +807,7 @@ function InlinePreviewPanel({
     <div style={{
       borderRadius: 16,
       border: "1px solid rgba(108,92,231,0.45)",
-      background: "#0a0b12",
+      background: "transparent",
       overflow: "hidden",
       display: "flex",
       flexDirection: "column",
@@ -853,7 +853,7 @@ function InlinePreviewPanel({
       {/* ── Game canvas area ── */}
       <div style={{
         height: 440, position: "relative", overflow: "hidden",
-        background: "#060810",
+        background: "transparent",
       }}>
         {/* Loading overlay */}
         {isLoading && (
@@ -861,7 +861,7 @@ function InlinePreviewPanel({
             position: "absolute", inset: 0, zIndex: 10,
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center", gap: 16,
-            background: "rgba(7,8,14,0.92)",
+            background: "rgba(14,12,32,0.55)",
           }}>
             <div style={{
               width: 52, height: 52, borderRadius: 14,
@@ -893,7 +893,7 @@ function InlinePreviewPanel({
             position: "absolute", inset: 0, zIndex: 10,
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center", gap: 12,
-            background: "rgba(7,8,14,0.85)",
+            background: "rgba(14,12,32,0.55)",
           }}>
             <div style={{ fontSize: 48 }}>{engineStatus === "won" ? "🏆" : "💀"}</div>
             <div style={{ fontWeight: 800, fontSize: 20, color: "#fff" }}>

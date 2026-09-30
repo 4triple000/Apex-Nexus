@@ -92,7 +92,7 @@ export function PaywallModal({
         style={{
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9201,
           borderRadius: "28px 28px 0 0",
-          background: "linear-gradient(180deg, #0D0F1E 0%, #07080F 100%)",
+          background: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
           border: `1px solid ${requiredMeta.border}`,
           borderBottom: "none",
           boxShadow: `0 -16px 60px rgba(0,0,0,0.80), 0 0 0 1px rgba(255,255,255,0.04) inset`,

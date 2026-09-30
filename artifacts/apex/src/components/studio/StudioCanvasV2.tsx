@@ -285,7 +285,7 @@ function CanvasInner({
   return (
     <div
       className="w-full h-full"
-      style={{ background: "#04080f" }}
+      style={{ background: "transparent" }}
       onMouseMove={handleMouseMove}
       onMouseLeave={onCursorLeave}
     >
@@ -315,7 +315,7 @@ function CanvasInner({
           border-radius: 10px !important;
           overflow: hidden;
         }
-        .react-flow__edge.selected .react-flow__edge-path { stroke: #ffcc33 !important; }
+        .react-flow__edge.selected .react-flow__edge-path { stroke: #A29BFE !important; }
         .react-flow__handle { transition: transform 0.15s, box-shadow 0.15s; }
         .react-flow__handle:hover { transform: scale(1.5); box-shadow: 0 0 6px currentColor; }
         .react-flow__attribution { display: none !important; }

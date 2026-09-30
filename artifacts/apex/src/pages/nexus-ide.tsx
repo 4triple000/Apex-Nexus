@@ -785,7 +785,7 @@ export default function NexusIDE() {
     <div style={{
       display: "flex", flexDirection: "column",
       height: "100vh", width: "100vw",
-      background: "#060810", color: "#e2e8f0",
+      background: "transparent", color: "#e2e8f0",
       fontFamily: "'Inter', system-ui, sans-serif",
       overflow: "hidden",
     }}>
@@ -979,7 +979,7 @@ function TopBar({
 
       {/* Project name */}
       {project && (
-        <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", background: "#12131f", border: "1px solid #1a1d2e", borderRadius: 5, fontSize: 12, color: "#94a3b8", maxWidth: 200, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", background: "rgba(30,26,62,0.62)", border: "1px solid #1a1d2e", borderRadius: 5, fontSize: 12, color: "#94a3b8", maxWidth: 200, overflow: "hidden" }}>
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{project.name}</span>
           {project.id < 0 && <span style={{ fontSize: 9, color: "#6b7280" }}>local</span>}
         </div>
@@ -1106,7 +1106,7 @@ function LeftPanel({
               </div>
             ))}
             {isAgentBusy && (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "#12131f", borderRadius: "12px 12px 12px 2px", border: "1px solid #1a1d2e", fontSize: 12, color: "#a78bfa" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "rgba(30,26,62,0.62)", borderRadius: "12px 12px 12px 2px", border: "1px solid #1a1d2e", fontSize: 12, color: "#a78bfa" }}>
                 <span style={{ animation: "pulse 1s ease-in-out infinite" }}>●</span>
                 <span style={{ color: "#94a3b8" }}>{agentMsg || "Working…"}</span>
               </div>
@@ -1117,7 +1117,7 @@ function LeftPanel({
           {/* Build progress */}
           {agentStatus === "building" && writeProgress.total > 0 && (
             <div style={{ padding: "0 10px 6px", flexShrink: 0 }}>
-              <div style={{ height: 3, background: "#1a1d2e", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ height: 3, background: "rgba(30,26,62,0.62)", borderRadius: 99, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${progressPct}%`, background: "linear-gradient(90deg,#6366f1,#06b6d4)", transition: "width 0.3s", borderRadius: 99 }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#4b5563", marginTop: 3 }}>
@@ -1133,7 +1133,7 @@ function LeftPanel({
               <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 {templates.map((tpl: typeof TEMPLATES[0]) => (
                   <button key={tpl.id} onClick={() => onLoadTemplate(tpl)} style={{
-                    background: "#12131f", border: "1px solid #1a1d2e", borderRadius: 6,
+                    background: "rgba(30,26,62,0.62)", border: "1px solid #1a1d2e", borderRadius: 6,
                     padding: "5px 9px", cursor: "pointer", fontSize: 11,
                     color: "#94a3b8", textAlign: "left", display: "flex", alignItems: "center", gap: 6,
                     transition: "all 0.15s",
@@ -1149,7 +1149,7 @@ function LeftPanel({
           <div style={{ padding: "8px 10px", borderTop: "1px solid #1a1d2e", flexShrink: 0 }}>
             <div style={{
               display: "flex", gap: 6, alignItems: "flex-end",
-              background: "#12131f", border: `1px solid ${isAgentBusy ? "#6366f160" : "#1a1d2e"}`,
+              background: "rgba(30,26,62,0.62)", border: `1px solid ${isAgentBusy ? "#6366f160" : "#1a1d2e"}`,
               borderRadius: 9, padding: "6px 8px", transition: "border-color 0.2s",
             }}>
               <textarea
@@ -1215,7 +1215,7 @@ function FileTabs({ files, activeFile, onSelect, onClose }: {
   return (
     <div style={{
       display: "flex", alignItems: "center", overflowX: "auto",
-      background: "#0a0b14", borderBottom: "1px solid #1a1d2e",
+      background: "transparent", borderBottom: "1px solid #1a1d2e",
       flexShrink: 0, height: 34,
     }}>
       {files.map(f => (
@@ -1259,7 +1259,7 @@ function EditorEmpty({ templates, onLoadTemplate, onPromptFocus }: any) {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
         {templates.map((tpl: any) => (
           <button key={tpl.id} onClick={() => onLoadTemplate(tpl)} style={{
-            padding: "8px 16px", background: "#12131f", border: "1px solid #1a1d2e",
+            padding: "8px 16px", background: "rgba(30,26,62,0.62)", border: "1px solid #1a1d2e",
             borderRadius: 8, cursor: "pointer", fontSize: 12, color: "#94a3b8",
             display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s",
           }}>
@@ -1280,7 +1280,7 @@ function EditorEmpty({ templates, onLoadTemplate, onPromptFocus }: any) {
 
 function EditorSkeleton() {
   return (
-    <div style={{ height: "100%", background: "#1e1e1e", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ height: "100%", background: "rgba(30,26,62,0.62)", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ fontSize: 12, color: "#4b5563" }}>Loading editor…</div>
     </div>
   );
@@ -1299,12 +1299,12 @@ function TerminalPanel({ lines, open, height, onToggle, onClear, termEndRef }: {
   };
 
   return (
-    <div style={{ background: "#06070c", borderTop: "1px solid #1a1d2e", flexShrink: 0 }}>
+    <div style={{ background: "transparent", borderTop: "1px solid #1a1d2e", flexShrink: 0 }}>
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", gap: 8, padding: "0 12px",
         height: 28, borderBottom: open ? "1px solid #1a1d2e" : "none",
-        background: "#0a0b14",
+        background: "transparent",
       }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: "#4b5563", letterSpacing: "0.08em" }}>TERMINAL</span>
         <span style={{ fontSize: 10, color: "#2d3149" }}>{lines.length} lines</span>
@@ -1348,7 +1348,7 @@ function PreviewPanel({ previewUrl, activeTab, setActiveTab, deployment }: {
       {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", gap: 4, padding: "0 10px",
-        height: 34, background: "#0a0b14", borderBottom: "1px solid #1a1d2e",
+        height: 34, background: "transparent", borderBottom: "1px solid #1a1d2e",
         flexShrink: 0,
       }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: "#4b5563", letterSpacing: "0.08em", marginRight: 6 }}>PREVIEW</span>
@@ -1424,7 +1424,7 @@ function MiniMarkdown({ text }: { text: string }) {
           return <strong key={i} style={{ color: "#c7d2fe" }}>{p.slice(2, -2)}</strong>;
         }
         if (p.startsWith("`") && p.endsWith("`")) {
-          return <code key={i} style={{ background: "#1a1d2e", color: "#06b6d4", padding: "1px 4px", borderRadius: 3, fontFamily: "monospace", fontSize: "0.88em" }}>{p.slice(1, -1)}</code>;
+          return <code key={i} style={{ background: "rgba(30,26,62,0.62)", color: "#06b6d4", padding: "1px 4px", borderRadius: 3, fontFamily: "monospace", fontSize: "0.88em" }}>{p.slice(1, -1)}</code>;
         }
         return <span key={i}>{p}</span>;
       })}

@@ -74,22 +74,22 @@ function getTierTheme(streak: number) {
   if (streak >= 30) return {
     from: "#FCD34D", to: "#F59E0B", accent: "#FBBF24",
     glow: "rgba(251,191,36,0.55)", label: "gold",
-    bg: "linear-gradient(160deg, #1A1508 0%, #0F0D04 100%)",
+    bg: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
   };
   if (streak >= 14) return {
     from: "#FB923C", to: "#EF4444", accent: "#F97316",
     glow: "rgba(249,115,22,0.55)", label: "red",
-    bg: "linear-gradient(160deg, #1A0C08 0%, #100804 100%)",
+    bg: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
   };
   if (streak >= 7) return {
     from: "#F97316", to: "#EF4444", accent: "#F97316",
     glow: "rgba(239,68,68,0.50)", label: "orange",
-    bg: "linear-gradient(160deg, #170C06 0%, #0F0602 100%)",
+    bg: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
   };
   return {
     from: "#FBBF24", to: "#F97316", accent: "#FBBF24",
     glow: "rgba(251,191,36,0.45)", label: "yellow",
-    bg: "linear-gradient(160deg, #161003 0%, #0E0A02 100%)",
+    bg: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
   };
 }
 

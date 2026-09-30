@@ -169,7 +169,7 @@ export function StudioCanvas({
     <div
       ref={containerRef}
       className="relative w-full h-full overflow-hidden select-none"
-      style={{ background: "#060a14", cursor: panning.current ? "grabbing" : "default" }}
+      style={{ background: "transparent", cursor: panning.current ? "grabbing" : "default" }}
       onMouseDown={handleCanvasMouseDown}
       onWheel={handleWheel}
     >
@@ -217,7 +217,7 @@ export function StudioCanvas({
                 <path
                   d={bezierPath(fromPort.pos, toPort)}
                   fill="none"
-                  stroke={isSelected ? "#ffcc33" : edgeColor}
+                  stroke={isSelected ? "#A29BFE" : edgeColor}
                   strokeWidth={isSelected ? 2 : 1.5}
                   strokeDasharray={isSelected ? "6,3" : undefined}
                   opacity={0.8}
@@ -244,7 +244,7 @@ export function StudioCanvas({
             <path
               d={bezierPath(ghostEdge.from, ghostEdge.to)}
               fill="none"
-              stroke="#ffcc33"
+              stroke="#A29BFE"
               strokeWidth={1.5}
               strokeDasharray="6,3"
               opacity={0.7}
@@ -317,7 +317,7 @@ export function StudioCanvas({
                     height: PORT_R * 2,
                     left: -PORT_R,
                     top: NODE_H / 2 - PORT_R,
-                    background: "#0a0f1e",
+                    background: "rgba(30,26,62,0.62)",
                     borderColor: def.color,
                     cursor: "crosshair",
                     zIndex: 30,

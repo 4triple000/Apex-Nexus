@@ -26,7 +26,7 @@ export const ApexNode = memo(function ApexNode({ id, data, selected }: ApexNodeP
   const outputPorts = def.outputLabels ?? (def.outputs > 0 ? ["out"] : []);
 
   const borderColor = isActive
-    ? "#ffcc33"
+    ? "#A29BFE"
     : hasError
     ? "#f87171"
     : isCompleted
@@ -122,7 +122,7 @@ export const ApexNode = memo(function ApexNode({ id, data, selected }: ApexNodeP
           style={{
             width: 10,
             height: 10,
-            background: "#0a0f1e",
+            background: "rgba(30,26,62,0.62)",
             border: `2px solid ${def.color}`,
             left: -5,
           }}

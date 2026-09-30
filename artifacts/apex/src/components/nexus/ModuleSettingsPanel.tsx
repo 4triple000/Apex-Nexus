@@ -62,7 +62,7 @@ function FieldEditor({
         <select value={String(value)} onChange={(e) => onChange(e.target.value)}
           style={{ ...inputStyle, appearance: "none" }}>
           {field.options?.map((o) => (
-            <option key={o} value={o} style={{ background: "#1a1d2e" }}>{o}</option>
+            <option key={o} value={o} style={{ background: "rgba(30,26,62,0.62)" }}>{o}</option>
           ))}
         </select>
       </div>
@@ -121,7 +121,7 @@ export function ModuleSettingsPanel({ module, onClose, onSave }: Props) {
         transition={{ type: "spring", stiffness: 320, damping: 36 }}
         style={{
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 101,
-          background: "#12141e", border: "1px solid rgba(255,255,255,0.1)",
+          background: "rgba(30,26,62,0.62)", border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: "22px 22px 0 0", maxHeight: "90vh", overflowY: "auto",
           paddingBottom: "env(safe-area-inset-bottom, 20px)",
         }}

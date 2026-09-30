@@ -70,7 +70,7 @@ export function ChatPanel({ messages, isGenerating, buildSteps, hasProject, plan
   const progress   = totalSteps > 0 ? Math.round((doneCount / totalSteps) * 100) : 0;
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "#0D0D0D" }}>
+    <div className="flex flex-col h-full" style={{ background: "transparent" }}>
       {/* Header */}
       <div
         className="flex items-center gap-3 px-5 py-4 flex-shrink-0 border-b"
@@ -78,7 +78,7 @@ export function ChatPanel({ messages, isGenerating, buildSteps, hasProject, plan
       >
         <div
           className="w-8 h-8 rounded-xl flex items-center justify-center text-base font-black flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #FFCC33, #FF8C00)", color: "#000" }}
+          style={{ background: "linear-gradient(135deg, #A29BFE, #FF8C00)", color: "#000" }}
         >
           ⚡
         </div>
@@ -117,30 +117,30 @@ export function ChatPanel({ messages, isGenerating, buildSteps, hasProject, plan
           <div className="flex items-start gap-3">
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-0.5"
-              style={{ background: "#1A1A1A", border: "1px solid #2A2A2A" }}
+              style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #2A2A2A" }}
             >
               ⚡
             </div>
 
             <div
               className="rounded-2xl rounded-tl-sm p-4 flex-1"
-              style={{ background: "#161B22", border: "1px solid #21262D" }}
+              style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-white/70 text-[11px] font-semibold tracking-wide uppercase">
                   {hasProject ? "Applying Changes" : "Building Your App"}
                 </span>
-                <span className="text-[#FFCC33] text-[10px] font-mono font-bold">
+                <span className="text-[#A29BFE] text-[10px] font-mono font-bold">
                   {doneCount}/{totalSteps}
                 </span>
               </div>
 
-              <div className="h-0.5 rounded-full mb-4 overflow-hidden" style={{ background: "#2A2A2A" }}>
+              <div className="h-0.5 rounded-full mb-4 overflow-hidden" style={{ background: "rgba(30,26,62,0.62)" }}>
                 <div
                   className="h-full rounded-full transition-all duration-700 ease-out"
                   style={{
                     width: `${progress}%`,
-                    background: "linear-gradient(90deg, #FFCC33, #FF8C00)",
+                    background: "linear-gradient(90deg, #A29BFE, #FF8C00)",
                   }}
                 />
               </div>
@@ -160,8 +160,8 @@ export function ChatPanel({ messages, isGenerating, buildSteps, hasProject, plan
         <div
           className="flex items-end gap-3 rounded-2xl px-4 py-3 transition-all"
           style={{
-            background: "#161B22",
-            border: isGenerating ? "1px solid rgba(255,204,51,0.2)" : "1px solid #21262D",
+            background: "rgba(30,26,62,0.62)",
+            border: isGenerating ? "1px solid rgba(162,155,254,0.2)" : "1px solid #21262D",
           }}
         >
           <textarea
@@ -180,11 +180,11 @@ export function ChatPanel({ messages, isGenerating, buildSteps, hasProject, plan
             disabled={!input.trim() || isGenerating}
             className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-95 disabled:opacity-40"
             style={{
-              background: input.trim() && !isGenerating ? "#FFCC33" : "#2A2A2A",
+              background: input.trim() && !isGenerating ? "#A29BFE" : "#2A2A2A",
             }}
           >
             {isGenerating ? (
-              <div className="w-3 h-3 rounded-full border-2 border-white/20 border-t-[#FFCC33] animate-spin" />
+              <div className="w-3 h-3 rounded-full border-2 border-white/20 border-t-[#A29BFE] animate-spin" />
             ) : (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={input.trim() ? "#000" : "#666"} strokeWidth="2.5">
                 <path d="M12 19V5M5 12l7-7 7 7" />
@@ -208,7 +208,7 @@ function PlanCard({ plan, onRun, onDeploy }: { plan: AiStudioPlan; onRun?: () =>
   return (
     <div
       className="rounded-2xl rounded-tl-sm overflow-hidden"
-      style={{ border: "1px solid rgba(255,204,51,0.15)", background: "rgba(255,204,51,0.03)" }}
+      style={{ border: "1px solid rgba(162,155,254,0.15)", background: "rgba(162,155,254,0.03)" }}
     >
       {/* Plan header */}
       <button
@@ -217,12 +217,12 @@ function PlanCard({ plan, onRun, onDeploy }: { plan: AiStudioPlan; onRun?: () =>
       >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-          style={{ background: "rgba(255,204,51,0.12)", border: "1px solid rgba(255,204,51,0.2)" }}
+          style={{ background: "rgba(162,155,254,0.12)", border: "1px solid rgba(162,155,254,0.2)" }}
         >
           📋
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[#FFCC33] text-xs font-bold truncate">{plan.project_name}</p>
+          <p className="text-[#A29BFE] text-xs font-bold truncate">{plan.project_name}</p>
           <p className="text-white/35 text-[10px] truncate">{plan.description.slice(0, 65)}</p>
         </div>
         <span className="text-white/30 text-[10px] transition-transform flex-shrink-0"
@@ -233,7 +233,7 @@ function PlanCard({ plan, onRun, onDeploy }: { plan: AiStudioPlan; onRun?: () =>
 
       {/* Expanded content */}
       {expanded && (
-        <div className="px-4 pb-4 space-y-4 border-t" style={{ borderColor: "rgba(255,204,51,0.1)" }}>
+        <div className="px-4 pb-4 space-y-4 border-t" style={{ borderColor: "rgba(162,155,254,0.1)" }}>
           <div className="pt-3 grid grid-cols-2 gap-3">
 
             {/* Features */}
@@ -259,7 +259,7 @@ function PlanCard({ plan, onRun, onDeploy }: { plan: AiStudioPlan; onRun?: () =>
                 <div className="space-y-1">
                   {plan.pages.slice(0, 5).map((p, i) => (
                     <div key={i} className="flex items-center gap-1.5">
-                      <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: "#FFCC33" }} />
+                      <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: "#A29BFE" }} />
                       <span className="text-white/50 text-[11px] truncate">{p}</span>
                     </div>
                   ))}
@@ -334,7 +334,7 @@ function PlanCard({ plan, onRun, onDeploy }: { plan: AiStudioPlan; onRun?: () =>
               <button
                 onClick={onDeploy}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all hover:brightness-110"
-                style={{ background: "linear-gradient(135deg, rgba(255,204,51,0.15), rgba(255,140,0,0.15))", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.25)" }}
+                style={{ background: "linear-gradient(135deg, rgba(162,155,254,0.15), rgba(255,140,0,0.15))", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.25)" }}
               >
                 🚀 Deploy
               </button>
@@ -365,7 +365,7 @@ function StepRow({ step }: { step: BuildStep }) {
         {step.status === "active" && (
           <div
             className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: "rgba(255,204,51,0.3)", borderTopColor: "#FFCC33" }}
+            style={{ borderColor: "rgba(162,155,254,0.3)", borderTopColor: "#A29BFE" }}
           />
         )}
         {step.status === "pending" && (
@@ -390,7 +390,7 @@ function StepRow({ step }: { step: BuildStep }) {
           style={{
             color:
               step.status === "done"    ? "#4ade80" :
-              step.status === "active"  ? "#FFCC33" :
+              step.status === "active"  ? "#A29BFE" :
               step.status === "error"   ? "#f87171" :
               "rgba(255,255,255,0.3)",
           }}
@@ -420,7 +420,7 @@ function ProgressRing({ progress }: { progress: number }) {
       <circle
         cx="14" cy="14" r={r}
         fill="none"
-        stroke="#FFCC33"
+        stroke="#A29BFE"
         strokeWidth="2.5"
         strokeDasharray={circ}
         strokeDashoffset={offset}
@@ -428,7 +428,7 @@ function ProgressRing({ progress }: { progress: number }) {
         transform="rotate(-90 14 14)"
         style={{ transition: "stroke-dashoffset 0.6s ease" }}
       />
-      <text x="14" y="18" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#FFCC33">
+      <text x="14" y="18" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#A29BFE">
         {progress}%
       </text>
     </svg>
@@ -448,7 +448,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       {!isUser && (
         <div
           className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 mt-0.5"
-          style={{ background: "#1A1A1A", border: "1px solid #2A2A2A" }}
+          style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #2A2A2A" }}
         >
           ⚡
         </div>

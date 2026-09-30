@@ -19,7 +19,7 @@ import { AutopilotPanel } from "@/components/studio/AutopilotPanel";
 import { type AutopilotResult } from "@/hooks/useAutopilot";
 import { GameForge } from "@/components/studio/GameForge";
 
-const GOLD = "#ffcc33";
+const GOLD = "#A29BFE";
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 const PROJECT_TYPES: { value: ProjectType; label: string; icon: string; color: string }[] = [
@@ -48,7 +48,7 @@ function DebugConsole({
   return (
     <div
       className="flex flex-col border-t overflow-hidden flex-shrink-0"
-      style={{ background: "rgba(10,12,18,0.97)", borderColor: "rgba(255,255,255,0.07)", height: 180 }}
+      style={{ background: "rgba(14,12,32,0.55)", borderColor: "rgba(255,255,255,0.07)", height: 180 }}
     >
       <div className="flex items-center gap-3 px-4 py-1.5 border-b border-white/5 flex-shrink-0">
         <div className="flex gap-1.5 items-center">
@@ -59,8 +59,8 @@ function DebugConsole({
         <span className="text-[10px] font-mono text-white/30 tracking-widest uppercase">Execution Console</span>
         {isRunning && (
           <div className="flex items-center gap-1.5 ml-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#ffcc33] animate-pulse" />
-            <span className="text-[9px] font-mono text-[#ffcc33]">Running</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-[#A29BFE] animate-pulse" />
+            <span className="text-[9px] font-mono text-[#A29BFE]">Running</span>
           </div>
         )}
         {logs.length > 0 && (
@@ -91,8 +91,8 @@ function DebugConsole({
         })}
         {finalOutput && !isRunning && (
           <div className="mt-2 pt-2 border-t border-white/5 flex items-start gap-2">
-            <span className="text-[9px] text-[#ffcc33] flex-shrink-0">$ OUTPUT →</span>
-            <span className="text-[9px] text-[#ffcc33]/80 leading-relaxed break-all">{finalOutput.slice(0, 300)}</span>
+            <span className="text-[9px] text-[#A29BFE] flex-shrink-0">$ OUTPUT →</span>
+            <span className="text-[9px] text-[#A29BFE]/80 leading-relaxed break-all">{finalOutput.slice(0, 300)}</span>
           </div>
         )}
       </div>
@@ -341,11 +341,11 @@ function CanvasEditorV2({
   const typeInfo = PROJECT_TYPES.find((t) => t.value === project.type);
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col" style={{ background: "#0F1115", paddingBottom: 64 }}>
+    <div className="fixed inset-0 z-40 flex flex-col" style={{ background: "transparent", paddingBottom: 64 }}>
       {/* Top toolbar */}
       <div
         className="flex items-center gap-2 px-3 py-2.5 flex-shrink-0 border-b"
-        style={{ background: "rgba(15,17,21,0.98)", borderColor: "rgba(255,255,255,0.06)" }}
+        style={{ background: "rgba(14,12,32,0.55)", borderColor: "rgba(255,255,255,0.06)" }}
       >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center text-base flex-shrink-0"
@@ -373,7 +373,7 @@ function CanvasEditorV2({
               className="px-2 py-1 rounded-md text-[9px] font-mono font-bold transition-all"
               style={
                 p.active
-                  ? { background: "rgba(255,204,51,0.12)", color: GOLD }
+                  ? { background: "rgba(162,155,254,0.12)", color: GOLD }
                   : { background: "transparent", color: "rgba(255,255,255,0.25)" }
               }
             >
@@ -433,7 +433,7 @@ function CanvasEditorV2({
           onClick={() => setShowAutopilot(true)}
           title="AI Autopilot — regenerate from a prompt"
           className="px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all hover:brightness-110"
-          style={{ background: "rgba(255,204,51,0.1)", color: GOLD }}
+          style={{ background: "rgba(162,155,254,0.1)", color: GOLD }}
         >
           ✨ AI
         </button>
@@ -480,7 +480,7 @@ function CanvasEditorV2({
       {/* Publish Modal */}
       {showPublishModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-[#0F1115] border border-white/8 rounded-2xl overflow-hidden">
+          <div className="w-full max-w-sm bg-transparent border border-white/8 rounded-2xl overflow-hidden">
             <div className="p-5 border-b border-white/8">
               <h3 className="text-white font-bold text-base">Publish to Marketplace</h3>
               <p className="text-white/40 text-xs mt-1">Share your node graph with the community</p>
@@ -499,7 +499,7 @@ function CanvasEditorV2({
                   onChange={e => setPublishDesc(e.target.value)}
                   placeholder="Describe what your project does..."
                   rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#ffcc33]/40 placeholder-white/20 resize-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#A29BFE]/40 placeholder-white/20 resize-none"
                 />
               </div>
               <div className="flex items-center gap-3 bg-white/5 rounded-xl p-3 text-xs text-white/50">
@@ -618,7 +618,7 @@ function CanvasEditorV2({
 
       {showInputModal && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm bg-[#0d1424] rounded-3xl border border-white/10 p-5 space-y-4">
+          <div className="w-full max-w-sm bg-[rgba(30,26,62,0.62)] rounded-3xl border border-white/10 p-5 space-y-4">
             <h3 className="text-white font-black text-sm">Inputs Required</h3>
             {inputNodes.map((n) => {
               const key = n.type === "player_input" ? "playerInput" : "userInput";
@@ -631,7 +631,7 @@ function CanvasEditorV2({
                     value={runInputs[key] ?? ""}
                     onChange={(e) => setRunInputs((prev) => ({ ...prev, [key]: e.target.value }))}
                     placeholder={String(n.data.default ?? n.data.value ?? "Enter value...")}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#ffcc33]/30"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#A29BFE]/30"
                   />
                 </div>
               );
@@ -743,7 +743,7 @@ function CreateModal({ onCreate, onClose }: {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-md p-4">
       <div
         className="w-full max-w-sm rounded-3xl border p-5 space-y-4"
-        style={{ background: "linear-gradient(180deg, #131620, #0F1115)", borderColor: "rgba(255,255,255,0.08)" }}
+        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03))", borderColor: "rgba(255,255,255,0.08)" }}
       >
         <div className="flex items-center justify-between">
           <h3 className="text-white font-black text-base">New Project</h3>
@@ -755,7 +755,7 @@ function CreateModal({ onCreate, onClose }: {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Project name..."
           autoFocus
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#ffcc33]/30"
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#A29BFE]/30"
         />
 
         <textarea
@@ -797,7 +797,7 @@ function CreateModal({ onCreate, onClose }: {
                 className="w-9 h-9 rounded-xl text-lg transition-all"
                 style={
                   emoji === e
-                    ? { background: "rgba(255,204,51,0.18)", border: "1.5px solid rgba(255,204,51,0.4)" }
+                    ? { background: "rgba(162,155,254,0.18)", border: "1.5px solid rgba(162,155,254,0.4)" }
                     : { background: "rgba(255,255,255,0.04)" }
                 }
               >
@@ -879,7 +879,7 @@ export default function StudioPage() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#0F1115" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "transparent" }}>
       {/* Header */}
       <div
         className="flex-shrink-0 px-4 pt-5 pb-4 border-b"
@@ -890,13 +890,13 @@ export default function StudioPage() {
             <div className="flex items-center gap-2">
               <h1
                 className="text-xl font-black tracking-[0.1em] uppercase"
-                style={{ color: GOLD, textShadow: "0 0 30px rgba(255,204,51,0.35)" }}
+                style={{ color: GOLD, textShadow: "0 0 30px rgba(162,155,254,0.35)" }}
               >
                 APEX STUDIO
               </h1>
               <span
                 className="text-[9px] font-black px-1.5 py-0.5 rounded-full tracking-widest"
-                style={{ background: "rgba(255,204,51,0.12)", color: GOLD }}
+                style={{ background: "rgba(162,155,254,0.12)", color: GOLD }}
               >
                 v2
               </span>
@@ -983,21 +983,21 @@ export default function StudioPage() {
           href={`${BASE}/ai-studio`}
           className="flex items-center gap-3 w-full rounded-2xl px-4 py-3 transition-all hover:brightness-110 active:scale-[0.99]"
           style={{
-            background: "linear-gradient(135deg, rgba(255,204,51,0.08) 0%, rgba(255,140,0,0.06) 100%)",
-            border: "1px solid rgba(255,204,51,0.18)",
+            background: "linear-gradient(135deg, rgba(162,155,254,0.08) 0%, rgba(255,140,0,0.06) 100%)",
+            border: "1px solid rgba(162,155,254,0.18)",
           }}
         >
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #FFCC33, #FF8C00)", boxShadow: "0 4px 12px rgba(255,204,51,0.25)" }}
+            style={{ background: "linear-gradient(135deg, #A29BFE, #FF8C00)", boxShadow: "0 4px 12px rgba(162,155,254,0.25)" }}
           >
             🏗️
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[#FFCC33] font-black text-sm">AI Studio — Build with AI</p>
+            <p className="text-[#A29BFE] font-black text-sm">AI Studio — Build with AI</p>
             <p className="text-white/40 text-[11px] truncate">Describe your idea → live app in seconds</p>
           </div>
-          <span className="text-[#FFCC33]/50 text-sm flex-shrink-0">→</span>
+          <span className="text-[#A29BFE]/50 text-sm flex-shrink-0">→</span>
         </a>
       </div>
 
@@ -1005,13 +1005,13 @@ export default function StudioPage() {
       <div className="flex-1 overflow-y-auto px-4 py-2 pb-24 space-y-2.5">
         {isLoading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="w-5 h-5 rounded-full border-2 border-[#ffcc33]/30 border-t-[#ffcc33] animate-spin" />
+            <div className="w-5 h-5 rounded-full border-2 border-[#A29BFE]/30 border-t-[#A29BFE] animate-spin" />
           </div>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-60 gap-5 text-center">
             <div
               className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl"
-              style={{ background: "rgba(255,204,51,0.06)", border: "1px solid rgba(255,204,51,0.12)" }}
+              style={{ background: "rgba(162,155,254,0.06)", border: "1px solid rgba(162,155,254,0.12)" }}
             >
               ⚡
             </div>
@@ -1082,7 +1082,7 @@ export function StudioProjectPage() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "#0F1115" }}>
+      <div className="fixed inset-0 flex items-center justify-center" style={{ background: "transparent" }}>
         <div className="text-white/30 text-sm font-mono animate-pulse">Loading project…</div>
       </div>
     );
@@ -1090,11 +1090,11 @@ export function StudioProjectPage() {
 
   if (!project) {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center gap-4" style={{ background: "#0F1115" }}>
+      <div className="fixed inset-0 flex flex-col items-center justify-center gap-4" style={{ background: "transparent" }}>
         <p className="text-white/40 text-sm">Project not found.</p>
         <button
           onClick={() => navigate("/studio")}
-          className="text-[#ffcc33] text-xs underline"
+          className="text-[#A29BFE] text-xs underline"
         >
           ← Back to Studio
         </button>

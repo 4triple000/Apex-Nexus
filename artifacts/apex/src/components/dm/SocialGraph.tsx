@@ -15,7 +15,7 @@ interface GraphNode {
 
 function getNodeColor(closeness: number): string {
   if (closeness >= 75) return "#10b981";
-  if (closeness >= 50) return "#ffcc33";
+  if (closeness >= 50) return "#A29BFE";
   if (closeness >= 25) return "#f59e0b";
   return "#6366f1";
 }
@@ -24,7 +24,7 @@ function getInitials(name: string): string {
   return name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 }
 
-const RING_COLORS = ["#ffcc33", "#8b5cf6", "#10b981", "#ec4899", "#3b82f6", "#ef4444"];
+const RING_COLORS = ["#A29BFE", "#8b5cf6", "#10b981", "#ec4899", "#3b82f6", "#ef4444"];
 
 export function SocialGraph() {
   const { data, isLoading } = useDMAnalytics();
@@ -91,8 +91,8 @@ export function SocialGraph() {
         >
           <defs>
             <radialGradient id="centerGrad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffcc33" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#ffcc33" stopOpacity="0" />
+              <stop offset="0%" stopColor="#A29BFE" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#A29BFE" stopOpacity="0" />
             </radialGradient>
           </defs>
 
@@ -153,9 +153,9 @@ export function SocialGraph() {
           })}
 
           {/* Center "You" node */}
-          <circle cx={cx} cy={cy} r={28} fill="#ffcc33" fillOpacity={0.2} stroke="#ffcc33" strokeWidth={2} />
-          <circle cx={cx} cy={cy} r={22} fill="#0a0a14" stroke="#ffcc33" strokeWidth={1.5} />
-          <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight="800" fill="#ffcc33" fontFamily="system-ui, sans-serif">
+          <circle cx={cx} cy={cy} r={28} fill="#A29BFE" fillOpacity={0.2} stroke="#A29BFE" strokeWidth={2} />
+          <circle cx={cx} cy={cy} r={22} fill="#0a0a14" stroke="#A29BFE" strokeWidth={1.5} />
+          <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={10} fontWeight="800" fill="#A29BFE" fontFamily="system-ui, sans-serif">
             YOU
           </text>
         </svg>
@@ -192,7 +192,7 @@ export function SocialGraph() {
       <div className="flex items-center justify-center gap-4 pb-1">
         {[
           { color: "#10b981", label: "Close (75+)" },
-          { color: "#ffcc33", label: "Connected (50+)" },
+          { color: "#A29BFE", label: "Connected (50+)" },
           { color: "#f59e0b", label: "Warming (25+)" },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1">

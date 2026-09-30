@@ -79,7 +79,7 @@ const MODE_PALETTE: Record<AvatarEntityMode, ModePalette> = {
   chat:    { primary: "#FD79A8", secondary: "#C0392B", glow: "rgba(253,121,168,0.5)", ring: "rgba(253,121,168,0.25)", particle: "#FD79A8" },
   builder: { primary: "#A29BFE", secondary: "#6C5CE7", glow: "rgba(162,155,254,0.5)", ring: "rgba(162,155,254,0.25)", particle: "#A29BFE" },
   game:    { primary: "#00D2D3", secondary: "#0984E3", glow: "rgba(0,210,211,0.5)",   ring: "rgba(0,210,211,0.25)",   particle: "#00D2D3" },
-  command: { primary: "#FFCC33", secondary: "#E17055", glow: "rgba(255,204,51,0.5)",  ring: "rgba(255,204,51,0.25)",  particle: "#FFCC33" },
+  command: { primary: "#A29BFE", secondary: "#E17055", glow: "rgba(162,155,254,0.5)",  ring: "rgba(162,155,254,0.25)",  particle: "#A29BFE" },
 };
 
 // ── State animation params ────────────────────────────────────────────────────

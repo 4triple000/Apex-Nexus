@@ -29,6 +29,7 @@ function PageTransition({ children, location }: { children: ReactNode; location:
 export function Layout({ children }: { children: ReactNode }) {
   const avatarStore = useAvatar();
   const [location] = useLocation();
+  // Home and Chat leave room for the fixed ☰ button in their own headers; other pages start below it
 
   return (
     <>
@@ -37,16 +38,11 @@ export function Layout({ children }: { children: ReactNode }) {
       ══════════════════════════════════════════════ */}
       <div
         className="mg-font lg:hidden min-h-[100dvh] flex flex-col w-full mx-auto max-w-md border-x relative overflow-hidden shadow-2xl"
-        style={{ background: "var(--mg-bg)", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
+        style={{ background: "transparent", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
       >
-        {/* Midnight Glass: bright moving light that the frosted surfaces pick up */}
-        <div aria-hidden className="mg-blob" style={{ width: 280, height: 280, top: 120, left: -85, background: "#6C5CE7" }} />
-        <div aria-hidden className="mg-blob" style={{ width: 250, height: 250, top: 330, right: -70, background: "#00C2FF", opacity: 0.75, animationDelay: "-5s" }} />
-        <div aria-hidden className="mg-blob" style={{ width: 225, height: 225, bottom: 55, left: 25, background: "#FF4FA3", opacity: 0.55, animationDelay: "-9s" }} />
-
         <ApexControlPanel />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingBottom: 96, paddingTop: 4 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingBottom: 96, paddingTop: location === "/" || location.startsWith("/dm") ? 4 : 64 }}>
           <PageTransition location={location}>{children}</PageTransition>
         </div>
 
@@ -59,13 +55,8 @@ export function Layout({ children }: { children: ReactNode }) {
       ══════════════════════════════════════════════ */}
       <div
         className="hidden lg:flex min-h-[100dvh] w-full relative"
-        style={{ background: "var(--mg-bg)", color: "var(--mg-ink)" }}
+        style={{ background: "transparent", color: "var(--mg-ink)" }}
       >
-        {/* Midnight Glass light */}
-        <div aria-hidden className="mg-blob" style={{ width: 520, height: 520, top: -80, left: 120, background: "rgba(108,92,231,0.42)" }} />
-        <div aria-hidden className="mg-blob" style={{ width: 460, height: 460, top: "40%", right: -120, background: "rgba(0,194,255,0.22)", animationDelay: "-6s" }} />
-        <div aria-hidden className="mg-blob" style={{ width: 420, height: 420, bottom: -120, left: "30%", background: "rgba(255,79,163,0.18)", animationDelay: "-11s" }} />
-
         {/* Sidebar */}
         <Sidebar />
 

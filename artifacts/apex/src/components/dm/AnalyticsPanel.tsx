@@ -24,7 +24,7 @@ function BarChart({ data }: { data: { label: string; value: number; color?: stri
           <div className="flex-1 h-5 bg-white/5 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${Math.round((d.value / max) * 100)}%`, background: d.color ?? "#ffcc33" }}
+              style={{ width: `${Math.round((d.value / max) * 100)}%`, background: d.color ?? "#A29BFE" }}
             />
           </div>
           <span className="text-xs text-white/40 w-8 text-right">{d.value}%</span>
@@ -65,7 +65,7 @@ export function AnalyticsPanel() {
     .map((c) => ({
       label: (c.displayName ?? c.username).split(" ")[0]!,
       value: c.responseRate,
-      color: c.responseRate >= 70 ? "#10b981" : c.responseRate >= 40 ? "#ffcc33" : "#ef4444",
+      color: c.responseRate >= 70 ? "#10b981" : c.responseRate >= 40 ? "#A29BFE" : "#ef4444",
     }));
 
   return (
@@ -78,7 +78,7 @@ export function AnalyticsPanel() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === t ? "bg-[#ffcc33] text-black" : "text-white/50"}`}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === t ? "bg-[#A29BFE] text-black" : "text-white/50"}`}
             >
               {labels[t]}
             </button>
@@ -91,14 +91,14 @@ export function AnalyticsPanel() {
         {tab === "overview" && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <StatCard label="Total Messages" value={summary.totalMessages} sub="all conversations" color="#ffcc33" />
+              <StatCard label="Total Messages" value={summary.totalMessages} sub="all conversations" color="#A29BFE" />
               <StatCard label="Contacts" value={summary.totalContacts} sub="active threads" color="#8b5cf6" />
               <StatCard label="AI Replies" value={summary.aiGenerated} sub="messages generated" color="#10b981" />
               <StatCard
                 label="Avg Score"
                 value={summary.avgScore > 0 ? `${summary.avgScore}%` : "—"}
                 sub="reply quality"
-                color={summary.avgScore >= 80 ? "#10b981" : summary.avgScore >= 60 ? "#ffcc33" : "#ef4444"}
+                color={summary.avgScore >= 80 ? "#10b981" : summary.avgScore >= 60 ? "#A29BFE" : "#ef4444"}
               />
             </div>
 
@@ -109,8 +109,8 @@ export function AnalyticsPanel() {
               </div>
             )}
 
-            <div className="rounded-xl p-4 border border-[#ffcc33]/20 bg-[#ffcc33]/5">
-              <p className="text-[#ffcc33] font-bold text-xs mb-2">💡 PRO TIPS</p>
+            <div className="rounded-xl p-4 border border-[#A29BFE]/20 bg-[#A29BFE]/5">
+              <p className="text-[#A29BFE] font-bold text-xs mb-2">💡 PRO TIPS</p>
               <ul className="space-y-1.5">
                 <li className="text-white/60 text-xs">• Use "Confident" mode for high-response contacts</li>
                 <li className="text-white/60 text-xs">• Score your drafts before sending — aim for 80+</li>
@@ -140,7 +140,7 @@ export function AnalyticsPanel() {
                         <p className="text-white/40 text-xs">{c.totalMessages} msgs · {closenessLabel}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold" style={{ color: c.responseRate >= 70 ? "#10b981" : c.responseRate >= 40 ? "#ffcc33" : "#ef4444" }}>
+                        <p className="text-sm font-bold" style={{ color: c.responseRate >= 70 ? "#10b981" : c.responseRate >= 40 ? "#A29BFE" : "#ef4444" }}>
                           {c.responseRate}%
                         </p>
                         <p className="text-white/30 text-[10px]">response</p>

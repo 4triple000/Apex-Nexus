@@ -73,7 +73,7 @@ export function WorkflowGraph({
       style={{
         flex: 1,
         position: "relative",
-        background: "#080808",
+        background: "transparent",
         overflow: "hidden",
       }}
     >
@@ -89,7 +89,7 @@ export function WorkflowGraph({
         minZoom={0.3}
         maxZoom={2}
         deleteKeyCode={null}
-        style={{ background: "#080808" }}
+        style={{ background: "transparent" }}
         proOptions={{ hideAttribution: true }}
       >
         <Background
@@ -151,23 +151,23 @@ export function WorkflowGraph({
             width: 44,
             height: 44,
             borderRadius: 12,
-            background: "#FFCC33",
+            background: "#A29BFE",
             border: "none",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 4px 16px rgba(255,204,51,0.35)",
+            boxShadow: "0 4px 16px rgba(162,155,254,0.35)",
             transition: "transform 0.15s, box-shadow 0.15s",
             zIndex: 10,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "scale(1.08)";
-            e.currentTarget.style.boxShadow = "0 6px 20px rgba(255,204,51,0.45)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(162,155,254,0.45)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "scale(1)";
-            e.currentTarget.style.boxShadow = "0 4px 16px rgba(255,204,51,0.35)";
+            e.currentTarget.style.boxShadow = "0 4px 16px rgba(162,155,254,0.35)";
           }}
         >
           <Plus size={20} color="#000" strokeWidth={2.5} />

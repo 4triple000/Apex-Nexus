@@ -184,7 +184,7 @@ export default function OrbScreen() {
       </View>
 
       {/* Bottom Sheet */}
-      <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 110 }]}>
 
         {/* Apex Personality */}
         <View style={styles.personalitySection}>
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(10,8,24,0.98)",
+    backgroundColor: "rgba(30,26,62,0.62)",
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.07)",
     paddingHorizontal: 24,

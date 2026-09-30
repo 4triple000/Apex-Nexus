@@ -102,7 +102,7 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#0D0D0D" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "transparent" }}>
       {/* Header */}
       <div className="px-5 py-4 border-b flex-shrink-0" style={{ borderColor: "#1C1C1E" }}>
         <div className="flex items-center justify-between">
@@ -123,7 +123,7 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
               <button
                 onClick={onAddWorkflow}
                 className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:brightness-110"
-                style={{ background: "rgba(255,204,51,0.1)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.2)" }}
+                style={{ background: "rgba(162,155,254,0.1)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.2)" }}
               >
                 + New
               </button>
@@ -146,7 +146,7 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
             <div
               key={wf.id}
               className="rounded-2xl overflow-hidden transition-all"
-              style={{ background: "#161B22", border: `1px solid ${isRunning ? "rgba(255,204,51,0.3)" : "#21262D"}` }}
+              style={{ background: "rgba(30,26,62,0.62)", border: `1px solid ${isRunning ? "rgba(162,155,254,0.3)" : "#21262D"}` }}
             >
               {/* Workflow header */}
               <button
@@ -156,13 +156,13 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
                 {/* Status dot */}
                 <div className="flex-shrink-0 mt-0.5">
                   {isRunning ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(255,204,51,0.3)", borderTopColor: "#FFCC33" }} />
+                    <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(162,155,254,0.3)", borderTopColor: "#A29BFE" }} />
                   ) : hasRun && doneLogs === totalLogs ? (
                     <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
                       <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   ) : (
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px]" style={{ background: "#0D0D0D", border: "1px solid #2A2A2A" }}>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px]" style={{ background: "transparent", border: "1px solid #2A2A2A" }}>
                       ⚡
                     </div>
                   )}
@@ -172,7 +172,7 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
                   <div className="flex items-center gap-2">
                     <p className="text-white text-sm font-semibold">{wf.name}</p>
                     {isRunning && (
-                      <span className="text-[#FFCC33] text-[10px] font-mono">{doneLogs}/{totalLogs}</span>
+                      <span className="text-[#A29BFE] text-[10px] font-mono">{doneLogs}/{totalLogs}</span>
                     )}
                   </div>
                   <p className="text-white/40 text-[11px] mt-0.5 truncate">{wf.description}</p>
@@ -203,11 +203,11 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
                       onClick={() => runWorkflow(wf)}
                       disabled={!!runningId || !projectId}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all hover:brightness-110 disabled:opacity-40"
-                      style={{ background: "rgba(255,204,51,0.12)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.25)" }}
+                      style={{ background: "rgba(162,155,254,0.12)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.25)" }}
                     >
                       {isRunning ? (
                         <>
-                          <div className="w-2.5 h-2.5 rounded-full border border-t-transparent animate-spin" style={{ borderColor: "rgba(255,204,51,0.3)", borderTopColor: "#FFCC33" }} />
+                          <div className="w-2.5 h-2.5 rounded-full border border-t-transparent animate-spin" style={{ borderColor: "rgba(162,155,254,0.3)", borderTopColor: "#A29BFE" }} />
                           Running…
                         </>
                       ) : (
@@ -225,11 +225,11 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
                           {/* Step number / status */}
                           <div className="flex-shrink-0 flex flex-col items-center" style={{ width: 20 }}>
                             {!log || log.status === "pending" ? (
-                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: "#0D0D0D", border: "1px solid #2A2A2A", color: "rgba(255,255,255,0.3)" }}>
+                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: "transparent", border: "1px solid #2A2A2A", color: "rgba(255,255,255,0.3)" }}>
                                 {idx + 1}
                               </div>
                             ) : log.status === "running" ? (
-                              <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(255,204,51,0.2)", borderTopColor: "#FFCC33" }} />
+                              <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(162,155,254,0.2)", borderTopColor: "#A29BFE" }} />
                             ) : log.status === "done" ? (
                               <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.15)" }}>
                                 <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2.5" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -246,7 +246,7 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
 
                           {/* Step content */}
                           <div className="flex-1 pb-2">
-                            <p className="text-[12px] font-medium" style={{ color: log?.status === "done" ? "#4ade80" : log?.status === "running" ? "#FFCC33" : "rgba(255,255,255,0.6)" }}>
+                            <p className="text-[12px] font-medium" style={{ color: log?.status === "done" ? "#4ade80" : log?.status === "running" ? "#A29BFE" : "rgba(255,255,255,0.6)" }}>
                               {step.action}
                             </p>
                             {step.output && (
@@ -283,8 +283,8 @@ export function WorkflowPane({ workflows, projectId, projectName, onAddWorkflow 
 
 function EmptyWorkflows({ projectName, onAdd }: { projectName: string; onAdd?: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center p-8" style={{ background: "#0D0D0D" }}>
-      <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+    <div className="flex flex-col items-center justify-center h-full text-center p-8" style={{ background: "transparent" }}>
+      <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
         🔄
       </div>
       <h3 className="text-white font-bold text-base mb-2">No workflows yet</h3>
@@ -295,7 +295,7 @@ function EmptyWorkflows({ projectName, onAdd }: { projectName: string; onAdd?: (
         <button
           onClick={onAdd}
           className="px-4 py-2 rounded-xl text-sm font-medium"
-          style={{ background: "rgba(255,204,51,0.1)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.2)" }}
+          style={{ background: "rgba(162,155,254,0.1)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.2)" }}
         >
           + Add workflow manually
         </button>

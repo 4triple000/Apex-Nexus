@@ -221,7 +221,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
   return (
     <div style={{
       fontFamily:  "'SF Pro Display', -apple-system, sans-serif",
-      background:  "#0a0b0f",
+      background:  "transparent",
       borderRadius: 16,
       border:       "1px solid #1e1f2e",
       overflow:     "hidden",
@@ -248,7 +248,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
               Apex Autonomous System
               <span style={{
                 marginLeft: 8, fontSize: 10, fontWeight: 600, letterSpacing: 1,
-                background: "#1e2035", color: "#A29BFE", padding: "2px 8px", borderRadius: 10,
+                background: "rgba(30,26,62,0.62)", color: "#A29BFE", padding: "2px 8px", borderRadius: 10,
               }}>v1</span>
             </div>
             <div style={{ fontSize: 11, color: "#636e72" }}>
@@ -260,7 +260,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
         {/* Phase indicator */}
         <div style={{
           display: "flex", alignItems: "center", gap: 8,
-          background: "#0f1020", border: "1px solid #1e2035",
+          background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
           borderRadius: 20, padding: "6px 14px",
         }}>
           <div style={{
@@ -278,7 +278,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
       {/* ── Tab Bar ── */}
       <div style={{
         display: "flex", borderBottom: "1px solid #1e1f2e",
-        background: "#0a0b0f",
+        background: "transparent",
       }}>
         {(["monitor", "suggestions", "history", "control"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
@@ -301,7 +301,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
 
             {/* Cycle pipeline visualization */}
             <div style={{
-              background: "#0f1020", border: "1px solid #1e2035",
+              background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
               borderRadius: 12, padding: 14,
             }}>
               <div style={{ fontSize: 11, color: "#636e72", marginBottom: 10, fontWeight: 600, letterSpacing: 1 }}>
@@ -346,7 +346,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
                 { label: "Cycles Run",      value: status?.cyclesRun ?? 0,               icon: "🔁", color: "#00b894" },
               ].map(({ label, value, icon, color }) => (
                 <div key={label} style={{
-                  background: "#0f1020", border: "1px solid #1e2035",
+                  background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
                   borderRadius: 10, padding: "10px 12px",
                 }}>
                   <div style={{ fontSize: 11, color: "#636e72", marginBottom: 4 }}>{icon} {label}</div>
@@ -358,7 +358,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
             {/* Game mode breakdown */}
             {(status?.metrics.gameModes ?? []).length > 0 && (
               <div style={{
-                background: "#0f1020", border: "1px solid #1e2035",
+                background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
                 borderRadius: 12, padding: 14,
               }}>
                 <div style={{ fontSize: 11, color: "#636e72", marginBottom: 10, fontWeight: 600, letterSpacing: 1 }}>
@@ -368,7 +368,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
                   {(status!.metrics.gameModes).slice(0, 5).map((m) => (
                     <div key={m.mode} style={{
                       display: "flex", alignItems: "center", gap: 10,
-                      background: "#12132a", borderRadius: 8, padding: "8px 12px",
+                      background: "rgba(30,26,62,0.62)", borderRadius: 8, padding: "8px 12px",
                     }}>
                       <span style={{ fontSize: 12, color: "#A29BFE", fontWeight: 600, minWidth: 90 }}>
                         {m.mode}
@@ -388,7 +388,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
 
             {/* Activity log */}
             <div style={{
-              background: "#050608", border: "1px solid #1e2035",
+              background: "transparent", border: "1px solid #1e2035",
               borderRadius: 10, padding: 12, maxHeight: 140, overflowY: "auto",
             }}>
               <div style={{ fontSize: 11, color: "#636e72", marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>
@@ -419,7 +419,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
               </div>
             ) : suggestions.map((s) => (
               <div key={s.id} style={{
-                background: "#0f1020", border: `1px solid ${s.status === "applied" ? "#00b89444" : s.status === "discarded" ? "#2d343644" : "#1e2035"}`,
+                background: "rgba(30,26,62,0.62)", border: `1px solid ${s.status === "applied" ? "#00b89444" : s.status === "discarded" ? "#2d343644" : "#1e2035"}`,
                 borderRadius: 12, overflow: "hidden",
               }}>
                 <div
@@ -454,7 +454,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
                 {expandedSugg === s.id && (
                   <div style={{
                     borderTop: "1px solid #1e2035", padding: "12px 14px",
-                    background: "#080910",
+                    background: "transparent",
                   }}>
                     <div style={{ fontSize: 11, color: "#636e72", marginBottom: 6 }}>
                       Pattern: <span style={{ color: "#A29BFE" }}>{s.pattern.title}</span>
@@ -466,7 +466,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
                       Files: {s.plan.files.map((f) => (
                         <span key={f.path} style={{
                           display: "inline-block", marginRight: 4, marginBottom: 4,
-                          background: "#12132a", padding: "2px 8px", borderRadius: 6,
+                          background: "rgba(30,26,62,0.62)", padding: "2px 8px", borderRadius: 6,
                           color: "#6C5CE7", fontSize: 10,
                         }}>{f.path.split("/").pop()}</span>
                       ))}
@@ -509,7 +509,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
               </div>
             ) : history.map((c) => (
               <div key={c.id} style={{
-                background: "#0f1020", border: `1px solid ${c.error ? "#e1705533" : c.deployed ? "#00b89433" : "#1e2035"}`,
+                background: "rgba(30,26,62,0.62)", border: `1px solid ${c.error ? "#e1705533" : c.deployed ? "#00b89433" : "#1e2035"}`,
                 borderRadius: 10, padding: "12px 14px",
               }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
@@ -565,7 +565,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
             </div>
 
             {/* Interval control */}
-            <div style={{ background: "#0f1020", border: "1px solid #1e2035", borderRadius: 10, padding: 14 }}>
+            <div style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035", borderRadius: 10, padding: 14 }}>
               <div style={{ fontSize: 11, color: "#636e72", marginBottom: 8, fontWeight: 600, letterSpacing: 1 }}>
                 CYCLE INTERVAL
               </div>
@@ -585,7 +585,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
             {/* Auto-apply toggle */}
             {ownerMode && (
               <div style={{
-                background: "#0f1020", border: "1px solid #1e2035",
+                background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
                 borderRadius: 10, padding: 14,
                 display: "flex", alignItems: "center", justifyContent: "space-between",
               }}>
@@ -648,7 +648,7 @@ export default function AutonomousPanel({ ownerMode = false }: { ownerMode?: boo
 
             {/* Safety summary */}
             <div style={{
-              background: "#0f1020", border: "1px solid #1e2035",
+              background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
               borderRadius: 10, padding: 14, fontSize: 11, color: "#636e72",
               lineHeight: 1.8,
             }}>

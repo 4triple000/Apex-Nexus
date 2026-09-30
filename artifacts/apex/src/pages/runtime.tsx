@@ -141,7 +141,7 @@ function ProjectPickerModal({
         exit={{ opacity: 0, scale: 0.94, y: 20 }}
         style={{
           position: "fixed", inset: "auto 12px", top: "50%", transform: "translateY(-50%)",
-          zIndex: 201, background: "#12141e",
+          zIndex: 201, background: "rgba(30,26,62,0.62)",
           border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20,
           padding: 20, maxHeight: "85vh", overflowY: "auto",
           fontFamily: "'Inter', -apple-system, sans-serif",
@@ -254,7 +254,7 @@ function FileTree({
   return (
     <div style={{
       height: "100%", display: "flex", flexDirection: "column",
-      background: "#0d0f1a", borderRight: "1px solid rgba(255,255,255,0.06)",
+      background: "rgba(30,26,62,0.62)", borderRight: "1px solid rgba(255,255,255,0.06)",
     }}>
       <div style={{
         display: "flex", alignItems: "center", padding: "12px 12px 8px",
@@ -351,14 +351,14 @@ function OutputPanel({
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100%",
-      background: "#0d0f1a",
+      background: "rgba(30,26,62,0.62)",
     }}>
       {/* Tab bar */}
       <div style={{
         display: "flex", alignItems: "center",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
         padding: "0 12px",
-        background: "rgba(10,11,20,0.9)",
+        background: "rgba(14,12,32,0.55)",
       }}>
         {(["console", "preview"] as const).map(m => (
           <button key={m} onClick={() => onModeChange(m)} style={{
@@ -668,7 +668,7 @@ export default function RuntimePage() {
   return (
     <div style={{
       minHeight: "100dvh", maxHeight: "100dvh",
-      background: "#07080e",
+      background: "transparent",
       display: "flex", flexDirection: "column",
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       color: "#fff", overflow: "hidden",
@@ -678,7 +678,7 @@ export default function RuntimePage() {
       <div style={{
         display: "flex", alignItems: "center", gap: 8,
         padding: "10px 14px",
-        background: "rgba(10,11,20,0.98)",
+        background: "rgba(14,12,32,0.55)",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         flexShrink: 0, zIndex: 30,
       }}>
@@ -856,7 +856,7 @@ export default function RuntimePage() {
               <Suspense fallback={
                 <div style={{
                   height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "#0d0f1a", color: "#636e72", fontSize: 13,
+                  background: "rgba(30,26,62,0.62)", color: "#636e72", fontSize: 13,
                 }}>
                   Loading editor…
                 </div>

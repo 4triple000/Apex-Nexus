@@ -213,7 +213,7 @@ export function CommandCenter({ modules, globalSettings, onModulesChange, onGlob
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             style={{
-              background: "#12141e",
+              background: "rgba(30,26,62,0.62)",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 10, marginTop: 4, overflow: "hidden",
             }}

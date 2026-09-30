@@ -20,16 +20,16 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
     <div
       style={{
         background: selected
-          ? "rgba(255,204,51,0.18)"
-          : "rgba(255,204,51,0.08)",
-        border: `2px solid ${selected ? "#FFCC33" : "rgba(255,204,51,0.4)"}`,
+          ? "rgba(162,155,254,0.18)"
+          : "rgba(162,155,254,0.08)",
+        border: `2px solid ${selected ? "#A29BFE" : "rgba(162,155,254,0.4)"}`,
         borderRadius: 14,
         padding: "12px 16px",
         minWidth: 220,
         cursor: "pointer",
         transition: "all 0.15s ease",
         boxShadow: selected
-          ? "0 0 0 3px rgba(255,204,51,0.2), 0 8px 24px rgba(0,0,0,0.4)"
+          ? "0 0 0 3px rgba(162,155,254,0.2), 0 8px 24px rgba(0,0,0,0.4)"
           : "0 4px 16px rgba(0,0,0,0.3)",
       }}
     >
@@ -39,7 +39,7 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
           fontSize: 10,
           fontWeight: 700,
           letterSpacing: 1.5,
-          color: "#FFCC33",
+          color: "#A29BFE",
           textTransform: "uppercase",
           marginBottom: 8,
           display: "flex",
@@ -58,7 +58,7 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
             width: 36,
             height: 36,
             borderRadius: 10,
-            background: "rgba(255,204,51,0.2)",
+            background: "rgba(162,155,254,0.2)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -93,10 +93,10 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
           style={{
             marginTop: 10,
             padding: "4px 8px",
-            background: "rgba(255,204,51,0.1)",
+            background: "rgba(162,155,254,0.1)",
             borderRadius: 6,
             fontSize: 11,
-            color: "#FFCC33",
+            color: "#A29BFE",
           }}
         >
           {d.conditions.length} condition{d.conditions.length > 1 ? "s" : ""}
@@ -107,7 +107,7 @@ export const TriggerNode = memo(({ data, selected }: NodeProps) => {
         type="source"
         position={Position.Bottom}
         style={{
-          background: "#FFCC33",
+          background: "#A29BFE",
           width: 10,
           height: 10,
           border: "2px solid #0a0a0a",

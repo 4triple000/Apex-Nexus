@@ -72,7 +72,7 @@ export function TopBar() {
           >
             <div
               className="w-full h-full rounded-full flex items-center justify-center text-xs font-bold"
-              style={{ background: "#0A0A15", color: "#A78BFA" }}
+              style={{ background: "rgba(30,26,62,0.62)", color: "#A78BFA" }}
             >
               A
             </div>

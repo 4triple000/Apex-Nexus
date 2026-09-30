@@ -45,7 +45,7 @@ const apiUrl = (path: string) => `${BASE}/api${path}`;
 const MODES: { id: AutopilotMode; label: string; color: string; desc: string; icon: string }[] = [
   { id: "off",       label: "OFF",          color: "#666",    icon: "⏸",  desc: "Manual mode only. No AI monitoring." },
   { id: "suggest",   label: "SUGGEST",      color: "#3b82f6", icon: "💡", desc: "AI scans and recommends fixes. You approve." },
-  { id: "auto_fix",  label: "AUTO FIX",     color: "#FFCC33", icon: "🔧", desc: "AI automatically applies safe fixes." },
+  { id: "auto_fix",  label: "AUTO FIX",     color: "#A29BFE", icon: "🔧", desc: "AI automatically applies safe fixes." },
   { id: "full_auto", label: "FULL AUTO",    color: "#ef4444", icon: "🤖", desc: "AI autonomously fixes all issues including structure." },
 ];
 
@@ -122,7 +122,7 @@ export function AutopilotPane({ projectId, projectName, mode, onModeChange, onFi
   const fixedIssues   = issues.filter((i) => appliedFixes.includes(i.id));
 
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#0D0D0D" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "transparent" }}>
       {/* Header */}
       <div className="px-5 py-4 border-b flex-shrink-0" style={{ borderColor: "#1C1C1E" }}>
         <div className="flex items-center justify-between">
@@ -172,11 +172,11 @@ export function AutopilotPane({ projectId, projectName, mode, onModeChange, onFi
               onClick={runScan}
               disabled={isScanning || !projectId}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all hover:brightness-110 disabled:opacity-40 flex items-center justify-center gap-2"
-              style={{ background: "rgba(255,204,51,0.1)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.2)" }}
+              style={{ background: "rgba(162,155,254,0.1)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.2)" }}
             >
               {isScanning ? (
                 <>
-                  <div className="w-3 h-3 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(255,204,51,0.3)", borderTopColor: "#FFCC33" }} />
+                  <div className="w-3 h-3 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(162,155,254,0.3)", borderTopColor: "#A29BFE" }} />
                   Scanning…
                 </>
               ) : (
@@ -212,7 +212,7 @@ export function AutopilotPane({ projectId, projectName, mode, onModeChange, onFi
             <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2">AI Observations</p>
             <div className="space-y-1.5">
               {observations.map((obs, i) => (
-                <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-lg" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+                <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
                   <span className="text-blue-400 text-[10px] mt-0.5 flex-shrink-0">●</span>
                   <p className="text-white/50 text-[11px] leading-snug">{obs}</p>
                 </div>
@@ -233,7 +233,7 @@ export function AutopilotPane({ projectId, projectName, mode, onModeChange, onFi
                   onClick={() => pendingIssues.forEach(applyFix)}
                   disabled={!!fixingId}
                   className="text-[10px] px-2 py-1 rounded-lg transition-all"
-                  style={{ background: "rgba(255,204,51,0.1)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.2)" }}
+                  style={{ background: "rgba(162,155,254,0.1)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.2)" }}
                 >
                   Fix All
                 </button>
@@ -308,7 +308,7 @@ function IssueCard({
 
   const severityColors = {
     error: { border: "rgba(239,68,68,0.3)", bg: "rgba(239,68,68,0.06)", dot: "#ef4444", label: "ERROR" },
-    warn:  { border: "rgba(255,204,51,0.3)", bg: "rgba(255,204,51,0.04)", dot: "#FFCC33", label: "WARN" },
+    warn:  { border: "rgba(162,155,254,0.3)", bg: "rgba(162,155,254,0.04)", dot: "#A29BFE", label: "WARN" },
     info:  { border: "rgba(59,130,246,0.3)", bg: "rgba(59,130,246,0.04)", dot: "#60a5fa", label: "INFO" },
   };
   const s = severityColors[issue.severity];
@@ -341,11 +341,11 @@ function IssueCard({
               onClick={onFix}
               disabled={isFixing}
               className="mt-2.5 w-full py-2 rounded-lg text-[11px] font-medium transition-all hover:brightness-110 disabled:opacity-50 flex items-center justify-center gap-1.5"
-              style={{ background: "rgba(255,204,51,0.1)", color: "#FFCC33", border: "1px solid rgba(255,204,51,0.2)" }}
+              style={{ background: "rgba(162,155,254,0.1)", color: "#A29BFE", border: "1px solid rgba(162,155,254,0.2)" }}
             >
               {isFixing ? (
                 <>
-                  <div className="w-2.5 h-2.5 rounded-full border border-t-transparent animate-spin" style={{ borderColor: "rgba(255,204,51,0.3)", borderTopColor: "#FFCC33" }} />
+                  <div className="w-2.5 h-2.5 rounded-full border border-t-transparent animate-spin" style={{ borderColor: "rgba(162,155,254,0.3)", borderTopColor: "#A29BFE" }} />
                   Applying fix…
                 </>
               ) : "🔧 Apply Fix"}
@@ -360,7 +360,7 @@ function IssueCard({
 // ── Health badge ───────────────────────────────────────────────────────────────
 
 function HealthBadge({ score }: { score: number }) {
-  const color = score >= 80 ? "#22c55e" : score >= 60 ? "#FFCC33" : "#ef4444";
+  const color = score >= 80 ? "#22c55e" : score >= 60 ? "#A29BFE" : "#ef4444";
   const label = score >= 80 ? "Healthy" : score >= 60 ? "Fair" : "At Risk";
   return (
     <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl" style={{ background: `${color}10`, border: `1px solid ${color}30` }}>
@@ -390,11 +390,11 @@ function SelfImprovingLog({ logs }: { logs: InteractionLog[] }) {
     <div>
       <div className="flex items-center justify-between mb-2">
         <p className="text-white/30 text-[10px] uppercase tracking-wider">Self-Improving System</p>
-        <span className="text-[10px] font-mono" style={{ color: successRate >= 80 ? "#22c55e" : "#FFCC33" }}>
+        <span className="text-[10px] font-mono" style={{ color: successRate >= 80 ? "#22c55e" : "#A29BFE" }}>
           {successRate}% success rate
         </span>
       </div>
-      <div className="rounded-xl overflow-hidden" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+      <div className="rounded-xl overflow-hidden" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
         <div className="px-3 py-2 border-b" style={{ borderColor: "#21262D" }}>
           <div className="flex items-center justify-between text-[10px]">
             <span style={{ color: "rgba(255,255,255,0.3)" }}>Interaction loop active</span>
@@ -403,7 +403,7 @@ function SelfImprovingLog({ logs }: { logs: InteractionLog[] }) {
               <span style={{ color: "#22c55e" }}>LEARNING</span>
             </div>
           </div>
-          <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: "#2A2A2A" }}>
+          <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: "rgba(30,26,62,0.62)" }}>
             <div className="h-full rounded-full" style={{ width: `${successRate}%`, background: "linear-gradient(90deg, #22c55e, #4ade80)" }} />
           </div>
         </div>
@@ -416,7 +416,7 @@ function SelfImprovingLog({ logs }: { logs: InteractionLog[] }) {
                   {log.prompt?.slice(0, 50) ?? log.type}
                 </p>
                 {log.insight && (
-                  <p className="text-[9px] mt-0.5" style={{ color: "rgba(255,204,51,0.6)" }}>
+                  <p className="text-[9px] mt-0.5" style={{ color: "rgba(162,155,254,0.6)" }}>
                     → {log.insight.slice(0, 60)}
                   </p>
                 )}

@@ -229,13 +229,13 @@ function makeStyles(colors: ReturnType<typeof import("@/hooks/useColors").useCol
       fontWeight: "700",
       color: colors.foreground,
       letterSpacing: 6,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "Sora_700Bold",
     },
     tagline: {
       fontSize: 14,
       color: colors.mutedForeground,
       marginTop: 6,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "Manrope_400Regular",
     },
     tabRow: {
       flexDirection: "row",
@@ -257,7 +257,7 @@ function makeStyles(colors: ReturnType<typeof import("@/hooks/useColors").useCol
       fontSize: 14,
       fontWeight: "600",
       color: colors.mutedForeground,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "Manrope_600SemiBold",
     },
     tabTextActive: {
       color: colors.primaryForeground,
@@ -283,7 +283,7 @@ function makeStyles(colors: ReturnType<typeof import("@/hooks/useColors").useCol
       flex: 1,
       fontSize: 15,
       color: colors.foreground,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "Manrope_400Regular",
     },
     eyeButton: {
       padding: 4,
@@ -306,17 +306,17 @@ function makeStyles(colors: ReturnType<typeof import("@/hooks/useColors").useCol
       fontSize: 16,
       fontWeight: "700",
       color: colors.primaryForeground,
-      fontFamily: "Inter_700Bold",
+      fontFamily: "Sora_700Bold",
     },
     footerText: {
       textAlign: "center",
       fontSize: 14,
       color: colors.mutedForeground,
-      fontFamily: "Inter_400Regular",
+      fontFamily: "Manrope_400Regular",
     },
     footerLink: {
       color: colors.primary,
-      fontFamily: "Inter_600SemiBold",
+      fontFamily: "Manrope_600SemiBold",
     },
   });
 }

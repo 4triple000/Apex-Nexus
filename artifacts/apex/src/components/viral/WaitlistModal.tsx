@@ -180,7 +180,7 @@ export function WaitlistModal({ feature, onClose }: WaitlistModalProps) {
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9500,
           maxHeight: "94vh", display: "flex", flexDirection: "column",
           borderRadius: "24px 24px 0 0",
-          background: "linear-gradient(180deg, #0D0F1D 0%, #080912 100%)",
+          background: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
           border: `1px solid ${feature.accent}35`,
           borderBottom: "none",
           boxShadow: `0 -12px 60px rgba(0,0,0,0.70), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 -8px 60px ${feature.accent}12`,

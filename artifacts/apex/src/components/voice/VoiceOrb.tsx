@@ -61,7 +61,7 @@ const MODE_CONFIG: Record<VoiceMode, { color: string; glow: string; label: strin
   builder: { color: "#A29BFE", glow: "rgba(162,155,254,0.55)", label: "Builder", emoji: "⚙️" },
   game:    { color: "#00D2D3", glow: "rgba(0,210,211,0.55)",   label: "Game",    emoji: "🎮" },
   chat:    { color: "#FD79A8", glow: "rgba(253,121,168,0.55)", label: "Chat",    emoji: "💬" },
-  command: { color: "#FFCC33", glow: "rgba(255,204,51,0.55)",  label: "Command", emoji: "⚡" },
+  command: { color: "#A29BFE", glow: "rgba(162,155,254,0.55)",  label: "Command", emoji: "⚡" },
 };
 
 // ── Waveform bars (speaking animation) ───────────────────────────────────────
@@ -204,7 +204,7 @@ export function VoiceOrb({
             : speaking
               ? `radial-gradient(circle at 40% 40%, ${cfg.color}cc, #1a0e2e)`
               : processing
-                ? "radial-gradient(circle at 40% 40%, #A29BFE88, #12121c)"
+                ? "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))"
                 : "radial-gradient(circle at 40% 40%, #2d2a4a, #0d0e18)",
           boxShadow:     listening || speaking
             ? `0 0 ${Math.round(amplitude * 40 + 20)}px ${cfg.glow}, 0 0 60px ${cfg.glow}40, inset 0 1px 0 rgba(255,255,255,0.15)`
@@ -285,7 +285,7 @@ export function VoiceOrb({
           bottom:      "calc(100% + 12px)",
           left:        "50%",
           transform:   "translateX(-50%)",
-          background:  "rgba(13,14,24,0.95)",
+          background:  "rgba(14,12,32,0.55)",
           backdropFilter: "blur(20px)",
           border:      `1px solid ${cfg.color}44`,
           borderRadius: 12,

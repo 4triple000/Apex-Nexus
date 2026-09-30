@@ -21,7 +21,7 @@ const REASON_COPY: Record<string, { title: string; sub: string }> = {
 };
 
 const TIER_ICONS: Record<string, React.ReactNode> = {
-  pro: <Zap size={16} className="text-[#ffcc33]" />,
+  pro: <Zap size={16} className="text-[#A29BFE]" />,
   creator_pro: <Crown size={16} className="text-purple-400" />,
 };
 
@@ -58,18 +58,18 @@ export function UpgradeModal({ open, onClose, reason = "general", projectTitle, 
 
         {/* One-time purchase option */}
         {reason === "paid_project" && projectPrice && projectId && (
-          <div className="mb-4 p-4 bg-[#1a1a1a] border border-white/10 rounded-2xl">
+          <div className="mb-4 p-4 bg-[rgba(30,26,62,0.62)] border border-white/10 rounded-2xl">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-sm font-bold text-white">Buy once</p>
                 <p className="text-xs text-white/50">{projectTitle ?? "This project"}</p>
               </div>
-              <span className="text-lg font-bold" style={{ color: "#ffcc33" }}>{formatPrice(projectPrice)}</span>
+              <span className="text-lg font-bold" style={{ color: "#A29BFE" }}>{formatPrice(projectPrice)}</span>
             </div>
             <p className="text-xs text-white/30 mb-3">Permanent access — run anytime</p>
             <Button
               className="w-full font-bold rounded-xl"
-              style={{ background: "#ffcc33", color: "#000" }}
+              style={{ background: "#A29BFE", color: "#000" }}
               disabled={checkout.isPending}
               onClick={() => {
                 // For one-time project purchase, we'd need a specific price ID
@@ -94,7 +94,7 @@ export function UpgradeModal({ open, onClose, reason = "general", projectTitle, 
             <p className="text-sm text-white/40 mb-4">Upgrade your plan to unlock more features.</p>
             <Button
               className="w-full font-bold rounded-xl"
-              style={{ background: "#ffcc33", color: "#000" }}
+              style={{ background: "#A29BFE", color: "#000" }}
               onClick={() => { onClose(); window.location.href = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/pricing`; }}
             >
               View Pricing
@@ -105,7 +105,7 @@ export function UpgradeModal({ open, onClose, reason = "general", projectTitle, 
         <div className="space-y-3">
           {plans.map((plan) => {
             const monthlyPrice = plan.prices.find((p) => p.interval === "month");
-            const accent = plan.tier === "creator_pro" ? "#a78bfa" : "#ffcc33";
+            const accent = plan.tier === "creator_pro" ? "#a78bfa" : "#A29BFE";
             return (
               <div
                 key={plan.id}

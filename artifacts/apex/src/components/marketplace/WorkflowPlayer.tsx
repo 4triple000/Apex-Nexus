@@ -75,7 +75,7 @@ export function WorkflowPlayer({ item, onClose }: WorkflowPlayerProps) {
   return (
     <div className="fixed inset-0 z-50 bg-[#060610] flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/10 bg-[#0a0a14]">
+      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/10 bg-[transparent]">
         <button onClick={handleClose} className="text-white/40 hover:text-white transition-colors">
           ←
         </button>
@@ -102,7 +102,7 @@ export function WorkflowPlayer({ item, onClose }: WorkflowPlayerProps) {
                   value={inputs[varName] ?? ""}
                   onChange={(e) => setInputs((prev) => ({ ...prev, [varName]: e.target.value }))}
                   placeholder={`Enter ${varName}...`}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#ffcc33]/40"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-[#A29BFE]/40"
                 />
               </div>
             ))}
@@ -147,7 +147,7 @@ export function WorkflowPlayer({ item, onClose }: WorkflowPlayerProps) {
                     <div className="flex-1">
                       <p className="text-white/60 text-xs">{step.name}</p>
                     </div>
-                    <div className="w-3 h-3 rounded-full border-2 border-[#ffcc33]/50 border-t-[#ffcc33] animate-spin" />
+                    <div className="w-3 h-3 rounded-full border-2 border-[#A29BFE]/50 border-t-[#A29BFE] animate-spin" />
                   </div>
                 ))}
               </div>
@@ -167,8 +167,8 @@ export function WorkflowPlayer({ item, onClose }: WorkflowPlayerProps) {
             ))}
 
             {results?.finalOutput && (
-              <div className="p-4 rounded-xl bg-[#ffcc33]/8 border border-[#ffcc33]/25">
-                <p className="text-[#ffcc33] font-bold text-xs mb-2">🏁 Final Output</p>
+              <div className="p-4 rounded-xl bg-[#A29BFE]/8 border border-[#A29BFE]/25">
+                <p className="text-[#A29BFE] font-bold text-xs mb-2">🏁 Final Output</p>
                 <p className="text-white/80 text-sm leading-relaxed">{results.finalOutput}</p>
               </div>
             )}
@@ -177,13 +177,13 @@ export function WorkflowPlayer({ item, onClose }: WorkflowPlayerProps) {
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-white/10 bg-[#0a0a14]">
+      <div className="p-4 border-t border-white/10 bg-[transparent]">
         {!started ? (
           <button
             onClick={handleRun}
             disabled={inputVars.some((v) => !inputs[v]?.trim())}
             className="w-full py-4 rounded-xl text-base font-black text-black transition-all disabled:opacity-40 hover:brightness-110 active:scale-95"
-            style={{ background: "#ffcc33" }}
+            style={{ background: "#A29BFE" }}
           >
             ▶ Run Workflow
           </button>
@@ -198,7 +198,7 @@ export function WorkflowPlayer({ item, onClose }: WorkflowPlayerProps) {
             <button
               onClick={handleClose}
               className="flex-1 py-3 rounded-xl text-sm font-bold text-black"
-              style={{ background: "#ffcc33" }}
+              style={{ background: "#A29BFE" }}
             >
               Done ✓
             </button>

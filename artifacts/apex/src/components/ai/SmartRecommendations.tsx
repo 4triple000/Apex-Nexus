@@ -22,7 +22,7 @@ export function SmartRecommendations({ compact = true, maxItems = 3, showTitle =
       {showTitle && (
         <div className="flex items-center justify-between mb-2 px-4">
           <div className="flex items-center gap-2">
-            <Brain size={13} className="text-[#ffcc33]" />
+            <Brain size={13} className="text-[#A29BFE]" />
             <span className="text-xs font-bold text-white">AI Recommendations</span>
           </div>
           <button

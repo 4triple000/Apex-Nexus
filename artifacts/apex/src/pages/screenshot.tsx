@@ -58,8 +58,8 @@ export default function Screenshot() {
   const canAnalyze = (content.trim().length > 0 || !!imageBase64) && !analyzeScreenshot.isPending;
 
   return (
-    <div className="flex flex-col h-full bg-background relative overflow-y-auto pb-24">
-      <div className="p-4 border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-md z-10">
+    <div className="flex flex-col h-full bg-transparent relative overflow-y-auto pb-24">
+      <div className="p-4 border-b border-border/50 sticky top-0 bg-[rgba(14,12,32,0.5)] backdrop-blur-md z-10">
         <h1 className="font-mono font-bold text-xl tracking-tight flex items-center gap-2">
           <span className="text-primary">/</span>
           <span>ANALYZE</span>
@@ -91,7 +91,7 @@ export default function Screenshot() {
               <button
                 onClick={clearImage}
                 data-testid="button-clear-image"
-                className="absolute top-2 right-2 bg-background/80 border border-border rounded-full p-1.5 hover:bg-muted transition-colors"
+                className="absolute top-2 right-2 bg-[rgba(14,12,32,0.5)] border border-border rounded-full p-1.5 hover:bg-muted transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>

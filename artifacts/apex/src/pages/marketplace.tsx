@@ -79,7 +79,7 @@ function RunModal({ item, onClose }: { item: StudioMarketplaceItem; onClose: () 
       <div
         className="relative w-full max-w-xl rounded-3xl max-h-[85vh] flex flex-col overflow-hidden"
         style={{
-          background: "rgba(14,14,20,0.96)",
+          background: "rgba(14,12,32,0.55)",
           border: "1px solid rgba(255,255,255,0.10)",
           boxShadow: "0 24px 64px rgba(0,0,0,0.7)",
         }}
@@ -536,7 +536,7 @@ function MarketplacePageInner() {
   const items = data?.items ?? [];
 
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#0A0A0F" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "transparent" }}>
 
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex-shrink-0 px-4 pt-6 pb-3 space-y-4">

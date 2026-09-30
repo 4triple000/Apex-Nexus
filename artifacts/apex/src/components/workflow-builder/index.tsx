@@ -195,7 +195,7 @@ export function WorkflowBuilder() {
       style={{
         width: "100vw",
         height: "100vh",
-        background: "#080808",
+        background: "transparent",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -207,7 +207,7 @@ export function WorkflowBuilder() {
       <div
         style={{
           height: 52,
-          background: "#0d0d0d",
+          background: "transparent",
           borderBottom: "1px solid #1a1a1a",
           display: "flex",
           alignItems: "center",
@@ -247,14 +247,14 @@ export function WorkflowBuilder() {
               width: 26,
               height: 26,
               borderRadius: 7,
-              background: "rgba(255,204,51,0.15)",
-              border: "1px solid rgba(255,204,51,0.3)",
+              background: "rgba(162,155,254,0.15)",
+              border: "1px solid rgba(162,155,254,0.3)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Wand2 size={13} color="#FFCC33" />
+            <Wand2 size={13} color="#A29BFE" />
           </div>
           <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
             AI Workflow Builder
@@ -313,7 +313,7 @@ export function WorkflowBuilder() {
             onClick={handleSave}
             disabled={!workflow || saveState === "saving"}
             style={{
-              background: workflow ? "#FFCC33" : "#1a1a1a",
+              background: workflow ? "#A29BFE" : "#1a1a1a",
               border: "none",
               borderRadius: 8,
               padding: "5px 14px",

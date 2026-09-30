@@ -62,7 +62,7 @@ export default function BuilderScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: Platform.OS === "web" ? 16 : insets.top }]}>
       <Backdrop />
       <ScrollView
         style={styles.scroll}

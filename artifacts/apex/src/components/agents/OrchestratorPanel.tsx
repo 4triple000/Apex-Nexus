@@ -209,7 +209,7 @@ export default function OrchestratorPanel() {
   return (
     <div style={{
       fontFamily: "'SF Pro Display', -apple-system, sans-serif",
-      background: "#0a0b0f", borderRadius: 16,
+      background: "transparent", borderRadius: 16,
       border: "1px solid #1e1f2e", overflow: "hidden",
     }}>
       {/* ── Header ── */}
@@ -228,7 +228,7 @@ export default function OrchestratorPanel() {
             <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", letterSpacing: -0.3 }}>
               Orchestrator Agent
               <span style={{ marginLeft: 8, fontSize: 9, fontWeight: 700, letterSpacing: 1.2,
-                background: "#1e2035", color: "#6C5CE7", padding: "2px 7px", borderRadius: 10,
+                background: "rgba(30,26,62,0.62)", color: "#6C5CE7", padding: "2px 7px", borderRadius: 10,
               }}>MASTER AI</span>
             </div>
             <div style={{ fontSize: 11, color: "#636e72" }}>
@@ -245,7 +245,7 @@ export default function OrchestratorPanel() {
             { v: status?.tasksRejected ?? 0, label: "Rejected", c: "#e17055" },
           ].map(({ v, label, c }) => (
             <div key={label} style={{
-              background: "#0f1020", border: "1px solid #1e2035",
+              background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
               borderRadius: 20, padding: "4px 12px", textAlign: "center",
             }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: c }}>{v}</div>
@@ -256,7 +256,7 @@ export default function OrchestratorPanel() {
           {/* Phase indicator */}
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
-            background: "#0f1020", border: "1px solid #1e2035",
+            background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
             borderRadius: 20, padding: "6px 14px",
           }}>
             <div style={{
@@ -271,7 +271,7 @@ export default function OrchestratorPanel() {
       </div>
 
       {/* ── Tab bar ── */}
-      <div style={{ display: "flex", borderBottom: "1px solid #1e1f2e", background: "#0a0b0f" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid #1e1f2e", background: "transparent" }}>
         {(["mission", "tasks", "history", "control"] as const).map((tab) => {
           const pendingCount = tab === "tasks" ? tasks.filter((t) => t.status === "approved").length : 0;
           return (
@@ -295,7 +295,7 @@ export default function OrchestratorPanel() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
             {/* Cycle pipeline */}
-            <div style={{ background: "#0f1020", border: "1px solid #1e2035", borderRadius: 12, padding: 14 }}>
+            <div style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035", borderRadius: 12, padding: 14 }}>
               <div style={{ fontSize: 10, color: "#636e72", marginBottom: 10, fontWeight: 700, letterSpacing: 1 }}>
                 ORCHESTRATION PIPELINE
               </div>
@@ -324,7 +324,7 @@ export default function OrchestratorPanel() {
             </div>
 
             {/* Agent roster */}
-            <div style={{ background: "#0f1020", border: "1px solid #1e2035", borderRadius: 12, padding: 14 }}>
+            <div style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035", borderRadius: 12, padding: 14 }}>
               <div style={{ fontSize: 10, color: "#636e72", marginBottom: 10, fontWeight: 700, letterSpacing: 1 }}>
                 AGENT ROSTER
               </div>
@@ -372,7 +372,7 @@ export default function OrchestratorPanel() {
                 { label: "Rejected", value: status?.tasksRejected ?? 0,    color: "#e17055" },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{
-                  background: "#0f1020", border: "1px solid #1e2035",
+                  background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035",
                   borderRadius: 10, padding: "10px", textAlign: "center",
                 }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
@@ -383,7 +383,7 @@ export default function OrchestratorPanel() {
 
             {/* Activity log */}
             <div style={{
-              background: "#050608", border: "1px solid #1e2035",
+              background: "transparent", border: "1px solid #1e2035",
               borderRadius: 10, padding: 12, maxHeight: 120, overflowY: "auto",
             }}>
               <div style={{ fontSize: 10, color: "#636e72", marginBottom: 6, fontWeight: 700, letterSpacing: 1 }}>
@@ -413,7 +413,7 @@ export default function OrchestratorPanel() {
               const isExpanded = expanded === task.id;
               return (
                 <div key={task.id} style={{
-                  background: "#0f1020",
+                  background: "rgba(30,26,62,0.62)",
                   border: `1px solid ${task.status === "deployed" ? "#00b89433" : task.status === "rejected" ? "#e1705533" : "#1e2035"}`,
                   borderRadius: 12, overflow: "hidden",
                 }}>
@@ -444,7 +444,7 @@ export default function OrchestratorPanel() {
                   </div>
 
                   {isExpanded && (
-                    <div style={{ borderTop: "1px solid #1e2035", padding: "12px 14px", background: "#080910" }}>
+                    <div style={{ borderTop: "1px solid #1e2035", padding: "12px 14px", background: "transparent" }}>
                       <div style={{ fontSize: 11, color: "#636e72", marginBottom: 8, lineHeight: 1.6 }}>
                         {task.description}
                       </div>
@@ -460,7 +460,7 @@ export default function OrchestratorPanel() {
                       )}
                       {task.agentOutput && (
                         <div style={{
-                          background: "#050608", borderRadius: 8, padding: 10, marginBottom: 10,
+                          background: "transparent", borderRadius: 8, padding: 10, marginBottom: 10,
                           fontSize: 11, color: "#b2bec3", maxHeight: 120, overflowY: "auto",
                           whiteSpace: "pre-wrap", fontFamily: "monospace",
                         }}>
@@ -504,7 +504,7 @@ export default function OrchestratorPanel() {
               </div>
             ) : cycles.map((c) => (
               <div key={c.id} style={{
-                background: "#0f1020",
+                background: "rgba(30,26,62,0.62)",
                 border: `1px solid ${c.error ? "#e1705533" : c.tasksDeployed > 0 ? "#00b89433" : "#1e2035"}`,
                 borderRadius: 10, padding: "12px 14px",
               }}>
@@ -560,7 +560,7 @@ export default function OrchestratorPanel() {
             </div>
 
             {/* Interval */}
-            <div style={{ background: "#0f1020", border: "1px solid #1e2035", borderRadius: 10, padding: 14 }}>
+            <div style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035", borderRadius: 10, padding: 14 }}>
               <div style={{ fontSize: 10, color: "#636e72", marginBottom: 8, fontWeight: 700, letterSpacing: 1 }}>
                 CYCLE INTERVAL
               </div>
@@ -579,7 +579,7 @@ export default function OrchestratorPanel() {
 
             {/* Auto-apply toggle */}
             <div style={{
-              background: "#0f1020", border: "1px solid #1e2035", borderRadius: 10, padding: 14,
+              background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035", borderRadius: 10, padding: 14,
               display: "flex", alignItems: "center", justifyContent: "space-between",
             }}>
               <div>
@@ -627,7 +627,7 @@ export default function OrchestratorPanel() {
 
             {/* Safety */}
             <div style={{
-              background: "#0f1020", border: "1px solid #1e2035", borderRadius: 10,
+              background: "rgba(30,26,62,0.62)", border: "1px solid #1e2035", borderRadius: 10,
               padding: 14, fontSize: 11, color: "#636e72", lineHeight: 1.8,
             }}>
               <div style={{ fontWeight: 700, color: "#dfe6e9", marginBottom: 6 }}>🔐 Safety Controls</div>

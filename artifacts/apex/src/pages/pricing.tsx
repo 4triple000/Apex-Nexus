@@ -6,7 +6,7 @@ import { useCheckout, useSubscriptionStatus, useCustomerPortal } from "@/hooks/u
 import { useToast } from "@/hooks/use-toast";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const BG       = "#0F1115";
+const BG = "transparent";
 const SURFACE  = "rgba(255,255,255,0.04)";
 const BORDER   = "rgba(255,255,255,0.07)";
 

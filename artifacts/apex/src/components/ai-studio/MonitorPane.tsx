@@ -126,7 +126,7 @@ export function MonitorPane({ projectId, projectName, buildCount = 0, editCount 
   // ── Empty state ─────────────────────────────────────────────────────────────
   if (!projectId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8" style={{ background: "#0D0D0D" }}>
+      <div className="flex flex-col items-center justify-center h-full text-center p-8" style={{ background: "transparent" }}>
         <div className="text-4xl mb-4">📊</div>
         <h3 className="text-white font-bold text-base mb-2">Monitor activates after build</h3>
         <p className="text-white/40 text-sm max-w-48">
@@ -137,7 +137,7 @@ export function MonitorPane({ projectId, projectName, buildCount = 0, editCount 
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden" style={{ background: "#0D0D0D" }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: "transparent" }}>
       {/* Header */}
       <div className="px-5 py-4 border-b flex-shrink-0" style={{ borderColor: "#1C1C1E" }}>
         <div className="flex items-center justify-between">
@@ -156,7 +156,7 @@ export function MonitorPane({ projectId, projectName, buildCount = 0, editCount 
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* ── AI Evolution Loop ─────────────────────────────────────────────── */}
-        <div className="rounded-xl p-3" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+        <div className="rounded-xl p-3" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
           <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2.5">AI Evolution Loop</p>
           <div className="flex items-center gap-1 overflow-x-auto">
             {LOOP_STAGES.map((stage, i) => (
@@ -164,9 +164,9 @@ export function MonitorPane({ projectId, projectName, buildCount = 0, editCount 
                 <div
                   className="px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all duration-500"
                   style={{
-                    background: loopPhase === i ? "rgba(255,204,51,0.2)" : "rgba(255,255,255,0.04)",
-                    color: loopPhase === i ? "#FFCC33" : "rgba(255,255,255,0.25)",
-                    border: `1px solid ${loopPhase === i ? "rgba(255,204,51,0.4)" : "rgba(255,255,255,0.06)"}`,
+                    background: loopPhase === i ? "rgba(162,155,254,0.2)" : "rgba(255,255,255,0.04)",
+                    color: loopPhase === i ? "#A29BFE" : "rgba(255,255,255,0.25)",
+                    border: `1px solid ${loopPhase === i ? "rgba(162,155,254,0.4)" : "rgba(255,255,255,0.06)"}`,
                     transform: loopPhase === i ? "scale(1.05)" : "scale(1)",
                   }}
                 >
@@ -184,7 +184,7 @@ export function MonitorPane({ projectId, projectName, buildCount = 0, editCount 
 
         {/* ── Project stats ─────────────────────────────────────────────────── */}
         <div className="grid grid-cols-3 gap-2">
-          <StatCard label="Builds"      value={String(buildCount)}                         icon="🏗"  color="#FFCC33" />
+          <StatCard label="Builds"      value={String(buildCount)}                         icon="🏗"  color="#A29BFE" />
           <StatCard label="Edits"       value={String(editCount)}                          icon="✏️"  color="#60a5fa" />
           <StatCard label="Deployments" value={String(metrics?.deploymentCount ?? "—")}   icon="🚀"  color="#22c55e" />
         </div>
@@ -224,7 +224,7 @@ export function MonitorPane({ projectId, projectName, buildCount = 0, editCount 
               />
             </div>
           ) : (
-            <div className="rounded-xl p-4 text-center" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+            <div className="rounded-xl p-4 text-center" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
               {fetchError
                 ? <p className="text-red-400 text-[11px]">Could not load metrics — check API connection</p>
                 : <p className="text-white/30 text-[11px]">Loading telemetry…</p>
@@ -250,7 +250,7 @@ export function MonitorPane({ projectId, projectName, buildCount = 0, editCount 
 
         {/* ── File count ────────────────────────────────────────────────────── */}
         {metrics && metrics.fileCount > 0 && (
-          <div className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+          <div className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
             <span className="text-lg">📁</span>
             <div>
               <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Project Files</p>
@@ -275,7 +275,7 @@ export function MonitorPane({ projectId, projectName, buildCount = 0, editCount 
 
 function StatCard({ label, value, icon, color }: { label: string; value: string; icon: string; color: string }) {
   return (
-    <div className="rounded-xl p-3 text-center" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+    <div className="rounded-xl p-3 text-center" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
       <div className="text-lg mb-1">{icon}</div>
       <div className="text-lg font-bold" style={{ color }}>{value}</div>
       <div className="text-[9px] mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>{label}</div>
@@ -287,7 +287,7 @@ function MetricCard({ label, value, delta, positive, icon }: {
   label: string; value: string; delta: string; positive: boolean; icon: string;
 }) {
   return (
-    <div className="rounded-xl p-3" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+    <div className="rounded-xl p-3" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
       <div className="flex items-center gap-1.5 mb-1.5">
         <span className="text-sm">{icon}</span>
         <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>{label}</span>
@@ -308,7 +308,7 @@ function UptimeBar({ seconds, successRate }: { seconds: number; successRate: num
   const displayRate = successRate.toFixed(1);
 
   return (
-    <div className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={{ background: "#161B22", border: "1px solid #21262D" }}>
+    <div className="rounded-xl px-3 py-2.5 flex items-center gap-3" style={{ background: "rgba(30,26,62,0.62)", border: "1px solid #21262D" }}>
       <div>
         <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Session Uptime</p>
         <p className="text-white font-mono text-sm font-bold">{str}</p>
@@ -326,7 +326,7 @@ function UptimeBar({ seconds, successRate }: { seconds: number; successRate: num
                 background: i < threshold
                   ? "rgba(34,197,94,0.5)"
                   : i === threshold
-                  ? "rgba(255,204,51,0.5)"
+                  ? "rgba(162,155,254,0.5)"
                   : "rgba(255,255,255,0.06)",
               }}
             />
@@ -334,7 +334,7 @@ function UptimeBar({ seconds, successRate }: { seconds: number; successRate: num
         })}
       </div>
       <span className="text-[11px] font-bold flex-shrink-0"
-        style={{ color: successRate >= 90 ? "#22c55e" : successRate >= 70 ? "#FFCC33" : "#f87171" }}>
+        style={{ color: successRate >= 90 ? "#22c55e" : successRate >= 70 ? "#A29BFE" : "#f87171" }}>
         {displayRate}%
       </span>
     </div>
@@ -344,7 +344,7 @@ function UptimeBar({ seconds, successRate }: { seconds: number; successRate: num
 function ObservationRow({ obs }: { obs: ObservationEntry }) {
   const colors = {
     info:    { dot: "#60a5fa", bg: "rgba(59,130,246,0.06)",  border: "rgba(59,130,246,0.15)" },
-    warn:    { dot: "#FFCC33", bg: "rgba(255,204,51,0.04)",  border: "rgba(255,204,51,0.15)" },
+    warn:    { dot: "#A29BFE", bg: "rgba(162,155,254,0.04)",  border: "rgba(162,155,254,0.15)" },
     improve: { dot: "#22c55e", bg: "rgba(34,197,94,0.06)",   border: "rgba(34,197,94,0.15)" },
   };
   const c = colors[obs.type];

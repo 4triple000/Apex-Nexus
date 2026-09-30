@@ -118,7 +118,7 @@ export function ReturnBanner() {
         <div style={{
           position: "relative",
           borderRadius: 24,
-          background: "rgba(12,13,22,0.97)",
+          background: "rgba(14,12,32,0.55)",
           border: `1px solid ${accent}25`,
           backdropFilter: "blur(28px)",
           WebkitBackdropFilter: "blur(28px)",

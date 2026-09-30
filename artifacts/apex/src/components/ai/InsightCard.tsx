@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 
 const TYPE_CONFIG = {
-  trend: { icon: <TrendingUp size={13} />, color: "#ffcc33", label: "Trending" },
+  trend: { icon: <TrendingUp size={13} />, color: "#A29BFE", label: "Trending" },
   optimization: { icon: <Zap size={13} />, color: "#34d399", label: "Optimize" },
   recommendation: { icon: <User size={13} />, color: "#a78bfa", label: "For You" },
   personalization: { icon: <Sparkles size={13} />, color: "#38bdf8", label: "Personalized" },

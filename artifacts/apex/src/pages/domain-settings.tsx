@@ -329,7 +329,7 @@ export default function DomainSettingsPage() {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="min-h-screen bg-transparent text-white">
       {/* Header */}
       <div className="border-b border-white/10 bg-black/30 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">

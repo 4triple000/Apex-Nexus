@@ -21,7 +21,6 @@ const FEATURES: ComingSoonFeature[] = [
   { icon: "🌍", name: "Domain Settings",         desc: "Connect your custom domain and set up email",         href: "/domain-settings", locked: false },
   { icon: "🎭", name: "Avatar System",           desc: "3D living AI avatar with emotion engine",             href: "/apex-avatar",   locked: false },
   { icon: "🛒", name: "Marketplace",             desc: "Buy and sell AI creations and game assets",           href: "/marketplace",   locked: false },
-  { icon: "📊", name: "Creator Dashboard",       desc: "Revenue analytics and audience insights",             href: "/creator-dashboard", locked: false },
   { icon: "🎙️", name: "Real-Time Voice Agent",   desc: "Live voice conversation with Apex AI",               locked: true },
   { icon: "🦾", name: "Autonomous Assistants",   desc: "AI agents that act on your behalf 24/7",             locked: true },
   { icon: "🌐", name: "Multi-Platform Automation", desc: "Control any app from one Apex command",            locked: true },

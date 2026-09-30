@@ -592,7 +592,7 @@ export function FeatureModal({ feature, onClose }: FeatureModalProps) {
               position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 8001,
               maxHeight: "92vh", display: "flex", flexDirection: "column",
               borderRadius: "24px 24px 0 0",
-              background: "linear-gradient(180deg, #0E0F1A 0%, #080912 100%)",
+              background: "linear-gradient(180deg, rgba(34,29,70,0.94), rgba(16,13,38,0.95))",
               border: `1px solid ${feature.accent}30`,
               borderBottom: "none",
               boxShadow: `0 -8px 60px rgba(0,0,0,0.60), 0 0 0 1px rgba(255,255,255,0.04) inset, 0 -4px 40px ${feature.accent}10`,
@@ -752,7 +752,7 @@ export function FeatureModal({ feature, onClose }: FeatureModalProps) {
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                   style={{
                     position: "absolute", bottom: 90, left: "50%", transform: "translateX(-50%)",
-                    whiteSpace: "nowrap", background: "rgba(14,15,26,0.96)",
+                    whiteSpace: "nowrap", background: "rgba(14,12,32,0.55)",
                     border: "1px solid rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.85)",
                     fontSize: 11, fontWeight: 700, padding: "8px 16px",
                     borderRadius: 99, zIndex: 100,

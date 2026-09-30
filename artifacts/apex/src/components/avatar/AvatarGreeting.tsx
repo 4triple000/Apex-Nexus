@@ -294,7 +294,7 @@ export function AvatarGreeting({ text: textOverride, voice = true }: AvatarGreet
         <div style={{
           position: "relative",
           borderRadius: 24,
-          background: "rgba(13,14,24,0.96)",
+          background: "rgba(14,12,32,0.55)",
           border: `1px solid ${palette.primary}30`,
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
