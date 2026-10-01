@@ -1,7 +1,7 @@
 /**
  * Social posts (the new Social tab). All routes need a signed-in account.
  *
- *   GET    /posts/feed?tab=foryou|following&cursor=&tag=&challenge=   — a page of posts (newest first)
+ *   GET    /posts/feed?tab=foryou|following&cursor=&tag=&challenge=&circle=   — a page of posts (For You is ranked; the rest newest first)
  *   GET    /posts/moment                                   — today's Apex Moment prompt and who answered
  *   GET    /posts/trending                                 — top hashtags this week
  *   GET    /posts/ideas                                    — "Not sure what to post?" starters
@@ -31,7 +31,8 @@ import { and, desc, eq, gt, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { requireUser } from "../shared/middleware/requireAuth";
 import type { ApexRequest } from "../shared/types";
 import { momentDay, postIdeas, promptFor } from "../lib/moments";
-import { tagsIn, blockedIds, followingIds, visibleTo, notify, present, loadVisible, idParam } from "../lib/socialPosts";
+import { tagsIn, blockedIds, followingIds, circleIds, canReadCircle, visibleTo, notify, present, loadVisible, idParam } from "../lib/socialPosts";
+import { forYouOrder } from "../lib/socialRank";
 import { logger } from "../lib/logger";
 import { checkAnswer } from "../lib/socialAi";
 
@@ -43,21 +44,43 @@ const PAGE = 15;
 router.get("/posts/feed", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const me = req.userId!;
   const tab = req.query.tab === "following" ? "following" : "foryou";
-  const cursor = idParam(req.query.cursor);
+  const rawCursor = typeof req.query.cursor === "string" ? req.query.cursor : "";
   const tag = typeof req.query.tag === "string" ? req.query.tag.replace(/^#/, "").toLowerCase().slice(0, 30) : "";
   const challenge = idParam(req.query.challenge);
-  const [blocked, following] = await Promise.all([blockedIds(me), followingIds(me)]);
+  const circle = idParam(req.query.circle);
+  const [blocked, following, circles] = await Promise.all([blockedIds(me), followingIds(me), circleIds(me)]);
 
-  const where: SQL[] = [eq(socialPostsTable.deleted, false), visibleTo(me, following)];
-  if (cursor) where.push(lt(socialPostsTable.id, cursor));
+  const where: SQL[] = [eq(socialPostsTable.deleted, false)];
+  if (circle) {
+    // A circle's own page: everything posted in it, for members (or anyone, if the circle is public)
+    if (!(await canReadCircle(circle, me))) { res.status(404).json({ ok: false, error: "This circle isn't available." }); return; }
+    where.push(eq(socialPostsTable.circleId, circle), or(eq(socialPostsTable.userId, me), eq(socialPostsTable.visibility, "public"))!);
+  } else {
+    where.push(visibleTo(me, following, circles));
+  }
   if (blocked.length) where.push(sql`${socialPostsTable.userId} not in (${sql.join(blocked.map((b) => sql`${b}`), sql`, `)})`);
-  if (tab === "following") where.push(inArray(socialPostsTable.userId, [me, ...following]));
+  if (tab === "following" && !circle) where.push(inArray(socialPostsTable.userId, [me, ...following]));
   if (tag) where.push(sql`${socialPostsTable.tags} @> ${JSON.stringify([tag])}::jsonb`);
   if (challenge) where.push(eq(socialPostsTable.challengeId, challenge));
 
+  // For You without filters is ranked (cursor "r<offset>"); everything else, and older posts after the ranked list, is newest first
+  if (tab === "foryou" && !tag && !challenge && !circle && (!rawCursor || rawCursor.startsWith("r"))) {
+    const offset = rawCursor ? Math.max(0, parseInt(rawCursor.slice(1), 10) || 0) : 0;
+    const order = await forYouOrder(me, following, where, offset === 0);
+    const pageIds = order.slice(offset, offset + PAGE);
+    const rows = pageIds.length ? await db.select().from(socialPostsTable).where(and(...where, inArray(socialPostsTable.id, pageIds))) : [];
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const page = pageIds.map((id) => byId.get(id)).filter((r): r is NonNullable<typeof r> => !!r);
+    const next = offset + PAGE < order.length ? `r${offset + PAGE}` : order.length ? String(Math.min(...order)) : null;
+    res.json({ ok: true, data: { posts: await present(page, me), nextCursor: next } });
+    return;
+  }
+
+  const cursor = idParam(rawCursor);
+  if (cursor) where.push(lt(socialPostsTable.id, cursor));
   const rows = await db.select().from(socialPostsTable).where(and(...where)).orderBy(desc(socialPostsTable.id)).limit(PAGE + 1);
   const page = rows.slice(0, PAGE);
-  res.json({ ok: true, data: { posts: await present(page, me), nextCursor: rows.length > PAGE ? page[page.length - 1]!.id : null } });
+  res.json({ ok: true, data: { posts: await present(page, me), nextCursor: rows.length > PAGE ? String(page[page.length - 1]!.id) : null } });
 });
 
 router.get("/posts/moment", requireUser, async (req: ApexRequest, res): Promise<void> => {
@@ -79,7 +102,7 @@ router.get("/posts/trending", requireUser, async (_req, res): Promise<void> => {
   const rows = await db.execute(sql`
     select tag, count(*)::int as n
     from ${socialPostsTable}, jsonb_array_elements_text(${socialPostsTable.tags}) as tag
-    where ${socialPostsTable.deleted} = false and ${socialPostsTable.visibility} = 'public' and ${socialPostsTable.createdAt} > ${since}
+    where ${socialPostsTable.deleted} = false and ${socialPostsTable.visibility} = 'public' and ${socialPostsTable.circleId} is null and ${socialPostsTable.createdAt} > ${since}
     group by tag order by n desc limit 10`);
   const tags = (rows.rows as { tag: string; n: number }[]).map((r) => ({ tag: r.tag, count: Number(r.n) }));
   res.json({ ok: true, data: { tags } });
@@ -99,6 +122,8 @@ const PostBody = z.object({
   gameId: z.number().int().positive().optional(),
   location: z.string().trim().max(60).optional(),
   challengeId: z.number().int().positive().optional(),
+  /** Post into a circle you're in */
+  circleId: z.number().int().positive().optional(),
   /** ask posts: Apex's answer and the token /social-ai/ask returned with it */
   answer: z.string().max(4000).optional(),
   answerToken: z.string().max(200).optional(),
@@ -124,6 +149,7 @@ router.post("/posts", requireUser, async (req: ApexRequest, res): Promise<void> 
     res.status(400).json({ ok: false, error: "Ask Apex again, then share the answer." }); return;
   }
   const tags = tagsIn(p.body);
+  if (p.circleId && !(await circleIds(me)).includes(p.circleId)) { res.status(403).json({ ok: false, error: "Join the circle to post in it." }); return; }
   if (p.challengeId) {
     const [c] = await db.select().from(socialChallengesTable).where(and(eq(socialChallengesTable.id, p.challengeId), eq(socialChallengesTable.deleted, false))).limit(1);
     if (!c || c.endsAt < new Date()) { res.status(400).json({ ok: false, error: "That challenge has ended." }); return; }
@@ -148,9 +174,11 @@ router.post("/posts", requireUser, async (req: ApexRequest, res): Promise<void> 
     momentDay: p.kind === "moment" ? momentDay() : null,
     location: p.location || null,
     challengeId: p.challengeId ?? null,
+    circleId: p.circleId ?? null,
     aiText: p.kind === "ask" ? p.answer : null,
     aiAt: p.kind === "ask" ? new Date() : null,
-    visibility: p.visibility,
+    // In a circle, the circle is the audience
+    visibility: p.circleId ? "public" : p.visibility,
     tags: tags.slice(0, 10),
   }).returning();
   const [view] = await present([row!], me);

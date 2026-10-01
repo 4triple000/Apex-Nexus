@@ -20,7 +20,7 @@ import { and, desc, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
 import { requireUser } from "../shared/middleware/requireAuth";
 import type { ApexRequest } from "../shared/types";
 import { weekStart, weeklyChallengeFor } from "../lib/moments";
-import { blockedIds, followingIds, visibleTo, present, loadVisible, idParam } from "../lib/socialPosts";
+import { blockedIds, followingIds, circleIds, visibleTo, present, loadVisible, idParam } from "../lib/socialPosts";
 import { askApex, jsonIn, signAnswer } from "../lib/socialAi";
 
 const router: IRouter = Router();
@@ -117,9 +117,9 @@ router.get("/challenges/:id", requireUser, async (req: ApexRequest, res): Promis
   const me = req.userId!;
   const id = idParam(req.params.id);
   const [row] = id ? await db.select().from(socialChallengesTable).where(and(eq(socialChallengesTable.id, id), eq(socialChallengesTable.deleted, false))).limit(1) : [];
-  const [blocked, following] = await Promise.all([blockedIds(me), followingIds(me)]);
+  const [blocked, following, circles] = await Promise.all([blockedIds(me), followingIds(me), circleIds(me)]);
   if (!row || (row.creatorId && blocked.includes(row.creatorId))) { res.status(404).json(bad("This challenge isn't available.")); return; }
-  const where = [eq(socialPostsTable.challengeId, row.id), eq(socialPostsTable.deleted, false), visibleTo(me, following)];
+  const where = [eq(socialPostsTable.challengeId, row.id), eq(socialPostsTable.deleted, false), visibleTo(me, following, circles)];
   if (blocked.length) where.push(sql`${socialPostsTable.userId} not in (${sql.join(blocked.map((b) => sql`${b}`), sql`, `)})`);
   const top = await db.select().from(socialPostsTable).where(and(...where)).orderBy(desc(socialPostsTable.reactionCount), desc(socialPostsTable.id)).limit(10);
   const [view] = await presentChallenges([row], me);

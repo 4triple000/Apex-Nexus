@@ -28,6 +28,25 @@ export interface Post {
   answer: string | null;
   /** Set when the post is a challenge entry */
   challenge: { id: number; title: string; tag: string } | null;
+  /** Set when posted in a circle */
+  circle: { id: number; name: string; emoji: string } | null;
+}
+
+export type StoryBg = "night" | "gold" | "ember" | "ocean" | "rose" | "mono";
+export interface Story { id: number; text: string; bg: StoryBg; createdAt: string; expiresAt: string; seen: boolean; media: { url: string } | null; viewCount?: number }
+export interface StoryGroup { author: Author; mine: boolean; stories: Story[]; unseen: number; allSeen: boolean }
+
+export interface Circle {
+  id: number;
+  name: string;
+  description: string;
+  emoji: string;
+  privacy: "public" | "invite";
+  memberCount: number;
+  role: "owner" | "member" | null;
+  member: boolean;
+  /** Shown to members, for inviting people */
+  inviteCode: string | null;
 }
 
 export interface Debate { sides: string[]; counts: number[]; total: number; mySide: number | null; summary: string | null; summaryAt: string | null }
@@ -90,17 +109,18 @@ const post = <T,>(path: string, body?: unknown) => call<T>(path, { method: "POST
 export const mediaSrc = (url: string) => `${BASE}${url}`;
 
 export const socialApi = {
-  feed: (tab: "foryou" | "following", cursor?: number | null, tag?: string, challenge?: number) => {
+  feed: (tab: "foryou" | "following", cursor?: string | null, tag?: string, challenge?: number, circle?: number) => {
     const q = new URLSearchParams({ tab });
-    if (cursor) q.set("cursor", String(cursor));
+    if (cursor) q.set("cursor", cursor);
     if (tag) q.set("tag", tag);
     if (challenge) q.set("challenge", String(challenge));
-    return call<{ posts: Post[]; nextCursor: number | null }>(`/posts/feed?${q}`);
+    if (circle) q.set("circle", String(circle));
+    return call<{ posts: Post[]; nextCursor: string | null }>(`/posts/feed?${q}`);
   },
   moment: () => call<Moment>("/posts/moment"),
   trending: () => call<{ tags: { tag: string; count: number }[] }>("/posts/trending").then((d) => d.tags),
   ideas: () => call<{ ideas: string[] }>("/posts/ideas").then((d) => d.ideas),
-  create: (data: { kind: Post["kind"]; body: string; mediaId?: number; pollOptions?: string[]; gameId?: number; challengeId?: number; answer?: string; answerToken?: string; visibility: Visibility }) =>
+  create: (data: { kind: Post["kind"]; body: string; mediaId?: number; pollOptions?: string[]; gameId?: number; challengeId?: number; circleId?: number; answer?: string; answerToken?: string; visibility: Visibility }) =>
     post<{ post: Post }>("/posts", data).then((d) => d.post),
   uploadPhoto: (dataUrl: string, width: number, height: number) => post<{ id: number; url: string }>("/posts/media", { dataUrl, width, height }),
   get: (id: number) => call<{ post: Post }>(`/posts/${id}`).then((d) => d.post),
@@ -120,6 +140,20 @@ export const socialApi = {
   challenge: (id: number) => call<{ challenge: Challenge; top: Post[] }>(`/challenges/${id}`),
   startChallenge: (data: { title: string; description: string; days: number }) => post<{ challenge: Challenge }>("/challenges", data).then((d) => d.challenge),
   removeChallenge: (id: number) => call<{ deleted: boolean }>(`/challenges/${id}`, { method: "DELETE" }),
+
+  stories: () => call<{ groups: StoryGroup[] }>("/stories").then((d) => d.groups),
+  postStory: (data: { mediaId?: number; text: string; bg: StoryBg }) => post<{ id: number }>("/stories", data),
+  viewStory: (id: number) => post<{ seen: boolean }>(`/stories/${id}/view`),
+  storyViewers: (id: number) => call<{ viewers: (Author & { seenAt: string })[] }>(`/stories/${id}/viewers`).then((d) => d.viewers),
+  deleteStory: (id: number) => call<{ deleted: boolean }>(`/stories/${id}`, { method: "DELETE" }),
+
+  circles: () => call<{ mine: Circle[]; discover: Circle[] }>("/circles"),
+  circle: (id: number, code?: string) => call<{ circle: Circle; members: (Author & { role: string })[] }>(`/circles/${id}${code ? `?code=${encodeURIComponent(code)}` : ""}`),
+  startCircle: (data: { name: string; description: string; emoji: string; privacy: "public" | "invite" }) => post<{ circle: Circle }>("/circles", data).then((d) => d.circle),
+  joinCircle: (id: number, code?: string) => post<{ circle: Circle }>(`/circles/${id}/join`, { code }).then((d) => d.circle),
+  joinByCode: (code: string) => post<{ circle: Circle }>("/circles/join-code", { code }).then((d) => d.circle),
+  leaveCircle: (id: number) => call<{ left: boolean }>(`/circles/${id}/membership`, { method: "DELETE" }),
+  deleteCircle: (id: number) => call<{ deleted: boolean }>(`/circles/${id}`, { method: "DELETE" }),
 
   // Apex's helpers: each uses credits like a chat message, and nothing is posted until the person chooses to
   assist: <A extends AssistAction>(action: A, text: string) =>

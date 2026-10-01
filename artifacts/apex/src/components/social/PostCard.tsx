@@ -19,13 +19,14 @@ const REASONS: { id: ReportReason; label: string }[] = [
   { id: "other", label: "Something else" },
 ];
 
-export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onChallenge }: {
+export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onChallenge, onCircle }: {
   post: Post;
   onChange: (p: Post) => void;
   onRemove: (id: number, authorBlocked?: number) => void;
   onOpenComments: (p: Post) => void;
   onTag: (tag: string) => void;
   onChallenge?: (id: number) => void;
+  onCircle?: (id: number) => void;
 }) {
   const [, nav] = useLocation();
   const [menu, setMenu] = useState(false);
@@ -126,6 +127,7 @@ export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onCh
           <div style={{ fontSize: 13.5, fontWeight: 700, color: S.ink }}>{post.author.username}</div>
           <div style={{ fontSize: 11.5, color: S.ink3, display: "flex", alignItems: "center", gap: 5 }}>
             {timeAgo(post.createdAt)}{post.location ? ` · ${post.location}` : ""}
+            {post.circle ? <> · <button onClick={() => onCircle?.(post.circle!.id)} style={{ background: "none", border: 0, padding: 0, color: S.ink2, font: "inherit", fontWeight: 700, cursor: onCircle ? "pointer" : "default" }}>{post.circle.emoji} {post.circle.name}</button></> : null}
             {VisIcon ? <VisIcon size={11} aria-label={post.visibility === "private" ? "Only you" : "Followers"} /> : null}
           </div>
         </div>

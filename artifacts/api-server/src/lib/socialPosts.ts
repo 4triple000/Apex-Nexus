@@ -2,8 +2,9 @@
 import {
   db, usersTable, followsTable, notificationsTable, gameFeedTable, socialChallengesTable,
   socialPostsTable, socialPostMediaTable, postReactionsTable, pollVotesTable, userBlocksTable,
+  socialCirclesTable, circleMembersTable,
 } from "@workspace/db";
-import { and, eq, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { promptFor } from "./moments";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -21,13 +22,35 @@ export async function followingIds(userId: number): Promise<number[]> {
   return rows.map((r) => r.id);
 }
 
-/** Posts this person may see: public ones, followers-only from people they follow, and all their own. */
-export function visibleTo(userId: number, following: number[]): SQL {
+/** Circles this person belongs to. */
+export async function circleIds(userId: number): Promise<number[]> {
+  const rows = await db.select({ id: circleMembersTable.circleId }).from(circleMembersTable).where(eq(circleMembersTable.userId, userId));
+  return rows.map((r) => r.id);
+}
+
+/**
+ * Posts this person may see in feeds: all their own; otherwise public ones and followers-only posts from
+ * people they follow, leaving out circle posts from circles they aren't in.
+ */
+export function visibleTo(userId: number, following: number[], circles: number[] = []): SQL {
   return or(
     eq(socialPostsTable.userId, userId),
-    eq(socialPostsTable.visibility, "public"),
-    following.length ? and(eq(socialPostsTable.visibility, "followers"), inArray(socialPostsTable.userId, following)) : sql`false`,
+    and(
+      or(
+        eq(socialPostsTable.visibility, "public"),
+        following.length ? and(eq(socialPostsTable.visibility, "followers"), inArray(socialPostsTable.userId, following)) : sql`false`,
+      ),
+      circles.length ? or(isNull(socialPostsTable.circleId), inArray(socialPostsTable.circleId, circles)) : isNull(socialPostsTable.circleId),
+    ),
   )!;
+}
+
+/** Whether someone can read a circle's posts: members always, anyone for public circles. */
+export async function canReadCircle(circleId: number, userId: number): Promise<boolean> {
+  const [c] = await db.select({ privacy: socialCirclesTable.privacy }).from(socialCirclesTable).where(and(eq(socialCirclesTable.id, circleId), eq(socialCirclesTable.deleted, false))).limit(1);
+  if (!c) return false;
+  if (c.privacy === "public") return true;
+  return (await circleIds(userId)).includes(circleId);
 }
 
 export async function notify(userId: number, type: string, message: string, fromUserId: number) {
@@ -46,8 +69,9 @@ export async function present(rows: PostRow[], viewerId: number) {
   const gameIds = rows.map((r) => r.gameId).filter((x): x is number => !!x);
   const pollIds = rows.filter((r) => r.kind === "poll" || r.kind === "debate").map((r) => r.id);
   const challengeIds = [...new Set(rows.map((r) => r.challengeId).filter((x): x is number => !!x))];
+  const circleIdsHere = [...new Set(rows.map((r) => r.circleId).filter((x): x is number => !!x))];
 
-  const [authors, reacted, media, games, votes, myVotes, challenges] = await Promise.all([
+  const [authors, reacted, media, games, votes, myVotes, challenges, circles] = await Promise.all([
     db.select({ id: usersTable.id, username: usersTable.username, avatarEmoji: usersTable.avatarEmoji, avatarUrl: usersTable.avatarUrl }).from(usersTable).where(inArray(usersTable.id, authorIds)),
     db.select({ postId: postReactionsTable.postId }).from(postReactionsTable).where(and(eq(postReactionsTable.userId, viewerId), inArray(postReactionsTable.postId, ids))),
     mediaIds.length ? db.select({ id: socialPostMediaTable.id, key: socialPostMediaTable.key, width: socialPostMediaTable.width, height: socialPostMediaTable.height }).from(socialPostMediaTable).where(inArray(socialPostMediaTable.id, mediaIds)) : Promise.resolve([]),
@@ -55,7 +79,9 @@ export async function present(rows: PostRow[], viewerId: number) {
     pollIds.length ? db.select({ postId: pollVotesTable.postId, option: pollVotesTable.option, n: sql<number>`count(*)::int` }).from(pollVotesTable).where(inArray(pollVotesTable.postId, pollIds)).groupBy(pollVotesTable.postId, pollVotesTable.option) : Promise.resolve([]),
     pollIds.length ? db.select({ postId: pollVotesTable.postId, option: pollVotesTable.option }).from(pollVotesTable).where(and(eq(pollVotesTable.userId, viewerId), inArray(pollVotesTable.postId, pollIds))) : Promise.resolve([]),
     challengeIds.length ? db.select({ id: socialChallengesTable.id, title: socialChallengesTable.title, tag: socialChallengesTable.tag }).from(socialChallengesTable).where(inArray(socialChallengesTable.id, challengeIds)) : Promise.resolve([]),
+    circleIdsHere.length ? db.select({ id: socialCirclesTable.id, name: socialCirclesTable.name, emoji: socialCirclesTable.emoji }).from(socialCirclesTable).where(inArray(socialCirclesTable.id, circleIdsHere)) : Promise.resolve([]),
   ]);
+  const byCircle = new Map(circles.map((c) => [c.id, c]));
   const byChallenge = new Map(challenges.map((c) => [c.id, c]));
   const byAuthor = new Map(authors.map((a) => [a.id, a]));
   const reactedSet = new Set(reacted.map((r) => r.postId));
@@ -88,6 +114,7 @@ export async function present(rows: PostRow[], viewerId: number) {
       debate: r.kind === "debate" ? { sides: options, counts, total: counts.reduce((a, b) => a + b, 0), mySide: myVote.get(r.id) ?? null, summary: r.aiText, summaryAt: r.aiAt } : null,
       answer: r.kind === "ask" ? r.aiText : null,
       challenge: r.challengeId && byChallenge.get(r.challengeId) ? byChallenge.get(r.challengeId)! : null,
+      circle: r.circleId && byCircle.get(r.circleId) ? byCircle.get(r.circleId)! : null,
     };
   });
 }
@@ -97,6 +124,7 @@ export async function loadVisible(postId: number, viewerId: number): Promise<Pos
   if (!row) return null;
   if (row.userId !== viewerId) {
     if ((await blockedIds(viewerId)).includes(row.userId)) return null;
+    if (row.circleId && !(await canReadCircle(row.circleId, viewerId))) return null;
     if (row.visibility === "private") return null;
     if (row.visibility === "followers" && !(await followingIds(viewerId)).includes(row.userId)) return null;
   }

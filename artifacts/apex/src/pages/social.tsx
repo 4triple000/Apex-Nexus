@@ -13,11 +13,13 @@ import { CreateSheet, Composer, type ComposeMode, type CreatePick } from "@/comp
 import { CommentsSheet } from "@/components/social/Comments";
 import { AskSheet } from "@/components/social/AskApex";
 import { ChallengesRow, ChallengeSheet, StartChallengeSheet } from "@/components/social/Challenges";
+import { StoryTray, StoryViewer, StoryComposer } from "@/components/social/Stories";
+import { CirclesRow, CircleSheet, FindCirclesSheet } from "@/components/social/Circles";
 import { S, card, Avatar, SectionLabel, primaryBtn, sceneFor } from "@/components/social/ui";
-import { socialApi, compact, type Challenge, type Post } from "@/lib/socialApi";
+import { socialApi, compact, type Challenge, type Circle, type Post, type StoryGroup } from "@/lib/socialApi";
 import { useExplore, useFollow, useMyProfile } from "@/hooks/useSocial";
 
-type Page = { posts: Post[]; nextCursor: number | null };
+type Page = { posts: Post[]; nextCursor: string | null };
 const STARTER_TAGS = ["apexmoments", "showyoursetup", "finishthebar", "gaming", "aiart", "music"];
 
 export default function SocialPage() {
@@ -25,7 +27,11 @@ export default function SocialPage() {
   const [tab, setTab] = useState<"foryou" | "following">("foryou");
   const [tag, setTag] = useState<string>("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [compose, setCompose] = useState<{ mode: ComposeMode; idea?: string; challengeId?: number } | null>(null);
+  const [compose, setCompose] = useState<{ mode: ComposeMode; idea?: string; challengeId?: number; circle?: Circle } | null>(null);
+  const [stories, setStories] = useState<{ groups: StoryGroup[]; index: number } | null>(null);
+  const [storyComposer, setStoryComposer] = useState(false);
+  const [circleOpen, setCircleOpen] = useState<number | null>(null);
+  const [findCircles, setFindCircles] = useState(false);
   const [commentsFor, setCommentsFor] = useState<Post | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState<number | null>(null);
@@ -51,11 +57,15 @@ export default function SocialPage() {
   const feedKey = ["social-feed", tab, tag, challengeFilter?.id ?? 0];
   const feed = useInfiniteQuery({
     queryKey: feedKey,
-    initialPageParam: null as number | null,
+    initialPageParam: null as string | null,
     queryFn: ({ pageParam }) => socialApi.feed(tab, pageParam, tag || undefined, challengeFilter?.id),
     getNextPageParam: (last: Page) => last.nextCursor,
   });
-  const posts = feed.data?.pages.flatMap((p) => p.posts) ?? [];
+  // Ranked pages can overlap if the order is refreshed mid-scroll; show each post once
+  const posts = useMemo(() => {
+    const seen = new Set<number>();
+    return (feed.data?.pages.flatMap((p) => p.posts) ?? []).filter((p) => !seen.has(p.id) && seen.add(p.id));
+  }, [feed.data]);
 
   // Load the next page when the bottom of the list comes into view
   useEffect(() => {
@@ -89,7 +99,7 @@ export default function SocialPage() {
     void qc.invalidateQueries({ queryKey: ["social-trending"] });
   };
 
-  const pickTag = (t: string) => { setTag(t); setChallengeFilter(null); setChallengeOpen(null); root.current?.scrollTo({ top: 0, behavior: "smooth" }); };
+  const pickTag = (t: string) => { setTag(t); setChallengeFilter(null); setChallengeOpen(null); setCircleOpen(null); root.current?.scrollTo({ top: 0, behavior: "smooth" }); };
   const pick = (mode: CreatePick, idea?: string) => {
     setCreateOpen(false);
     if (mode === "ask") setAskOpen(true);
@@ -109,6 +119,8 @@ export default function SocialPage() {
           <h1 className="mg-display" style={{ margin: 0, fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em" }}>Social</h1>
           <NotificationBell />
         </header>
+
+        <StoryTray onOpen={(groups, index) => setStories({ groups, index })} onAdd={() => setStoryComposer(true)} />
 
         {/* Apex Moment */}
         <SectionLabel>Apex Moment</SectionLabel>
@@ -136,6 +148,7 @@ export default function SocialPage() {
         </div>
 
         <ChallengesRow onOpen={setChallengeOpen} onStart={() => setStartOpen("row")} />
+        <CirclesRow onOpen={setCircleOpen} onFind={() => setFindCircles(true)} />
 
         {/* Tabs */}
         <div role="tablist" aria-label="Feed" style={{ display: "flex", gap: 22, borderBottom: `1px solid ${S.line}`, fontSize: 14, fontWeight: 700 }}>
@@ -157,7 +170,7 @@ export default function SocialPage() {
         {shared.data && !filtered ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <SectionLabel>Shared with you</SectionLabel>
-            <PostCard post={shared.data} onChange={updatePost} onRemove={() => qc.setQueryData(["social-shared", sharedId], null)} onOpenComments={setCommentsFor} onTag={pickTag} onChallenge={setChallengeOpen} />
+            <PostCard post={shared.data} onChange={updatePost} onRemove={() => qc.setQueryData(["social-shared", sharedId], null)} onOpenComments={setCommentsFor} onTag={pickTag} onChallenge={setChallengeOpen} onCircle={setCircleOpen} />
           </div>
         ) : null}
 
@@ -173,7 +186,7 @@ export default function SocialPage() {
         ) : null}
         {posts.map((p, i) => (
           <Fragment key={p.id}>
-            <PostCard post={p} onChange={updatePost} onRemove={removePost} onOpenComments={setCommentsFor} onTag={pickTag} onChallenge={setChallengeOpen} />
+            <PostCard post={p} onChange={updatePost} onRemove={removePost} onOpenComments={setCommentsFor} onTag={pickTag} onChallenge={setChallengeOpen} onCircle={setCircleOpen} />
             {i === 1 && tab === "foryou" && !filtered ? <PeopleToFollow /> : null}
           </Fragment>
         ))}
@@ -192,8 +205,13 @@ export default function SocialPage() {
       )}
 
       <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} onPick={pick} />
-      <Composer open={!!compose} mode={compose?.mode ?? "text"} idea={compose?.idea} challengeId={compose?.challengeId} prompt={moment.data?.prompt} onClose={() => setCompose(null)} onPosted={posted}
+      <Composer open={!!compose} mode={compose?.mode ?? "text"} idea={compose?.idea} challengeId={compose?.challengeId} circle={compose?.circle} prompt={moment.data?.prompt} onClose={() => setCompose(null)} onPosted={posted}
         onStartChallenge={() => { setCompose(null); setStartOpen("composer"); }} />
+      {stories ? <StoryViewer groups={stories.groups} start={stories.index} onClose={() => setStories(null)} /> : null}
+      <StoryComposer open={storyComposer} onClose={() => setStoryComposer(false)} />
+      <CircleSheet id={circleOpen} onClose={() => setCircleOpen(null)} onPost={(c) => { setCircleOpen(null); setCompose({ mode: "text", circle: c }); }}
+        onOpenComments={(p) => { setCircleOpen(null); setCommentsFor(p); }} onTag={pickTag} onPostChange={updatePost} />
+      <FindCirclesSheet open={findCircles} onClose={() => setFindCircles(false)} onOpen={(id) => { setFindCircles(false); setCircleOpen(id); }} />
       <AskSheet open={askOpen} onClose={() => setAskOpen(false)} onPosted={posted} />
       <ChallengeSheet id={challengeOpen} onClose={() => setChallengeOpen(null)} onJoin={joinChallenge} onSeeAll={seeAllEntries}
         onPostChange={updatePost} onOpenComments={(p) => { setChallengeOpen(null); setCommentsFor(p); }} onTag={pickTag} />

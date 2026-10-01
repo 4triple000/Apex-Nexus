@@ -101,7 +101,7 @@ const inputStyle: React.CSSProperties = { width: "100%", boxSizing: "border-box"
 const hidden: React.CSSProperties = { position: "absolute", left: -9999 };
 const aiBtn = (extra?: React.CSSProperties) => ghostBtn({ height: 32, padding: "0 11px", borderRadius: 16, fontSize: 12, color: S.gold, borderColor: "rgba(226,193,126,0.28)", ...extra });
 
-export function Composer({ open, mode, idea, prompt, challengeId: startChallenge, onClose, onPosted, onStartChallenge }: {
+export function Composer({ open, mode, idea, prompt, challengeId: startChallenge, circle, onClose, onPosted, onStartChallenge }: {
   open: boolean;
   mode: ComposeMode;
   /** Starter idea from "Surprise me" */
@@ -110,6 +110,8 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
   prompt?: string;
   /** Challenge to enter (challenge mode) */
   challengeId?: number;
+  /** Posting into a circle: its members are the audience */
+  circle?: { id: number; name: string; emoji: string };
   onClose: () => void;
   onPosted: (p: Post) => void;
   /** Opens "Start a challenge" (challenge mode) */
@@ -206,7 +208,9 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
         pollOptions: m === "poll" || m === "debate" ? filledOptions : undefined,
         gameId: gameId ?? undefined,
         challengeId: m === "challenge" ? challengeId ?? undefined : undefined,
+        circleId: circle?.id,
       });
+      if (circle) void qc.invalidateQueries({ queryKey: ["social-circle-posts", circle.id] });
       onPosted(created);
       if (m === "challenge") void qc.invalidateQueries({ queryKey: ["social-challenges"] });
       onClose();
@@ -217,7 +221,7 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
     }
   };
 
-  const title = { poll: "New poll", debate: "New debate", game: "Share a game", moment: "Apex Moment", ai: "Create with AI", challenge: "Enter a challenge", text: "New post" }[m];
+  const title = circle && m === "text" ? `Post in ${circle.name}` : { poll: "New poll", debate: "New debate", game: "Share a game", moment: "Apex Moment", ai: "Create with AI", challenge: "Enter a challenge", text: "New post" }[m];
   const placeholder =
     m === "poll" ? "Ask a question…" :
     m === "debate" ? "What's the debate? e.g. Is pineapple on pizza okay?" :
@@ -288,7 +292,9 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
               {user ? <Avatar user={{ username: user.username, avatarUrl: (user as { avatarUrl?: string | null }).avatarUrl ?? null, avatarEmoji: null }} size={40} /> : null}
               <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start", flexGrow: 1 }}>
                 <span style={{ fontSize: 14, fontWeight: 700 }}>{user?.username ?? "You"}</span>
-                <VisibilityPicker value={visibility} onChange={setVisibility} />
+                {circle ? (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", borderRadius: 14, background: S.goldSoft, color: S.gold, fontSize: 12, fontWeight: 800 }}>{circle.emoji} Posting in {circle.name}</span>
+                ) : <VisibilityPicker value={visibility} onChange={setVisibility} />}
               </div>
             </div>
 
