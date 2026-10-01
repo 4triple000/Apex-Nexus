@@ -3,6 +3,7 @@ import { pgTable, serial, integer, text, timestamp, boolean, jsonb, unique, inde
 /**
  * Social posts. `kind` decides how the card renders:
  *   text · photo · poll · game (links a game-feed entry) · moment (an answer to the daily Apex Moment)
+ *   debate (two sides in poll_options) · ask (a question with Apex's answer in ai_text)
  * `visibility`: public · followers · private.
  */
 export const socialPostsTable = pgTable(
@@ -21,6 +22,13 @@ export const socialPostsTable = pgTable(
     /** Day of the Apex Moment this answers (YYYY-MM-DD) */
     momentDay: text("moment_day"),
     location: text("location"),
+    /** social_challenges.id when this post is a challenge entry */
+    challengeId: integer("challenge_id"),
+    /** social_circles.id when posted into a circle (only members see it, plus anyone for public circles) */
+    circleId: integer("circle_id"),
+    /** Apex's answer (ask posts) or the latest summary of both sides (debates) */
+    aiText: text("ai_text"),
+    aiAt: timestamp("ai_at", { withTimezone: true }),
     visibility: text("visibility").notNull().default("public"),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
     reactionCount: integer("reaction_count").notNull().default(0),
@@ -28,7 +36,7 @@ export const socialPostsTable = pgTable(
     deleted: boolean("deleted").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("social_posts_created_idx").on(t.createdAt), index("social_posts_user_idx").on(t.userId)],
+  (t) => [index("social_posts_created_idx").on(t.createdAt), index("social_posts_user_idx").on(t.userId), index("social_posts_challenge_idx").on(t.challengeId), index("social_posts_circle_idx").on(t.circleId)],
 );
 
 /** Photos are resized on the device and kept here until object storage is set up on the server. */
@@ -65,6 +73,11 @@ export const postCommentsTable = pgTable(
     /** Set on replies (one level deep) */
     parentId: integer("parent_id"),
     body: text("body").notNull(),
+    /** On debates: the side the commenter picked (0 or 1) when they commented */
+    side: integer("side"),
+    /** An Apex answer the commenter chose to share; ai_prompt is what they asked */
+    ai: boolean("ai").notNull().default(false),
+    aiPrompt: text("ai_prompt"),
     reactionCount: integer("reaction_count").notNull().default(0),
     deleted: boolean("deleted").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -92,6 +105,83 @@ export const pollVotesTable = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [unique("poll_votes_post_user").on(t.postId, t.userId)],
+);
+
+/**
+ * Challenges: a prompt with a hashtag and an end date. Entries are posts with challenge_id set.
+ * Apex's weekly challenge has a slug ("weekly-2026-09-28") and no creator.
+ */
+export const socialChallengesTable = pgTable("social_challenges", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").unique(),
+  creatorId: integer("creator_id"),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  tag: text("tag").notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  deleted: boolean("deleted").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Stories: a photo or a short text on a colour, gone after 24 hours.
+ * Seen by the people who follow the author (and the author).
+ */
+export const socialStoriesTable = pgTable(
+  "social_stories",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    mediaId: integer("media_id"),
+    text: text("text").notNull().default(""),
+    /** Background for text stories: one of the app's preset names */
+    bg: text("bg").notNull().default("night"),
+    viewCount: integer("view_count").notNull().default(0),
+    deleted: boolean("deleted").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("social_stories_user_idx").on(t.userId), index("social_stories_expires_idx").on(t.expiresAt)],
+);
+
+export const storyViewsTable = pgTable(
+  "story_views",
+  {
+    id: serial("id").primaryKey(),
+    storyId: integer("story_id").notNull(),
+    userId: integer("user_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("story_views_story_user").on(t.storyId, t.userId)],
+);
+
+/**
+ * Circles: groups people join to post together. Public circles can be found and joined by anyone;
+ * invite-only circles are joined with their invite code.
+ */
+export const socialCirclesTable = pgTable("social_circles", {
+  id: serial("id").primaryKey(),
+  ownerId: integer("owner_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  emoji: text("emoji").notNull().default("✨"),
+  privacy: text("privacy").notNull().default("public"), // public · invite
+  inviteCode: text("invite_code").notNull().unique(),
+  memberCount: integer("member_count").notNull().default(1),
+  deleted: boolean("deleted").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const circleMembersTable = pgTable(
+  "circle_members",
+  {
+    id: serial("id").primaryKey(),
+    circleId: integer("circle_id").notNull(),
+    userId: integer("user_id").notNull(),
+    role: text("role").notNull().default("member"), // owner · member
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("circle_members_pair").on(t.circleId, t.userId), index("circle_members_user_idx").on(t.userId)],
 );
 
 /** Reports of posts, comments or people, for the owner to review. */

@@ -570,7 +570,7 @@ export function ChatView({ conversation, contact, messages }: ChatViewProps) {
             </AnimatePresence>
 
             {/* ── Message Input ─────────────────────────────────── */}
-            <div style={{
+            <div className="apex-dock" style={{
               flexShrink: 0, padding: "8px 12px 14px",
               borderTop: "1px solid rgba(255,255,255,0.06)",
             }}>

@@ -668,6 +668,19 @@
   --mg-body: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 .mg-font { font-family: var(--mg-body); }
+
+/* Phone layout: pages run under the floating tab bar. The outermost scroll area of each page
+   gets a spacer at its end, so the last thing on the page can scroll clear of the bar. */
+:root { --apex-nav-space: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.apex-page :is(.overflow-y-auto, .overflow-auto, [style*="overflow-y: auto"], [style*="overflow: auto"]):not(:is(.overflow-y-auto, .overflow-auto, [style*="overflow-y: auto"], [style*="overflow: auto"]) *)::after {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  grid-column: 1 / -1;
+  height: var(--apex-nav-space);
+}
+/* Bars pinned to the bottom of a page (like the chat box) sit just above the tab bar */
+.apex-page .apex-dock { margin-bottom: calc(var(--apex-nav-space) - 12px); }
 .mg-display { font-family: var(--mg-display); letter-spacing: -0.02em; }
 .mg-glass {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));

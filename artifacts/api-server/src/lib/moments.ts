@@ -41,3 +41,28 @@ export function postIdeas(day: string, count = 3): string[] {
   const start = Math.floor(Date.parse(`${day}T00:00:00Z`) / 86_400_000) + 7;
   return Array.from({ length: count }, (_, i) => PROMPTS[(start + i * 5) % PROMPTS.length]!);
 }
+
+/**
+ * Apex's weekly challenge, one per week (weeks start Monday, UTC), rotating through this list.
+ */
+const WEEKLY_CHALLENGES: { title: string; description: string; tag: string }[] = [
+  { title: "Show your setup", description: "Desk, room, car, kitchen: wherever you get things done. Post a photo of it.", tag: "showyoursetup" },
+  { title: "Finish the bar", description: "Start with \"I came from nothing, now…\" and finish it your way.", tag: "finishthebar" },
+  { title: "Build a game in a day", description: "Make a game in Apex and share it before the week ends.", tag: "gameinaday" },
+  { title: "One photo, no filter", description: "Post one honest photo from your week. No edits.", tag: "nofilter" },
+  { title: "Teach us something", description: "Share one thing you know well in a few lines.", tag: "teachme" },
+  { title: "Best AI creation", description: "Make something with Apex's AI and show it off.", tag: "aicreation" },
+  { title: "Small wins", description: "Post a small win from this week. They all count.", tag: "smallwins" },
+  { title: "Hot take week", description: "Share an opinion you'll defend. Keep it respectful.", tag: "hottake" },
+];
+
+/** Monday (UTC) of the week `d` falls in, as YYYY-MM-DD. */
+export function weekStart(d = new Date()): string {
+  const day = (d.getUTCDay() + 6) % 7;
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - day)).toISOString().slice(0, 10);
+}
+
+export function weeklyChallengeFor(week: string) {
+  const n = Math.floor(Date.parse(`${week}T00:00:00Z`) / (7 * 86_400_000));
+  return WEEKLY_CHALLENGES[((n % WEEKLY_CHALLENGES.length) + WEEKLY_CHALLENGES.length) % WEEKLY_CHALLENGES.length]!;
+}

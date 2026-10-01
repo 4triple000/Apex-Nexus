@@ -9,10 +9,14 @@ import { useAvatar } from "@/contexts/AvatarContext";
 import { ApexControlPanel } from "@/components/apex/ApexControlPanel";
 import { useStreakCheckin } from "@/lib/dailyStreak";
 
-function PageTransition({ children, location }: { children: ReactNode; location: string }) {
+/** Pages that paint their own full-screen background, including behind the ☰ button. */
+const FULL_SCREEN = ["/feed"];
+
+function PageTransition({ children, location, phone = false }: { children: ReactNode; location: string; phone?: boolean }) {
   return (
     <div
       key={location}
+      className={phone ? "apex-page" : undefined}
       style={{
         flex: 1,
         display: "flex",
@@ -44,8 +48,10 @@ export function Layout({ children }: { children: ReactNode }) {
       >
         <ApexControlPanel />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingBottom: 96, paddingTop: location === "/" || location.startsWith("/dm") ? 4 : location === "/settings" ? 20 : 64 }}>
-          <PageTransition location={location}>{children}</PageTransition>
+        {/* Pages run to the bottom edge so the tab bar floats over them; each page's scroll area leaves room for it (--apex-nav-space).
+            Full-screen pages (Social) also paint behind the ☰ button and add their own top space. */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingTop: FULL_SCREEN.includes(location) ? 0 : location === "/" || location.startsWith("/dm") ? 4 : location === "/settings" ? 20 : 64 }}>
+          <PageTransition location={location} phone>{children}</PageTransition>
         </div>
 
         <BottomNav />

@@ -20,6 +20,9 @@ export const S = {
   goldSoft: "rgba(226,193,126,0.14)",
   goldLine: "rgba(226,193,126,0.4)",
   heart: "#FF4D67",
+  /** The second side of a debate (gold is the first) */
+  silver: "#C9CDD6",
+  silverSoft: "rgba(201,205,214,0.12)",
   btn: "#F5F5F7",
   btnText: "#0A0A0C",
 };
@@ -48,7 +51,7 @@ export function Avatar({ user, size = 36, ring = false }: { user: Pick<Author, "
 }
 
 /** Bottom sheet rendered on <body> (page transitions use transforms, which would trap a fixed overlay). */
-export function Sheet({ open, onClose, title, children, maxWidth = 520, label }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode; maxWidth?: number; label: string }) {
+export function Sheet({ open, onClose, title, children, maxWidth = 520, label, z = 9000 }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode; maxWidth?: number; label: string; z?: number }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -60,7 +63,7 @@ export function Sheet({ open, onClose, title, children, maxWidth = 520, label }:
   if (!open) return null;
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={label} onClick={onClose} className="mg-font"
-      style={{ position: "fixed", inset: 0, zIndex: 9000, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      style={{ position: "fixed", inset: 0, zIndex: z, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
       <style>{`@keyframes apexSheetUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}@media (prefers-reduced-motion: reduce){.apex-sheet{animation:none!important}}`}</style>
       <div className="apex-sheet" onClick={(e) => e.stopPropagation()}
         style={{ width: "100%", maxWidth, maxHeight: "92vh", display: "flex", flexDirection: "column", background: "#121215", color: S.ink, border: `1px solid ${S.line2}`, borderBottom: 0, borderRadius: "26px 26px 0 0", animation: "apexSheetUp .22s ease-out" }}>
@@ -108,6 +111,19 @@ export function sceneFor(seed: string | number): string {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return SCENES[h % SCENES.length]!;
 }
+
+/** The small gold "Apex" label on anything Apex wrote. */
+export function ApexTag({ children = "Apex" }: { children?: ReactNode }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 800, color: S.gold }}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z" /></svg>
+      {children}
+    </span>
+  );
+}
+
+/** Gold-edged card for Apex's answers and summaries. */
+export const apexCard: React.CSSProperties = { padding: 12, borderRadius: 14, background: "linear-gradient(135deg, rgba(226,193,126,0.08), rgba(226,193,126,0.02))", border: "1px solid rgba(226,193,126,0.28)" };
 
 export function SectionLabel({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
   return (
