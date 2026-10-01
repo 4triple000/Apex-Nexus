@@ -49,7 +49,7 @@ export default function Usage() {
             <>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
                 <span className="mg-display" style={{ fontSize: 40, fontWeight: 700, color: "var(--mg-ink)" }}>{credits.remaining}</span>
-                <span style={{ fontSize: 14, color: "var(--mg-ink-2)" }}>left · {credits.dailyRemaining} of {credits.limit} daily (resets {resetsIn(credits.resetsAt)}){credits.purchased ? ` + ${credits.purchased} bought` : ""}</span>
+                <span style={{ fontSize: 14, color: "var(--mg-ink-2)" }}>left · {credits.dailyRemaining ?? credits.remaining} of {credits.limit} daily (resets {resetsIn(credits.resetsAt)}){credits.purchased ? ` + ${credits.purchased} bought` : ""}</span>
               </div>
               <div role="progressbar" aria-valuemin={0} aria-valuemax={credits.limit} aria-valuenow={credits.used} aria-label="Credits used today"
                 style={{ height: 8, borderRadius: 4, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
@@ -69,7 +69,7 @@ export default function Usage() {
               <Tile icon={<Crown size={18} />} accent="#FFD479" title="Upgrade to Pro" sub="60 credits a day for $14.99/month." onClick={() => nav("/pricing")} />
             )}
             {!credits.unlimited && (
-              <Tile icon={<Zap size={18} />} accent="#FFD479" title="Buy a credit pack" sub="From $5 for 300. Never expire." onClick={() => nav("/pricing#packs")} />
+              <Tile icon={<Zap size={18} />} accent="#FFD479" title="Buy a credit pack" sub="300 credits for $5 and up. They never expire." onClick={() => nav("/pricing#packs")} />
             )}
             <Tile icon={<KeyRound size={18} />} accent="#86EFAC" title="Use your own AI account" sub="Replies on your own key are free and unlimited." onClick={() => nav("/connectors")} />
           </div>

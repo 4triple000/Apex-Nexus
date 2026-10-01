@@ -82,7 +82,7 @@ export default function PricingPage() {
           <p style={{ margin: 0, fontSize: 14.5, color: "var(--mg-ink-2)" }}>Every reply costs 1 to 3 credits depending on the model. Cheaper models stretch your credits further.</p>
           {credits && !credits.unlimited && (
             <p style={{ margin: 0, fontSize: 13, color: "var(--mg-ink-3)" }}>
-              You have {credits.dailyRemaining} of {credits.limit} daily credits left{credits.purchased ? ` + ${credits.purchased} bought credits` : ""}.
+              You have {credits.dailyRemaining ?? credits.remaining} of {credits.limit} daily credits left{credits.purchased ? ` + ${credits.purchased} bought credits` : ""}.
             </p>
           )}
         </header>

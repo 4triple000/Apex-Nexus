@@ -87,7 +87,7 @@ export function CreditsSheetHost() {
 
             {data && !data.unlimited && (
               <View style={{ gap: 8 }}>
-                <Text style={s.big}>{data.remaining} <Text style={s.of}>left ({data.dailyRemaining} of {data.limit} daily{data.purchased ? ` + ${data.purchased} bought` : ""})</Text></Text>
+                <Text style={s.big}>{data.remaining} <Text style={s.of}>left ({data.dailyRemaining ?? data.remaining} of {data.limit} daily{data.purchased ? ` + ${data.purchased} bought` : ""})</Text></Text>
                 <View style={s.track}><View style={[s.fill, { width: `${(1 - pct) * 100}%`, backgroundColor: pct >= 0.8 ? "#FFD479" : MG.violet }]} /></View>
               </View>
             )}
