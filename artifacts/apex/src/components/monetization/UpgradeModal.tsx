@@ -135,10 +135,10 @@ export function UpgradeModal({ open, onClose, reason = "general", projectTitle, 
                 <Button
                   className="w-full font-bold rounded-xl text-sm h-9"
                   style={{ background: accent, color: "#000" }}
-                  disabled={checkout.isPending || !monthlyPrice}
-                  onClick={() => monthlyPrice && checkout.mutate({ priceId: monthlyPrice.id, successPath: "/pricing", cancelPath: "/pricing" })}
+                  disabled={checkout.isPending}
+                  onClick={() => checkout.mutate({ successPath: "/pricing", cancelPath: "/pricing" })}
                 >
-                  {checkout.isPending ? "Loading…" : `Subscribe — ${monthlyPrice ? formatPrice(monthlyPrice.amount) + "/mo" : "Contact us"}`}
+                  {checkout.isPending ? "Loading…" : `Subscribe — ${monthlyPrice ? formatPrice(monthlyPrice.amount) : "$14.99"}/mo`}
                 </Button>
               </div>
             );

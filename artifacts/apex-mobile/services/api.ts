@@ -278,8 +278,11 @@ export interface Credits {
   /** Daily allowance plus today's bonus; -1 = unlimited */
   limit: number;
   bonus: number;
-  /** -1 = unlimited */
+  /** Daily credits left plus bought credits; -1 = unlimited */
   remaining: number;
+  dailyRemaining: number;
+  /** Bought in packs (never expire) */
+  purchased: number;
   unlimited: boolean;
   resetsAt: string;
   costs: Record<string, number>;
@@ -289,6 +292,20 @@ export interface Credits {
 
 export const creditsApi = {
   today: () => apexFetch<Credits>("/credits"),
+};
+
+// ── Store (Pro and credit packs, paid on Stripe) ──────────────────────────────
+export const CREDIT_PACKS = [
+  { id: "pack300", credits: 300, price: "$5" },
+  { id: "pack600", credits: 600, price: "$8" },
+  { id: "pack900", credits: 900, price: "$12" },
+] as const;
+
+export const storeApi = {
+  buyCredits: (packId: string, returnTo: string) =>
+    apexFetch<{ url: string }>("/store/credits/checkout", { method: "POST", body: JSON.stringify({ packId, returnTo }) }).then((d) => d.url),
+  subscribePro: (returnTo: string, interval: "month" | "year" = "month") =>
+    apexFetch<{ url: string }>("/store/pro/checkout", { method: "POST", body: JSON.stringify({ interval, returnTo }) }).then((d) => d.url),
 };
 
 // ── Connectors ────────────────────────────────────────────────────────────────

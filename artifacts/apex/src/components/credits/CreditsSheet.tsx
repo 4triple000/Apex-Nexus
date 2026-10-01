@@ -65,7 +65,9 @@ export function CreditsSheetHost() {
           <div style={{ display: "grid", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span className="mg-display" style={{ fontSize: 34, fontWeight: 700 }}>{data.remaining}</span>
-              <span style={{ fontSize: 13.5, color: "var(--mg-ink-2)" }}>of {data.limit} left today{data.bonus ? ` (includes +${data.bonus} bonus)` : ""}</span>
+              <span style={{ fontSize: 13.5, color: "var(--mg-ink-2)" }}>
+                left ({data.dailyRemaining ?? data.remaining} of {data.limit} daily{data.bonus ? `, incl. +${data.bonus} bonus` : ""}{data.purchased ? ` + ${data.purchased} bought` : ""})
+              </span>
             </div>
             <div style={{ height: 8, borderRadius: 4, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
               <div style={{ width: `${(1 - pct) * 100}%`, height: "100%", borderRadius: 4, background: pct >= 0.8 ? "#FFD479" : "linear-gradient(90deg,#8B7BFF,#5BC0FF)" }} />
@@ -76,8 +78,9 @@ export function CreditsSheetHost() {
         {/* Ways to get more */}
         <div style={{ display: "grid", gap: 8 }}>
           {!isPaid && !data?.isOwner && (
-            <Option icon={<Crown size={18} />} accent="#FFD479" title="Upgrade to Pro" sub="20x the credits every day, plus the premium features." onClick={() => go("/pricing")} primary />
+            <Option icon={<Crown size={18} />} accent="#FFD479" title="Upgrade to Pro" sub="60 credits every day (3x Free) for $14.99 a month." onClick={() => go("/pricing")} primary />
           )}
+          <Option icon={<Zap size={18} />} accent="#FFD479" title="Buy a credit pack" sub="300 credits ($5) · 600 credits ($8) · 900 credits ($12). They never expire." onClick={() => go("/pricing#packs")} />
           <Option icon={<KeyRound size={18} />} accent="#86EFAC" title="Use your own AI account" sub="Sign in with OpenRouter (or add an API key) and chat on your own account with no daily limit." onClick={() => go("/connectors")} />
           {out && (
             <Option icon={<Zap size={18} />} accent="#8B7BFF" title="Try a lighter model" sub="Llama, DeepSeek and Gemini cost 1 credit per reply." onClick={() => setOpen(null)} />

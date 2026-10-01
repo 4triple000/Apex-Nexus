@@ -20,6 +20,7 @@ import { db, usersTable, apexBillingEventsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getUncachableStripeClient } from "../../lib/stripeClient";
 import { getTierForPriceId, normalizeTier } from "./planConfig";
+import { creditPack, grantPurchasedCredits } from "../../lib/credits";
 import { logger } from "../../lib/logger";
 import type { PlanTier, WebhookProcessResult } from "./types";
 import type Stripe from "stripe";
@@ -36,6 +37,11 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
     const stripe = await getUncachableStripeClient();
     if (secret && signature) {
       event = stripe.webhooks.constructEvent(req.body as Buffer, signature, secret);
+    } else if (process.env.NODE_ENV === "production") {
+      // Without the signing secret anyone could fake a payment, so refuse
+      logger.error("Stripe webhook: STRIPE_WEBHOOK_SECRET is not set — rejecting unsigned event");
+      res.status(400).json({ error: "Webhook signing secret not configured" });
+      return;
     } else {
       // Dev mode: parse raw JSON (no signature verification)
       logger.warn("Stripe webhook: STRIPE_WEBHOOK_SECRET not set — skipping signature verification");
@@ -87,6 +93,12 @@ async function processEvent(event: Stripe.Event): Promise<WebhookProcessResult> 
   };
 
   switch (event.type) {
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      return await handleCheckoutCompleted(event, session, base);
+    }
+
     case "customer.subscription.created":
     case "customer.subscription.updated": {
       const sub = event.data.object as Stripe.Subscription;
@@ -122,7 +134,9 @@ async function handleSubscriptionChange(
 ): Promise<WebhookProcessResult> {
   const customerId = sub.customer as string;
   const priceId    = sub.items.data[0]?.price?.id;
-  const newTier    = priceId ? getTierForPriceId(priceId) : "pro";
+  // Checkouts made by Apex tag the plan on the subscription; older ones map by price ID
+  const taggedTier = sub.metadata?.apexTier ? normalizeTier(sub.metadata.apexTier) : null;
+  const newTier    = taggedTier ?? (priceId ? getTierForPriceId(priceId) : "pro");
   const newStatus  = mapStripeStatus(sub.status);
 
   const user = await findUserByCustomerId(customerId);
@@ -153,6 +167,37 @@ async function handleSubscriptionChange(
     userId: user.id,
     tierChange: { before: tierBefore, after: newTier },
   };
+}
+
+// ── Checkout completed: credit packs ──────────────────────────────────────────
+
+async function handleCheckoutCompleted(
+  event: Stripe.Event,
+  session: Stripe.Checkout.Session,
+  base: WebhookProcessResult
+): Promise<WebhookProcessResult> {
+  const meta = session.metadata ?? {};
+  // Subscriptions are handled by the customer.subscription.* events
+  if (meta.apexKind !== "credits") {
+    await recordEvent(event, (session.customer as string) ?? null, null, null, "processed");
+    return { ...base, processed: false };
+  }
+  if (session.payment_status !== "paid") {
+    // Delayed payment methods finish later with checkout.session.async_payment_succeeded
+    await recordEvent(event, (session.customer as string) ?? null, null, null, "processed");
+    return { ...base, processed: false };
+  }
+  const userId = Number(meta.apexUserId);
+  const pack = creditPack(meta.packId ?? "");
+  if (!userId || !pack) {
+    logger.warn({ meta }, "Stripe webhook: credit checkout missing user or pack");
+    await recordEvent(event, (session.customer as string) ?? null, null, null, "error", "missing user or pack");
+    return { ...base, processed: false };
+  }
+  const added = await grantPurchasedCredits(userId, pack.id, pack.credits, session.amount_total ?? pack.priceCents, session.id);
+  logger.info({ userId, pack: pack.id, added }, "Stripe webhook: credit pack paid");
+  await recordEvent(event, (session.customer as string) ?? null, null, userId, "processed");
+  return { ...base, processed: true, userId };
 }
 
 // ── Subscription deleted (cancelled) ──────────────────────────────────────────

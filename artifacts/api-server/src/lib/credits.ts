@@ -9,11 +9,13 @@
  * owner can see what the API keys are really costing (GET /credits/admin).
  *
  * All numbers can be changed on the server without code changes:
- *   APEX_CREDITS_FREE=30  APEX_CREDITS_PRO=600  APEX_CREDITS_ENTERPRISE=-1   (-1 = unlimited)
+ *   APEX_CREDITS_FREE=20  APEX_CREDITS_PRO=60  APEX_CREDITS_ENTERPRISE=-1   (-1 = unlimited)
+ *
+ * Credits bought in packs (credit_wallet) never expire and are spent only after the daily allowance.
  *   APEX_CREDIT_COST_CLAUDE=3  (any provider, upper-case)
  *   APEX_PRICE_CLAUDE=4,20     (estimated $ per million input,output tokens)
  */
-import { db, aiUsageTable, creditBonusTable, usersTable } from "@workspace/db";
+import { db, aiUsageTable, creditBonusTable, creditWalletTable, creditPurchasesTable, usersTable } from "@workspace/db";
 import { and, eq, sql, desc, gte } from "drizzle-orm";
 import { normalizeTier } from "../server/billing/planConfig";
 import { isOwnerEmail } from "../shared/lib/owner";
@@ -78,8 +80,43 @@ export function estimateCostMicros(provider: string, inputTokens: number, output
 
 export function dailyAllowance(tier: PlanTier): number {
   if (tier === "enterprise") return envInt("APEX_CREDITS_ENTERPRISE", -1);
-  if (tier === "pro") return envInt("APEX_CREDITS_PRO", 600);
-  return envInt("APEX_CREDITS_FREE", 30);
+  if (tier === "pro") return envInt("APEX_CREDITS_PRO", 60);
+  return envInt("APEX_CREDITS_FREE", 20);
+}
+
+// ── Credit packs (one-time purchases) ─────────────────────────────────────────
+
+export const CREDIT_PACKS = [
+  { id: "pack300", credits: 300, priceCents: 500, name: "300 credits" },
+  { id: "pack600", credits: 600, priceCents: 800, name: "600 credits" },
+  { id: "pack900", credits: 900, priceCents: 1200, name: "900 credits" },
+] as const;
+export type CreditPackId = (typeof CREDIT_PACKS)[number]["id"];
+export const creditPack = (id: string) => CREDIT_PACKS.find((p) => p.id === id);
+
+async function walletBalance(userId: number): Promise<number> {
+  const [row] = await db.select({ balance: creditWalletTable.balance }).from(creditWalletTable).where(eq(creditWalletTable.userId, userId)).limit(1);
+  return row?.balance ?? 0;
+}
+
+/**
+ * Add a paid pack to the person's wallet. Safe to call twice for the same checkout session:
+ * the purchase row is unique per session, so the second call adds nothing.
+ */
+export async function grantPurchasedCredits(userId: number, packId: string, credits: number, amountCents: number, stripeSessionId: string): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const inserted = await tx
+      .insert(creditPurchasesTable)
+      .values({ userId, packId, credits, amountCents, stripeSessionId })
+      .onConflictDoNothing({ target: creditPurchasesTable.stripeSessionId })
+      .returning({ id: creditPurchasesTable.id });
+    if (!inserted.length) return false;
+    await tx
+      .insert(creditWalletTable)
+      .values({ userId, balance: credits })
+      .onConflictDoUpdate({ target: creditWalletTable.userId, set: { balance: sql`${creditWalletTable.balance} + ${credits}`, updatedAt: new Date() } });
+    return true;
+  });
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -126,7 +163,12 @@ export interface CreditBalance {
   used: number;
   limit: number;       // daily allowance + today's bonus; -1 = unlimited
   bonus: number;
-  remaining: number;   // -1 = unlimited
+  /** Credits left today plus bought credits; -1 = unlimited */
+  remaining: number;
+  /** Left from today's allowance */
+  dailyRemaining: number;
+  /** Bought in packs (never expire) */
+  purchased: number;
   unlimited: boolean;
   resetsAt: string;
   costs: Record<string, number>;
@@ -148,12 +190,16 @@ export async function getBalance(who: CreditUser): Promise<CreditBalance> {
   const base = who.isOwner ? -1 : dailyAllowance(who.tier);
   const unlimited = base === -1;
   const limit = unlimited ? -1 : base + bonus;
+  const purchased = await walletBalance(who.userId);
+  const dailyRemaining = unlimited ? -1 : Math.max(0, limit - used);
   return {
     tier: who.tier,
     used,
     limit,
     bonus,
-    remaining: unlimited ? -1 : Math.max(0, limit - used),
+    remaining: unlimited ? -1 : dailyRemaining + purchased,
+    dailyRemaining,
+    purchased,
     unlimited,
     resetsAt: nextResetIso(),
     costs: Object.fromEntries(Object.keys(BASE_COST).map((p) => [p, creditCost(p)])),
@@ -174,7 +220,7 @@ export function outOfCredits(balance: CreditBalance, needed: number) {
     error:
       balance.remaining > 0
         ? `That model needs ${needed} credits and you have ${balance.remaining} left today. Try a lighter model, or upgrade for more.`
-        : "You've used today's free AI credits. They reset at midnight, or upgrade to Pro for 20x more.",
+        : "You've used today's AI credits. They reset at midnight, or buy a credit pack or upgrade to Pro for more.",
     credits: balance,
   };
 }
@@ -195,6 +241,17 @@ export async function recordUsage(who: CreditUser, report: UsageReport): Promise
   const inputTokens = Math.max(0, Math.round(report.inputTokens ?? 0));
   const outputTokens = Math.max(0, Math.round(report.outputTokens ?? 0));
   const costMicros = own ? 0 : estimateCostMicros(report.provider, inputTokens, outputTokens);
+  // Whatever today's allowance can't cover comes out of bought credits
+  if (credits > 0 && !who.isOwner) {
+    const balance = await getBalance(who);
+    const overflow = balance.unlimited ? 0 : Math.max(0, credits - balance.dailyRemaining);
+    if (overflow > 0) {
+      await db
+        .update(creditWalletTable)
+        .set({ balance: sql`greatest(${creditWalletTable.balance} - ${overflow}, 0)`, updatedAt: new Date() })
+        .where(eq(creditWalletTable.userId, who.userId));
+    }
+  }
   await db
     .insert(aiUsageTable)
     .values({

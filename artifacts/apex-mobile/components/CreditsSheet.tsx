@@ -3,14 +3,14 @@
  * Mounted once in the tabs layout; open it from anywhere with openCreditsSheet().
  */
 import React, { useEffect, useState } from "react";
-import { DeviceEventEmitter, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, DeviceEventEmitter, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useQuery } from "@tanstack/react-query";
 
 import { MG, MGFont } from "@/constants/colors";
-import { creditsApi, WEB_APP_URL } from "@/services/api";
+import { creditsApi, storeApi, CREDIT_PACKS, WEB_APP_URL } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 
 const EVENT = "apex:credits-sheet";
@@ -52,6 +52,19 @@ export function CreditsSheetHost() {
   }, [refetch]);
 
   const close = () => setOpen(null);
+
+  // Stripe checkout: same tab on the website version, the browser on the phone
+  const checkout = async (start: (returnTo: string) => Promise<string>) => {
+    const returnTo = Platform.OS === "web" && typeof window !== "undefined" ? `${window.location.origin}/` : `${WEB_APP_URL}/pricing`;
+    try {
+      const url = await start(returnTo);
+      if (Platform.OS === "web") window.location.href = url;
+      else { close(); await WebBrowser.openBrowserAsync(url); void refetch(); }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Couldn't start checkout.";
+      if (Platform.OS === "web") window.alert(msg); else Alert.alert("Checkout", msg);
+    }
+  };
   const out = open?.reason === "out";
   const isPaid = data?.tier === "pro" || data?.tier === "enterprise";
   const pct = data && !data.unlimited ? Math.min(1, data.used / Math.max(1, data.limit)) : 0;
@@ -74,16 +87,29 @@ export function CreditsSheetHost() {
 
             {data && !data.unlimited && (
               <View style={{ gap: 8 }}>
-                <Text style={s.big}>{data.remaining} <Text style={s.of}>of {data.limit} left today{data.bonus ? ` (+${data.bonus} bonus)` : ""}</Text></Text>
+                <Text style={s.big}>{data.remaining} <Text style={s.of}>left ({data.dailyRemaining ?? data.remaining} of {data.limit} daily{data.purchased ? ` + ${data.purchased} bought` : ""})</Text></Text>
                 <View style={s.track}><View style={[s.fill, { width: `${(1 - pct) * 100}%`, backgroundColor: pct >= 0.8 ? "#FFD479" : MG.violet }]} /></View>
               </View>
             )}
 
             <View style={{ gap: 8 }}>
               {!isPaid && !data?.isOwner && (
-                <Option icon="award" accent="#FFD479" primary title="Upgrade to Pro" sub="20x the credits every day, plus the premium features."
-                  onPress={() => { close(); void WebBrowser.openBrowserAsync(`${WEB_APP_URL}/pricing`); }} />
+                <Option icon="award" accent="#FFD479" primary title="Upgrade to Pro" sub="60 credits every day (3x Free) for $14.99 a month."
+                  onPress={() => void checkout((r) => storeApi.subscribePro(r))} />
               )}
+              <View style={{ gap: 6 }}>
+                <Text style={s.label}>BUY CREDITS · NEVER EXPIRE</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {CREDIT_PACKS.map((p) => (
+                    <Pressable key={p.id} accessibilityRole="button" accessibilityLabel={`Buy ${p.credits} credits for ${p.price}`}
+                      onPress={() => void checkout((r) => storeApi.buyCredits(p.id, r))}
+                      style={({ pressed }) => [s.pack, pressed && { opacity: 0.8 }]}>
+                      <Text style={s.packCredits}>{p.credits}</Text>
+                      <Text style={s.packPrice}>{p.price}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
               <Option icon="key" accent="#86EFAC" title="Use your own AI account" sub="Sign in with OpenRouter (or add an API key) and chat on your own account with no daily limit."
                 onPress={() => { close(); router.push("/(tabs)/connectors"); }} />
               {out && <Option icon="zap" accent={MG.violet} title="Try a lighter model" sub="Llama, DeepSeek and Gemini cost 1 credit per reply." onPress={close} />}
@@ -137,6 +163,9 @@ const s = StyleSheet.create({
   optionIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)" },
   optionTitle: { color: MG.ink, fontFamily: MGFont.bold, fontSize: 14.5 },
   optionSub: { color: MG.ink2, fontFamily: MGFont.body, fontSize: 12.5, lineHeight: 17 },
+  pack: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: 14, backgroundColor: "rgba(255,212,121,0.1)", borderWidth: 1, borderColor: "rgba(255,212,121,0.35)" },
+  packCredits: { color: MG.ink, fontFamily: MGFont.display, fontSize: 18 },
+  packPrice: { color: "#FFD479", fontFamily: MGFont.bold, fontSize: 12.5 },
   label: { color: MG.ink3, fontFamily: MGFont.bold, fontSize: 10.5, letterSpacing: 1.2 },
   chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
   chipText: { color: MG.ink2, fontFamily: MGFont.semi, fontSize: 12 },
