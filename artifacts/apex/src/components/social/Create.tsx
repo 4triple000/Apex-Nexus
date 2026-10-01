@@ -1,30 +1,32 @@
 /**
  * The + button: "Create on Apex" grid, and the composer it opens.
- * Ready now: post (with an optional photo), poll, game, Apex Moment answer.
- * Coming soon tiles are shown but disabled, so nobody hits a dead end.
+ * Ready now: post (with an optional photo), poll, debate, game, challenge entry, Apex Moment answer,
+ * AI Creation (Apex drafts, you edit) and Ask Apex (opens its own sheet).
+ * Apex's suggestions only fill the composer; nothing posts until the person taps Post.
  */
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { PenLine, Video, Mic, Smile, HelpCircle, Sparkles, BarChart3, Gamepad2, Trophy, Lightbulb, Image as ImageIcon, X, Globe, Users, Lock, Plus, Loader2 } from "lucide-react";
-import { socialApi, resizePhoto, type Post, type Visibility } from "@/lib/socialApi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { PenLine, Video, Mic, HelpCircle, Sparkles, BarChart3, Gamepad2, Trophy, Lightbulb, Image as ImageIcon, X, Globe, Users, Lock, Plus, Loader2, Scale, Wand2, Hash } from "lucide-react";
+import { socialApi, resizePhoto, endsIn, type Post, type Visibility } from "@/lib/socialApi";
 import { useAuth } from "@/contexts/AuthContext";
-import { S, Avatar, Sheet, primaryBtn, ghostBtn, sceneFor } from "./ui";
+import { S, Avatar, Sheet, primaryBtn, ghostBtn, sceneFor, ApexTag, apexCard } from "./ui";
 
-export type ComposeMode = "text" | "poll" | "game" | "moment";
+export type ComposeMode = "text" | "poll" | "game" | "moment" | "debate" | "ai" | "challenge";
+export type CreatePick = ComposeMode | "ask";
 
-const TILES: { id: ComposeMode | null; icon: typeof PenLine; title: string; sub: string }[] = [
+const TILES: { id: CreatePick | null; icon: typeof PenLine; title: string; sub: string }[] = [
   { id: "text", icon: PenLine, title: "Post", sub: "Share anything" },
+  { id: "poll", icon: BarChart3, title: "Poll", sub: "Ask the community" },
+  { id: "debate", icon: Scale, title: "Debate", sub: "Pick a side" },
+  { id: "ask", icon: HelpCircle, title: "Ask Apex", sub: "Get answers" },
+  { id: "ai", icon: Sparkles, title: "AI Creation", sub: "Apex drafts it" },
+  { id: "challenge", icon: Trophy, title: "Challenge", sub: "Join or start one" },
+  { id: "game", icon: Gamepad2, title: "Game", sub: "Share a game" },
   { id: null, icon: Video, title: "Video", sub: "Record or upload" },
   { id: null, icon: Mic, title: "Voice", sub: "Speak your mind" },
-  { id: null, icon: Smile, title: "Meme", sub: "Make it funny" },
-  { id: null, icon: HelpCircle, title: "Ask Apex", sub: "Get answers" },
-  { id: null, icon: Sparkles, title: "AI Creation", sub: "Create with AI" },
-  { id: "poll", icon: BarChart3, title: "Poll", sub: "Ask the community" },
-  { id: "game", icon: Gamepad2, title: "Game", sub: "Share a game" },
-  { id: null, icon: Trophy, title: "Challenge", sub: "Start something" },
 ];
 
-export function CreateSheet({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (mode: ComposeMode, idea?: string) => void }) {
+export function CreateSheet({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (mode: CreatePick, idea?: string) => void }) {
   const [busy, setBusy] = useState(false);
   const surprise = async () => {
     setBusy(true);
@@ -45,7 +47,7 @@ export function CreateSheet({ open, onClose, onPick }: { open: boolean; onClose:
           return (
             <button key={t.title} disabled={!ready} onClick={() => t.id && onPick(t.id)}
               style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, padding: "14px 12px", minHeight: 96, borderRadius: 16, background: S.surf, border: `1px solid ${S.line}`, color: S.ink, textAlign: "left", cursor: ready ? "pointer" : "default", opacity: ready ? 1 : 0.5, fontFamily: "Manrope, sans-serif" }}>
-              <span style={{ width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.06)" }}><t.icon size={18} /></span>
+              <span style={{ width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: t.id === "ask" || t.id === "ai" ? S.goldSoft : "rgba(255,255,255,0.06)", color: t.id === "ask" || t.id === "ai" ? S.gold : S.ink }}><t.icon size={18} /></span>
               <span>
                 <span style={{ display: "block", fontSize: 13.5, fontWeight: 800 }}>{t.title}</span>
                 <span style={{ display: "block", fontSize: 11, color: S.ink3, marginTop: 2 }}>{ready ? t.sub : "Coming soon"}</span>
@@ -73,42 +75,82 @@ const VIS: { id: Visibility; label: string; icon: typeof Globe; sub: string }[] 
   { id: "private", label: "Only me", icon: Lock, sub: "Just you" },
 ];
 
+export function VisibilityPicker({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
+  const [open, setOpen] = useState(false);
+  const vis = VIS.find((v) => v.id === value)!;
+  return (
+    <>
+      <button onClick={() => setOpen((v) => !v)} aria-expanded={open} style={ghostBtn({ height: 28, padding: "0 10px", borderRadius: 14, fontSize: 12 })}><vis.icon size={13} /> {vis.label}</button>
+      {open ? (
+        <div role="radiogroup" aria-label="Who can see this" style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
+          {VIS.map((v) => (
+            <button key={v.id} role="radio" aria-checked={value === v.id} onClick={() => { onChange(v.id); setOpen(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: value === v.id ? "rgba(255,255,255,0.06)" : "none", border: `1px solid ${value === v.id ? "rgba(255,255,255,0.22)" : "transparent"}`, color: S.ink, cursor: "pointer", textAlign: "left", fontFamily: "Manrope, sans-serif" }}>
+              <v.icon size={17} /><span style={{ flexGrow: 1 }}><span style={{ display: "block", fontSize: 13.5, fontWeight: 800 }}>{v.label}</span><span style={{ display: "block", fontSize: 11.5, color: S.ink3 }}>{v.sub}</span></span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 interface GameEntry { id: number; name: string; creatorName: string; playCount: number }
 
-export function Composer({ open, mode, idea, prompt, onClose, onPosted }: {
+const inputStyle: React.CSSProperties = { width: "100%", boxSizing: "border-box", height: 42, borderRadius: 12, padding: "0 12px", background: "rgba(0,0,0,0.3)", border: `1px solid ${S.line2}`, color: S.ink, fontFamily: "Manrope, sans-serif", fontSize: 14, outline: "none" };
+const hidden: React.CSSProperties = { position: "absolute", left: -9999 };
+const aiBtn = (extra?: React.CSSProperties) => ghostBtn({ height: 32, padding: "0 11px", borderRadius: 16, fontSize: 12, color: S.gold, borderColor: "rgba(226,193,126,0.28)", ...extra });
+
+export function Composer({ open, mode, idea, prompt, challengeId: startChallenge, onClose, onPosted }: {
   open: boolean;
   mode: ComposeMode;
   /** Starter idea from "Surprise me" */
   idea?: string;
   /** Today's Apex Moment prompt (moment mode) */
   prompt?: string;
+  /** Challenge to enter (challenge mode) */
+  challengeId?: number;
   onClose: () => void;
   onPosted: (p: Post) => void;
 }) {
   const { user } = useAuth();
+  const qc = useQueryClient();
+  // AI Creation starts with Apex's drafting panel, then switches to the kind of post Apex made
+  const [m, setM] = useState<ComposeMode>(mode);
   const [body, setBody] = useState("");
   const [options, setOptions] = useState(["", ""]);
   const [gameId, setGameId] = useState<number | null>(null);
+  const [challengeId, setChallengeId] = useState<number | null>(null);
   const [visibility, setVisibility] = useState<Visibility>("public");
-  const [visOpen, setVisOpen] = useState(false);
   const [photo, setPhoto] = useState<{ dataUrl: string; width: number; height: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiBusy, setAiBusy] = useState<string | null>(null);
+  const [about, setAbout] = useState("");
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [tagIdeas, setTagIdeas] = useState<string[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setBody(""); setOptions(["", ""]); setGameId(null); setPhoto(null); setError(null);
-  }, [open, mode]);
+    setM(mode); setBody(""); setOptions(["", ""]); setGameId(null); setPhoto(null); setError(null);
+    setAbout(""); setSuggestion(null); setTagIdeas([]); setChallengeId(startChallenge ?? null);
+  }, [open, mode, startChallenge]);
 
   const games = useQuery({
     queryKey: ["social-game-picker"],
-    enabled: open && mode === "game",
+    enabled: open && m === "game",
     queryFn: async () => {
       const res = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/game-feed?limit=24`);
       return (((await res.json()) as { entries?: GameEntry[] }).entries ?? []).slice(0, 24);
     },
   });
+  const challenges = useQuery({ queryKey: ["social-challenges"], enabled: open && m === "challenge", queryFn: socialApi.challenges });
+  const activeChallenges = challenges.data?.active ?? [];
+  const chosen = activeChallenges.find((c) => c.id === challengeId);
+  useEffect(() => {
+    if (m === "challenge" && !challengeId && activeChallenges[0]) setChallengeId(activeChallenges[0].id);
+  }, [m, challengeId, activeChallenges]);
 
   const pickPhoto = async (file?: File) => {
     if (!file) return;
@@ -116,10 +158,38 @@ export function Composer({ open, mode, idea, prompt, onClose, onPosted }: {
     try { setPhoto(await resizePhoto(file)); } catch (e) { setError((e as Error).message || "Couldn't read that photo."); }
   };
 
+  /** Run one of Apex's helpers; errors (including running out of credits) show in the composer. */
+  const withAi = async (label: string, fn: () => Promise<void>) => {
+    setAiBusy(label); setError(null);
+    try { await fn(); void qc.invalidateQueries({ queryKey: ["credits"] }); }
+    catch (e) { setError((e as Error).message); }
+    finally { setAiBusy(null); }
+  };
+  const draft = (kind: "draft" | "poll" | "debate") => withAi(kind, async () => {
+    if (kind === "draft") { const r = await socialApi.assist("draft", about.trim()); setBody(r.text); setM("text"); return; }
+    const r = await socialApi.assist(kind, about.trim());
+    setBody(r.question); setOptions(r.options); setM(kind);
+  });
+  const improve = () => withAi("improve", async () => setSuggestion((await socialApi.assist("improve", body.trim())).text));
+  const hashtags = () => withAi("hashtags", async () => {
+    const have = body.toLowerCase();
+    const tags = (await socialApi.assist("hashtags", body.trim())).tags.filter((t) => !have.includes(`#${t}`));
+    setTagIdeas(tags);
+    if (!tags.length) setError("Your post already has the tags Apex would suggest.");
+  });
+  const suggestChoices = () => withAi("choices", async () => {
+    const r = await socialApi.assist(m === "debate" ? "debate" : "poll", body.trim());
+    setOptions(r.options);
+  });
+  const addTag = (t: string) => { setBody((b) => (b.toLowerCase().includes(`#${t}`) ? b : `${b.trimEnd()} #${t}`)); setTagIdeas((list) => list.filter((x) => x !== t)); };
+
   const filledOptions = options.map((o) => o.trim()).filter(Boolean);
-  const canPost = !busy && (
-    mode === "poll" ? !!body.trim() && filledOptions.length >= 2 :
-    mode === "game" ? !!gameId :
+  const canPost = !busy && !aiBusy && (
+    m === "poll" ? !!body.trim() && filledOptions.length >= 2 :
+    m === "debate" ? !!body.trim() && filledOptions.length === 2 :
+    m === "game" ? !!gameId :
+    m === "challenge" ? !!chosen && (!!body.trim() || !!photo) :
+    m === "ai" ? false :
     !!body.trim() || !!photo
   );
 
@@ -128,9 +198,15 @@ export function Composer({ open, mode, idea, prompt, onClose, onPosted }: {
     try {
       let mediaId: number | undefined;
       if (photo) mediaId = (await socialApi.uploadPhoto(photo.dataUrl, photo.width, photo.height)).id;
-      const kind: Post["kind"] = mode === "moment" ? "moment" : mode === "poll" ? "poll" : mode === "game" ? "game" : photo ? "photo" : "text";
-      const created = await socialApi.create({ kind, body: body.trim(), mediaId, pollOptions: mode === "poll" ? filledOptions : undefined, gameId: gameId ?? undefined, visibility });
+      const kind: Post["kind"] = m === "moment" ? "moment" : m === "poll" ? "poll" : m === "debate" ? "debate" : m === "game" ? "game" : photo ? "photo" : "text";
+      const created = await socialApi.create({
+        kind, body: body.trim(), mediaId, visibility,
+        pollOptions: m === "poll" || m === "debate" ? filledOptions : undefined,
+        gameId: gameId ?? undefined,
+        challengeId: m === "challenge" ? challengeId ?? undefined : undefined,
+      });
       onPosted(created);
+      if (m === "challenge") void qc.invalidateQueries({ queryKey: ["social-challenges"] });
       onClose();
     } catch (e) {
       setError((e as Error).message);
@@ -139,64 +215,126 @@ export function Composer({ open, mode, idea, prompt, onClose, onPosted }: {
     }
   };
 
-  const vis = VIS.find((v) => v.id === visibility)!;
-  const title = mode === "poll" ? "New poll" : mode === "game" ? "Share a game" : mode === "moment" ? "Apex Moment" : "New post";
-  const placeholder = mode === "poll" ? "Ask a question…" : mode === "game" ? "Say something about it (optional)" : mode === "moment" ? "Your answer…" : idea ? idea : "What's on your mind? Use #tags to join a trend";
+  const title = { poll: "New poll", debate: "New debate", game: "Share a game", moment: "Apex Moment", ai: "Create with AI", challenge: "Enter a challenge", text: "New post" }[m];
+  const placeholder =
+    m === "poll" ? "Ask a question…" :
+    m === "debate" ? "What's the debate? e.g. Is pineapple on pizza okay?" :
+    m === "game" ? "Say something about it (optional)" :
+    m === "moment" ? "Your answer…" :
+    m === "challenge" ? (chosen ? chosen.description || `Your entry for #${chosen.tag}` : "Your entry…") :
+    idea ? idea : "What's on your mind? Use #tags to join a trend";
+  const writes = m === "text" || m === "moment" || m === "challenge";
 
   return (
     <Sheet open={open} onClose={onClose} label={title} title={title}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {mode === "moment" && prompt ? (
+        {m === "moment" && prompt ? (
           <div style={{ padding: 14, borderRadius: 16, background: "linear-gradient(135deg, #1D1D22, #141417)", border: `1px solid ${S.line}` }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", color: S.gold }}>TODAY'S PROMPT</div>
             <div style={{ fontFamily: "Sora, sans-serif", fontSize: 18, fontWeight: 700, marginTop: 6, lineHeight: 1.3 }}>{prompt}</div>
           </div>
         ) : null}
-        {mode === "text" && idea ? (
+        {m === "text" && idea ? (
           <div style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 12.5, color: S.gold }}><Sparkles size={14} /> Idea: <span style={{ color: S.ink2 }}>{idea}</span></div>
         ) : null}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {user ? <Avatar user={{ username: user.username, avatarUrl: (user as { avatarUrl?: string | null }).avatarUrl ?? null, avatarEmoji: null }} size={40} /> : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ fontSize: 14, fontWeight: 700 }}>{user?.username ?? "You"}</span>
-            <button onClick={() => setVisOpen((v) => !v)} aria-expanded={visOpen} style={ghostBtn({ height: 28, padding: "0 10px", borderRadius: 14, fontSize: 12 })}><vis.icon size={13} /> {vis.label}</button>
-          </div>
-        </div>
-        {visOpen ? (
-          <div role="radiogroup" aria-label="Who can see this" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {VIS.map((v) => (
-              <button key={v.id} role="radio" aria-checked={visibility === v.id} onClick={() => { setVisibility(v.id); setVisOpen(false); }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: visibility === v.id ? "rgba(255,255,255,0.06)" : "none", border: `1px solid ${visibility === v.id ? "rgba(255,255,255,0.22)" : "transparent"}`, color: S.ink, cursor: "pointer", textAlign: "left", fontFamily: "Manrope, sans-serif" }}>
-                <v.icon size={17} /><span style={{ flexGrow: 1 }}><span style={{ display: "block", fontSize: 13.5, fontWeight: 800 }}>{v.label}</span><span style={{ display: "block", fontSize: 11.5, color: S.ink3 }}>{v.sub}</span></span>
-              </button>
-            ))}
+        {m === "ai" ? (
+          <div style={{ ...apexCard, padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+            <ApexTag>Tell Apex what you want to post</ApexTag>
+            <label>
+              <span style={hidden}>What the post is about</span>
+              <textarea value={about} onChange={(e) => setAbout(e.target.value)} rows={3} maxLength={500} autoFocus placeholder="e.g. I finally finished my first game after 3 months"
+                style={{ ...inputStyle, height: "auto", minHeight: 76, padding: 12, resize: "vertical", lineHeight: 1.5 }} />
+            </label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {([["draft", "Write a post", Wand2], ["poll", "Make a poll", BarChart3], ["debate", "Start a debate", Scale]] as const).map(([k, label, Icon]) => (
+                <button key={k} onClick={() => void draft(k)} disabled={!about.trim() || !!aiBusy} style={k === "draft" ? primaryBtn({ height: 36, fontSize: 12.5, opacity: about.trim() ? 1 : 0.5 }) : ghostBtn({ height: 36, fontSize: 12.5, opacity: about.trim() ? 1 : 0.5 })}>
+                  {aiBusy === k ? <Loader2 size={14} className="animate-spin" /> : <Icon size={14} />} {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: 11.5, color: S.ink3 }}>Uses credits like a chat message. You can edit everything before posting.</div>
           </div>
         ) : null}
 
-        <label style={{ display: "block" }}>
-          <span style={{ position: "absolute", left: -9999 }}>{mode === "poll" ? "Question" : "Post text"}</span>
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={placeholder} rows={mode === "game" ? 2 : 4} maxLength={2000} autoFocus
-            style={{ width: "100%", boxSizing: "border-box", resize: "vertical", minHeight: 80, borderRadius: 14, padding: 12, background: "rgba(0,0,0,0.3)", border: `1px solid ${S.line2}`, color: S.ink, fontFamily: "Manrope, sans-serif", fontSize: 15, lineHeight: 1.5, outline: "none" }} />
-        </label>
+        {m === "challenge" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {challenges.isLoading ? <div style={{ fontSize: 13, color: S.ink3 }}>Loading challenges…</div> : null}
+            <div role="radiogroup" aria-label="Challenge" style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+              {activeChallenges.map((c) => (
+                <button key={c.id} role="radio" aria-checked={challengeId === c.id} onClick={() => setChallengeId(c.id)}
+                  style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", borderRadius: 17, background: challengeId === c.id ? S.goldSoft : S.surf, border: `1px solid ${challengeId === c.id ? S.gold : S.line}`, color: challengeId === c.id ? S.gold : S.ink2, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
+                  <Trophy size={13} /> {c.title}
+                </button>
+              ))}
+            </div>
+            {chosen ? <div style={{ fontSize: 12, color: S.ink3 }}>#{chosen.tag} is added for you · {endsIn(chosen.endsAt)}</div> : null}
+          </div>
+        ) : null}
 
-        {mode === "poll" ? (
+        {m !== "ai" ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              {user ? <Avatar user={{ username: user.username, avatarUrl: (user as { avatarUrl?: string | null }).avatarUrl ?? null, avatarEmoji: null }} size={40} /> : null}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start", flexGrow: 1 }}>
+                <span style={{ fontSize: 14, fontWeight: 700 }}>{user?.username ?? "You"}</span>
+                <VisibilityPicker value={visibility} onChange={setVisibility} />
+              </div>
+            </div>
+
+            <label style={{ display: "block" }}>
+              <span style={hidden}>{m === "poll" || m === "debate" ? "Question" : "Post text"}</span>
+              <textarea value={body} onChange={(e) => { setBody(e.target.value); setSuggestion(null); }} placeholder={placeholder} rows={m === "game" ? 2 : 4} maxLength={2000} autoFocus
+                style={{ width: "100%", boxSizing: "border-box", resize: "vertical", minHeight: 80, borderRadius: 14, padding: 12, background: "rgba(0,0,0,0.3)", border: `1px solid ${S.line2}`, color: S.ink, fontFamily: "Manrope, sans-serif", fontSize: 15, lineHeight: 1.5, outline: "none" }} />
+            </label>
+
+            {writes && body.trim().length >= 3 ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={() => void improve()} disabled={!!aiBusy} style={aiBtn()}>{aiBusy === "improve" ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />} Improve</button>
+                <button onClick={() => void hashtags()} disabled={!!aiBusy} style={aiBtn()}>{aiBusy === "hashtags" ? <Loader2 size={13} className="animate-spin" /> : <Hash size={13} />} Hashtags</button>
+              </div>
+            ) : null}
+            {suggestion ? (
+              <div style={apexCard}>
+                <ApexTag>Apex suggests</ApexTag>
+                <div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 6, whiteSpace: "pre-wrap" }}>{suggestion}</div>
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button onClick={() => { setBody(suggestion); setSuggestion(null); }} style={primaryBtn({ height: 32, fontSize: 12.5 })}>Use this</button>
+                  <button onClick={() => setSuggestion(null)} style={ghostBtn({ height: 32, fontSize: 12.5 })}>Keep mine</button>
+                </div>
+              </div>
+            ) : null}
+            {tagIdeas.length ? (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <span style={{ fontSize: 11.5, color: S.ink3 }}>Tap to add:</span>
+                {tagIdeas.map((t) => <button key={t} onClick={() => addTag(t)} style={ghostBtn({ height: 28, padding: "0 10px", borderRadius: 14, fontSize: 12, color: S.gold })}>#{t}</button>)}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+
+        {m === "poll" || m === "debate" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {options.map((o, i) => (
               <div key={i} style={{ display: "flex", gap: 8 }}>
                 <label style={{ flexGrow: 1 }}>
-                  <span style={{ position: "absolute", left: -9999 }}>Choice {i + 1}</span>
-                  <input value={o} maxLength={80} onChange={(e) => setOptions(options.map((x, j) => (j === i ? e.target.value : x)))} placeholder={`Choice ${i + 1}`}
-                    style={{ width: "100%", boxSizing: "border-box", height: 42, borderRadius: 12, padding: "0 12px", background: "rgba(0,0,0,0.3)", border: `1px solid ${S.line2}`, color: S.ink, fontFamily: "Manrope, sans-serif", fontSize: 14, outline: "none" }} />
+                  <span style={hidden}>{m === "debate" ? `Side ${i + 1}` : `Choice ${i + 1}`}</span>
+                  <input value={o} maxLength={80} onChange={(e) => setOptions(options.map((x, j) => (j === i ? e.target.value : x)))} placeholder={m === "debate" ? (i === 0 ? "Side A, e.g. Yes, always" : "Side B, e.g. Never") : `Choice ${i + 1}`}
+                    style={{ ...inputStyle, borderColor: m === "debate" ? (i === 0 ? "rgba(226,193,126,0.35)" : "rgba(201,205,214,0.3)") : S.line2 }} />
                 </label>
-                {options.length > 2 ? <button aria-label={`Remove choice ${i + 1}`} onClick={() => setOptions(options.filter((_, j) => j !== i))} style={ghostBtn({ width: 42, padding: 0 })}><X size={16} /></button> : null}
+                {m === "poll" && options.length > 2 ? <button aria-label={`Remove choice ${i + 1}`} onClick={() => setOptions(options.filter((_, j) => j !== i))} style={ghostBtn({ width: 42, padding: 0 })}><X size={16} /></button> : null}
               </div>
             ))}
-            {options.length < 4 ? <button onClick={() => setOptions([...options, ""])} style={ghostBtn({ alignSelf: "flex-start", height: 34, fontSize: 12.5 })}><Plus size={15} /> Add choice</button> : null}
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {m === "poll" && options.length < 4 ? <button onClick={() => setOptions([...options, ""])} style={ghostBtn({ height: 32, fontSize: 12.5 })}><Plus size={15} /> Add choice</button> : null}
+              {body.trim().length >= 3 ? (
+                <button onClick={() => void suggestChoices()} disabled={!!aiBusy} style={aiBtn()}>{aiBusy === "choices" ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Suggest {m === "debate" ? "sides" : "choices"}</button>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
-        {mode === "game" ? (
+        {m === "game" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 12, fontWeight: 800, color: S.ink2 }}>Pick a game</div>
             {games.isLoading ? <div style={{ fontSize: 13, color: S.ink3 }}>Loading games…</div> : null}
@@ -221,18 +359,20 @@ export function Composer({ open, mode, idea, prompt, onClose, onPosted }: {
 
         {error ? <div role="alert" style={{ fontSize: 13, color: "#FF8A8A" }}>{error}</div> : null}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {mode === "text" || mode === "moment" ? (
-            <>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => void pickPhoto(e.target.files?.[0])} />
-              <button onClick={() => fileRef.current?.click()} style={ghostBtn({ height: 38 })}><ImageIcon size={16} /> Photo</button>
-            </>
-          ) : null}
-          <span style={{ flexGrow: 1, textAlign: "right", fontSize: 11.5, color: S.ink3 }}>{body.length > 1800 ? `${2000 - body.length} left` : ""}</span>
-          <button onClick={() => void submit()} disabled={!canPost} style={primaryBtn({ height: 40, opacity: canPost ? 1 : 0.45, cursor: canPost ? "pointer" : "default" })}>
-            {busy ? <Loader2 size={16} className="animate-spin" /> : null} Post
-          </button>
-        </div>
+        {m !== "ai" ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {writes ? (
+              <>
+                <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => void pickPhoto(e.target.files?.[0])} />
+                <button onClick={() => fileRef.current?.click()} style={ghostBtn({ height: 38 })}><ImageIcon size={16} /> Photo</button>
+              </>
+            ) : null}
+            <span style={{ flexGrow: 1, textAlign: "right", fontSize: 11.5, color: S.ink3 }}>{body.length > 1800 ? `${2000 - body.length} left` : ""}</span>
+            <button onClick={() => void submit()} disabled={!canPost} style={primaryBtn({ height: 40, opacity: canPost ? 1 : 0.45, cursor: canPost ? "pointer" : "default" })}>
+              {busy ? <Loader2 size={16} className="animate-spin" /> : null} Post
+            </button>
+          </div>
+        ) : null}
       </div>
     </Sheet>
   );

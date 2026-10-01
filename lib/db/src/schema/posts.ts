@@ -3,6 +3,7 @@ import { pgTable, serial, integer, text, timestamp, boolean, jsonb, unique, inde
 /**
  * Social posts. `kind` decides how the card renders:
  *   text · photo · poll · game (links a game-feed entry) · moment (an answer to the daily Apex Moment)
+ *   debate (two sides in poll_options) · ask (a question with Apex's answer in ai_text)
  * `visibility`: public · followers · private.
  */
 export const socialPostsTable = pgTable(
@@ -21,6 +22,11 @@ export const socialPostsTable = pgTable(
     /** Day of the Apex Moment this answers (YYYY-MM-DD) */
     momentDay: text("moment_day"),
     location: text("location"),
+    /** social_challenges.id when this post is a challenge entry */
+    challengeId: integer("challenge_id"),
+    /** Apex's answer (ask posts) or the latest summary of both sides (debates) */
+    aiText: text("ai_text"),
+    aiAt: timestamp("ai_at", { withTimezone: true }),
     visibility: text("visibility").notNull().default("public"),
     tags: jsonb("tags").$type<string[]>().notNull().default([]),
     reactionCount: integer("reaction_count").notNull().default(0),
@@ -28,7 +34,7 @@ export const socialPostsTable = pgTable(
     deleted: boolean("deleted").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("social_posts_created_idx").on(t.createdAt), index("social_posts_user_idx").on(t.userId)],
+  (t) => [index("social_posts_created_idx").on(t.createdAt), index("social_posts_user_idx").on(t.userId), index("social_posts_challenge_idx").on(t.challengeId)],
 );
 
 /** Photos are resized on the device and kept here until object storage is set up on the server. */
@@ -65,6 +71,11 @@ export const postCommentsTable = pgTable(
     /** Set on replies (one level deep) */
     parentId: integer("parent_id"),
     body: text("body").notNull(),
+    /** On debates: the side the commenter picked (0 or 1) when they commented */
+    side: integer("side"),
+    /** An Apex answer the commenter chose to share; ai_prompt is what they asked */
+    ai: boolean("ai").notNull().default(false),
+    aiPrompt: text("ai_prompt"),
     reactionCount: integer("reaction_count").notNull().default(0),
     deleted: boolean("deleted").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -93,6 +104,22 @@ export const pollVotesTable = pgTable(
   },
   (t) => [unique("poll_votes_post_user").on(t.postId, t.userId)],
 );
+
+/**
+ * Challenges: a prompt with a hashtag and an end date. Entries are posts with challenge_id set.
+ * Apex's weekly challenge has a slug ("weekly-2026-09-28") and no creator.
+ */
+export const socialChallengesTable = pgTable("social_challenges", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").unique(),
+  creatorId: integer("creator_id"),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  tag: text("tag").notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  deleted: boolean("deleted").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Reports of posts, comments or people, for the owner to review. */
 export const contentReportsTable = pgTable("content_reports", {

@@ -1,7 +1,7 @@
 /**
  * Social posts (the new Social tab). All routes need a signed-in account.
  *
- *   GET    /posts/feed?tab=foryou|following&cursor=&tag=   — a page of posts (newest first)
+ *   GET    /posts/feed?tab=foryou|following&cursor=&tag=&challenge=   — a page of posts (newest first)
  *   GET    /posts/moment                                   — today's Apex Moment prompt and who answered
  *   GET    /posts/trending                                 — top hashtags this week
  *   GET    /posts/ideas                                    — "Not sure what to post?" starters
@@ -11,7 +11,7 @@
  *   GET    /posts/:id                                      — one post
  *   DELETE /posts/:id                                      — delete your post
  *   POST   /posts/:id/react                                — like / unlike
- *   POST   /posts/:id/vote                                 — vote in a poll
+ *   POST   /posts/:id/vote                                 — vote in a poll, or pick a side in a debate
  *   GET    /posts/:id/comments                             — comments with replies
  *   POST   /posts/:id/comments                             — comment or reply
  *   POST   /post-comments/:id/react                        — like / unlike a comment
@@ -23,111 +23,20 @@ import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import {
-  db, usersTable, followsTable, notificationsTable, gameFeedTable,
-  socialPostsTable, socialPostMediaTable, postReactionsTable, postCommentsTable,
+  db, usersTable, followsTable, gameFeedTable,
+  socialPostsTable, socialPostMediaTable, postReactionsTable, postCommentsTable, socialChallengesTable,
   commentReactionsTable, pollVotesTable, contentReportsTable, userBlocksTable,
 } from "@workspace/db";
 import { and, desc, eq, gt, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { requireUser } from "../shared/middleware/requireAuth";
 import type { ApexRequest } from "../shared/types";
 import { momentDay, postIdeas, promptFor } from "../lib/moments";
+import { tagsIn, blockedIds, followingIds, visibleTo, notify, present, loadVisible, idParam } from "../lib/socialPosts";
 import { logger } from "../lib/logger";
+import { checkAnswer } from "../lib/socialAi";
 
 const router: IRouter = Router();
 const PAGE = 15;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const tagsIn = (text: string) =>
-  [...new Set([...text.matchAll(/#([\p{L}\p{N}_]{2,30})/gu)].map((m) => m[1]!.toLowerCase()))].slice(0, 10);
-
-async function blockedIds(userId: number): Promise<number[]> {
-  const rows = await db.select().from(userBlocksTable).where(or(eq(userBlocksTable.blockerId, userId), eq(userBlocksTable.blockedId, userId)));
-  return rows.map((r) => (r.blockerId === userId ? r.blockedId : r.blockerId));
-}
-
-async function followingIds(userId: number): Promise<number[]> {
-  const rows = await db.select({ id: followsTable.followingId }).from(followsTable).where(eq(followsTable.followerId, userId));
-  return rows.map((r) => r.id);
-}
-
-/** Posts this person may see: public ones, followers-only from people they follow, and all their own. */
-function visibleTo(userId: number, following: number[]): SQL {
-  return or(
-    eq(socialPostsTable.userId, userId),
-    eq(socialPostsTable.visibility, "public"),
-    following.length ? and(eq(socialPostsTable.visibility, "followers"), inArray(socialPostsTable.userId, following)) : sql`false`,
-  )!;
-}
-
-async function notify(userId: number, type: string, message: string, fromUserId: number) {
-  if (userId === fromUserId) return;
-  await db.insert(notificationsTable).values({ userId, type, message, relatedUserId: fromUserId }).catch(() => undefined);
-}
-
-type PostRow = typeof socialPostsTable.$inferSelect;
-
-/** Turns post rows into what the app shows: author, photo URL, poll results, game, and whether you liked it. */
-async function present(rows: PostRow[], viewerId: number) {
-  if (!rows.length) return [];
-  const ids = rows.map((r) => r.id);
-  const authorIds = [...new Set(rows.map((r) => r.userId))];
-  const mediaIds = rows.map((r) => r.mediaId).filter((x): x is number => !!x);
-  const gameIds = rows.map((r) => r.gameId).filter((x): x is number => !!x);
-  const pollIds = rows.filter((r) => r.kind === "poll").map((r) => r.id);
-
-  const [authors, reacted, media, games, votes, myVotes] = await Promise.all([
-    db.select({ id: usersTable.id, username: usersTable.username, avatarEmoji: usersTable.avatarEmoji, avatarUrl: usersTable.avatarUrl }).from(usersTable).where(inArray(usersTable.id, authorIds)),
-    db.select({ postId: postReactionsTable.postId }).from(postReactionsTable).where(and(eq(postReactionsTable.userId, viewerId), inArray(postReactionsTable.postId, ids))),
-    mediaIds.length ? db.select({ id: socialPostMediaTable.id, key: socialPostMediaTable.key, width: socialPostMediaTable.width, height: socialPostMediaTable.height }).from(socialPostMediaTable).where(inArray(socialPostMediaTable.id, mediaIds)) : Promise.resolve([]),
-    gameIds.length ? db.select({ id: gameFeedTable.id, name: gameFeedTable.name, creatorName: gameFeedTable.creatorName, playCount: gameFeedTable.playCount, likeCount: gameFeedTable.likeCount, gameConfig: gameFeedTable.gameConfig }).from(gameFeedTable).where(inArray(gameFeedTable.id, gameIds)) : Promise.resolve([]),
-    pollIds.length ? db.select({ postId: pollVotesTable.postId, option: pollVotesTable.option, n: sql<number>`count(*)::int` }).from(pollVotesTable).where(inArray(pollVotesTable.postId, pollIds)).groupBy(pollVotesTable.postId, pollVotesTable.option) : Promise.resolve([]),
-    pollIds.length ? db.select({ postId: pollVotesTable.postId, option: pollVotesTable.option }).from(pollVotesTable).where(and(eq(pollVotesTable.userId, viewerId), inArray(pollVotesTable.postId, pollIds))) : Promise.resolve([]),
-  ]);
-  const byAuthor = new Map(authors.map((a) => [a.id, a]));
-  const reactedSet = new Set(reacted.map((r) => r.postId));
-  const byMedia = new Map(media.map((m) => [m.id, m]));
-  const byGame = new Map(games.map((g) => [g.id, g]));
-  const myVote = new Map(myVotes.map((v) => [v.postId, v.option]));
-
-  return rows.map((r) => {
-    const m = r.mediaId ? byMedia.get(r.mediaId) : undefined;
-    const g = r.gameId ? byGame.get(r.gameId) : undefined;
-    const options = r.pollOptions ?? [];
-    const counts = options.map((_, i) => votes.find((v) => v.postId === r.id && v.option === i)?.n ?? 0);
-    return {
-      id: r.id,
-      kind: r.kind,
-      body: r.body,
-      createdAt: r.createdAt,
-      location: r.location,
-      visibility: r.visibility,
-      tags: r.tags,
-      reactionCount: r.reactionCount,
-      commentCount: r.commentCount,
-      reacted: reactedSet.has(r.id),
-      mine: r.userId === viewerId,
-      author: byAuthor.get(r.userId) ?? { id: r.userId, username: "Someone", avatarEmoji: "🙂", avatarUrl: null },
-      media: m ? { url: `/api/posts/media/${m.key}`, width: m.width, height: m.height } : null,
-      poll: r.kind === "poll" ? { options, counts, total: counts.reduce((a, b) => a + b, 0), myVote: myVote.get(r.id) ?? null } : null,
-      game: g ? { id: g.id, name: g.name, creatorName: g.creatorName, playCount: g.playCount, likeCount: g.likeCount, mode: (g.gameConfig as { gameMode?: string } | null)?.gameMode ?? null } : null,
-      moment: r.momentDay ? { day: r.momentDay, prompt: promptFor(r.momentDay) } : null,
-    };
-  });
-}
-
-async function loadVisible(postId: number, viewerId: number): Promise<PostRow | null> {
-  const [row] = await db.select().from(socialPostsTable).where(and(eq(socialPostsTable.id, postId), eq(socialPostsTable.deleted, false))).limit(1);
-  if (!row) return null;
-  if (row.userId !== viewerId) {
-    if ((await blockedIds(viewerId)).includes(row.userId)) return null;
-    if (row.visibility === "private") return null;
-    if (row.visibility === "followers" && !(await followingIds(viewerId)).includes(row.userId)) return null;
-  }
-  return row;
-}
-
-const idParam = (v: unknown) => { const n = Number(v); return Number.isInteger(n) && n > 0 ? n : null; };
 
 // ── Feed, Moment, trending ───────────────────────────────────────────────────
 
@@ -136,6 +45,7 @@ router.get("/posts/feed", requireUser, async (req: ApexRequest, res): Promise<vo
   const tab = req.query.tab === "following" ? "following" : "foryou";
   const cursor = idParam(req.query.cursor);
   const tag = typeof req.query.tag === "string" ? req.query.tag.replace(/^#/, "").toLowerCase().slice(0, 30) : "";
+  const challenge = idParam(req.query.challenge);
   const [blocked, following] = await Promise.all([blockedIds(me), followingIds(me)]);
 
   const where: SQL[] = [eq(socialPostsTable.deleted, false), visibleTo(me, following)];
@@ -143,6 +53,7 @@ router.get("/posts/feed", requireUser, async (req: ApexRequest, res): Promise<vo
   if (blocked.length) where.push(sql`${socialPostsTable.userId} not in (${sql.join(blocked.map((b) => sql`${b}`), sql`, `)})`);
   if (tab === "following") where.push(inArray(socialPostsTable.userId, [me, ...following]));
   if (tag) where.push(sql`${socialPostsTable.tags} @> ${JSON.stringify([tag])}::jsonb`);
+  if (challenge) where.push(eq(socialPostsTable.challengeId, challenge));
 
   const rows = await db.select().from(socialPostsTable).where(and(...where)).orderBy(desc(socialPostsTable.id)).limit(PAGE + 1);
   const page = rows.slice(0, PAGE);
@@ -181,12 +92,16 @@ router.get("/posts/ideas", requireUser, (_req, res): void => {
 // ── Creating ──────────────────────────────────────────────────────────────────
 
 const PostBody = z.object({
-  kind: z.enum(["text", "photo", "poll", "game", "moment"]),
+  kind: z.enum(["text", "photo", "poll", "game", "moment", "debate", "ask"]),
   body: z.string().trim().max(2000).default(""),
   mediaId: z.number().int().positive().optional(),
   pollOptions: z.array(z.string().trim().min(1).max(80)).min(2).max(4).optional(),
   gameId: z.number().int().positive().optional(),
   location: z.string().trim().max(60).optional(),
+  challengeId: z.number().int().positive().optional(),
+  /** ask posts: Apex's answer and the token /social-ai/ask returned with it */
+  answer: z.string().max(4000).optional(),
+  answerToken: z.string().max(200).optional(),
   visibility: z.enum(["public", "followers", "private"]).default("public"),
 });
 
@@ -203,7 +118,17 @@ router.post("/posts", requireUser, async (req: ApexRequest, res): Promise<void> 
   if (p.kind === "photo" && !p.mediaId) { res.status(400).json({ ok: false, error: "Add a photo first." }); return; }
   if (p.kind === "poll" && !p.pollOptions) { res.status(400).json({ ok: false, error: "A poll needs at least two choices." }); return; }
   if (p.kind === "game" && !p.gameId) { res.status(400).json({ ok: false, error: "Pick a game to share." }); return; }
-  if ((p.kind === "text" || p.kind === "moment" || p.kind === "poll") && !p.body && !p.mediaId) { res.status(400).json({ ok: false, error: "Write something first." }); return; }
+  if (p.kind === "debate" && p.pollOptions?.length !== 2) { res.status(400).json({ ok: false, error: "A debate needs two sides." }); return; }
+  if ((p.kind === "text" || p.kind === "moment" || p.kind === "poll" || p.kind === "debate" || p.kind === "ask") && !p.body && !p.mediaId) { res.status(400).json({ ok: false, error: "Write something first." }); return; }
+  if (p.kind === "ask" && !(p.answer && p.answerToken && checkAnswer(me, p.body, p.answer, p.answerToken))) {
+    res.status(400).json({ ok: false, error: "Ask Apex again, then share the answer." }); return;
+  }
+  const tags = tagsIn(p.body);
+  if (p.challengeId) {
+    const [c] = await db.select().from(socialChallengesTable).where(and(eq(socialChallengesTable.id, p.challengeId), eq(socialChallengesTable.deleted, false))).limit(1);
+    if (!c || c.endsAt < new Date()) { res.status(400).json({ ok: false, error: "That challenge has ended." }); return; }
+    if (!tags.includes(c.tag)) tags.unshift(c.tag);
+  }
   if (p.mediaId) {
     const [m] = await db.select({ userId: socialPostMediaTable.userId }).from(socialPostMediaTable).where(eq(socialPostMediaTable.id, p.mediaId)).limit(1);
     if (!m || m.userId !== me) { res.status(400).json({ ok: false, error: "That photo didn't upload. Try again." }); return; }
@@ -218,12 +143,15 @@ router.post("/posts", requireUser, async (req: ApexRequest, res): Promise<void> 
     kind: p.kind,
     body: p.body,
     mediaId: p.mediaId ?? null,
-    pollOptions: p.kind === "poll" ? p.pollOptions : null,
+    pollOptions: p.kind === "poll" || p.kind === "debate" ? p.pollOptions : null,
     gameId: p.gameId ?? null,
     momentDay: p.kind === "moment" ? momentDay() : null,
     location: p.location || null,
+    challengeId: p.challengeId ?? null,
+    aiText: p.kind === "ask" ? p.answer : null,
+    aiAt: p.kind === "ask" ? new Date() : null,
     visibility: p.visibility,
-    tags: tagsIn(p.body),
+    tags: tags.slice(0, 10),
   }).returning();
   const [view] = await present([row!], me);
   res.status(201).json({ ok: true, data: { post: view } });
@@ -299,11 +227,11 @@ router.post("/posts/:id/vote", requireUser, async (req: ApexRequest, res): Promi
   const id = idParam(req.params.id);
   const row = id ? await loadVisible(id, me) : null;
   const option = Number(req.body?.option);
-  if (!row || row.kind !== "poll") { res.status(404).json({ ok: false, error: "This poll isn't available." }); return; }
+  if (!row || (row.kind !== "poll" && row.kind !== "debate")) { res.status(404).json({ ok: false, error: "This poll isn't available." }); return; }
   if (!Number.isInteger(option) || option < 0 || option >= (row.pollOptions?.length ?? 0)) { res.status(400).json({ ok: false, error: "Pick one of the choices." }); return; }
   await db.insert(pollVotesTable).values({ postId: row.id, userId: me, option }).onConflictDoUpdate({ target: [pollVotesTable.postId, pollVotesTable.userId], set: { option } });
   const [view] = await present([row], me);
-  res.json({ ok: true, data: { poll: view!.poll } });
+  res.json({ ok: true, data: { poll: view!.poll, debate: view!.debate } });
 });
 
 // ── Comments ──────────────────────────────────────────────────────────────────
@@ -325,6 +253,7 @@ router.get("/posts/:id/comments", requireUser, async (req: ApexRequest, res): Pr
   const likedSet = new Set(liked.map((l) => l.commentId));
   const view = (c: typeof rows[number]) => ({
     id: c.id, body: c.body, createdAt: c.createdAt, reactionCount: c.reactionCount, reacted: likedSet.has(c.id),
+    side: c.side, ai: c.ai, aiPrompt: c.aiPrompt,
     mine: c.userId === me, canDelete: c.userId === me || row.userId === me,
     author: byUser.get(c.userId) ?? { id: c.userId, username: "Someone", avatarEmoji: "🙂", avatarUrl: null },
   });
@@ -332,7 +261,13 @@ router.get("/posts/:id/comments", requireUser, async (req: ApexRequest, res): Pr
   res.json({ ok: true, data: { comments: top } });
 });
 
-const CommentBody = z.object({ body: z.string().trim().min(1).max(1000), parentId: z.number().int().positive().optional() });
+const CommentBody = z.object({
+  body: z.string().trim().min(1).max(4000),
+  parentId: z.number().int().positive().optional(),
+  /** Sharing an Apex answer from /posts/:id/ask-apex: the question and its token */
+  aiPrompt: z.string().trim().max(500).optional(),
+  aiToken: z.string().max(200).optional(),
+});
 
 router.post("/posts/:id/comments", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const me = req.userId!;
@@ -341,6 +276,14 @@ router.post("/posts/:id/comments", requireUser, async (req: ApexRequest, res): P
   if (!row) { res.status(404).json({ ok: false, error: "This post isn't available." }); return; }
   const parsed = CommentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ ok: false, error: "Write a comment first." }); return; }
+  const ai = !!parsed.data.aiPrompt;
+  if (ai && !(parsed.data.aiToken && checkAnswer(me, `post:${row.id}|${parsed.data.aiPrompt}`, parsed.data.body, parsed.data.aiToken))) {
+    res.status(400).json({ ok: false, error: "Ask Apex again, then share the answer." }); return;
+  }
+  if (!ai && parsed.data.body.length > 1000) { res.status(400).json({ ok: false, error: "Comments can be up to 1,000 characters." }); return; }
+  // On debates, the comment shows the side its writer picked
+  const [vote] = row.kind === "debate" ? await db.select({ option: pollVotesTable.option }).from(pollVotesTable).where(and(eq(pollVotesTable.postId, row.id), eq(pollVotesTable.userId, me))).limit(1) : [];
+  const side = vote?.option ?? null;
   let parent: typeof postCommentsTable.$inferSelect | undefined;
   if (parsed.data.parentId) {
     [parent] = await db.select().from(postCommentsTable).where(and(eq(postCommentsTable.id, parsed.data.parentId), eq(postCommentsTable.postId, row.id))).limit(1);
@@ -348,13 +291,13 @@ router.post("/posts/:id/comments", requireUser, async (req: ApexRequest, res): P
   }
   // Replies stay one level deep: replying to a reply attaches to its parent
   const parentId = parent ? parent.parentId ?? parent.id : null;
-  const [c] = await db.insert(postCommentsTable).values({ postId: row.id, userId: me, parentId, body: parsed.data.body }).returning();
+  const [c] = await db.insert(postCommentsTable).values({ postId: row.id, userId: me, parentId, body: parsed.data.body, side, ai, aiPrompt: ai ? parsed.data.aiPrompt : null }).returning();
   await db.update(socialPostsTable).set({ commentCount: sql`${socialPostsTable.commentCount} + 1` }).where(eq(socialPostsTable.id, row.id));
   const [actor] = await db.select({ username: usersTable.username, avatarEmoji: usersTable.avatarEmoji, avatarUrl: usersTable.avatarUrl }).from(usersTable).where(eq(usersTable.id, me)).limit(1);
   const name = actor?.username ?? "Someone";
   if (parent) await notify(parent.userId, "comment_reply", `${name} replied to your comment`, me);
   if (!parent || parent.userId !== row.userId) await notify(row.userId, "post_comment", `${name} commented on your post`, me);
-  res.status(201).json({ ok: true, data: { comment: { id: c!.id, body: c!.body, createdAt: c!.createdAt, parentId, reactionCount: 0, reacted: false, mine: true, canDelete: true, author: { id: me, ...actor } } } });
+  res.status(201).json({ ok: true, data: { comment: { id: c!.id, body: c!.body, createdAt: c!.createdAt, parentId, side, ai, aiPrompt: c!.aiPrompt, reactionCount: 0, reacted: false, mine: true, canDelete: true, author: { id: me, ...actor } } } });
 });
 
 router.post("/post-comments/:id/react", requireUser, async (req: ApexRequest, res): Promise<void> => {

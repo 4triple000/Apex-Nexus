@@ -9,10 +9,12 @@ import { useLocation } from "wouter";
 import { Plus, X, Loader2 } from "lucide-react";
 import { NotificationBell } from "@/components/social/NotificationBell";
 import { PostCard } from "@/components/social/PostCard";
-import { CreateSheet, Composer, type ComposeMode } from "@/components/social/Create";
+import { CreateSheet, Composer, type ComposeMode, type CreatePick } from "@/components/social/Create";
 import { CommentsSheet } from "@/components/social/Comments";
+import { AskSheet } from "@/components/social/AskApex";
+import { ChallengesRow, ChallengeSheet, StartChallengeSheet } from "@/components/social/Challenges";
 import { S, card, Avatar, SectionLabel, primaryBtn, sceneFor } from "@/components/social/ui";
-import { socialApi, compact, type Post } from "@/lib/socialApi";
+import { socialApi, compact, type Challenge, type Post } from "@/lib/socialApi";
 import { useExplore, useFollow, useMyProfile } from "@/hooks/useSocial";
 
 type Page = { posts: Post[]; nextCursor: number | null };
@@ -23,8 +25,12 @@ export default function SocialPage() {
   const [tab, setTab] = useState<"foryou" | "following">("foryou");
   const [tag, setTag] = useState<string>("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [compose, setCompose] = useState<{ mode: ComposeMode; idea?: string } | null>(null);
+  const [compose, setCompose] = useState<{ mode: ComposeMode; idea?: string; challengeId?: number } | null>(null);
   const [commentsFor, setCommentsFor] = useState<Post | null>(null);
+  const [askOpen, setAskOpen] = useState(false);
+  const [challengeOpen, setChallengeOpen] = useState<number | null>(null);
+  const [startOpen, setStartOpen] = useState(false);
+  const [challengeFilter, setChallengeFilter] = useState<{ id: number; title: string } | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
   // Layout renders this page for both mobile and desktop and hides one with CSS; only the shown copy gets the + button
@@ -41,11 +47,11 @@ export default function SocialPage() {
   const trending = useQuery({ queryKey: ["social-trending"], queryFn: socialApi.trending, staleTime: 120_000 });
   const shared = useQuery({ queryKey: ["social-shared", sharedId], enabled: !!sharedId, queryFn: () => socialApi.get(sharedId!).catch(() => null), retry: false });
 
-  const feedKey = ["social-feed", tab, tag];
+  const feedKey = ["social-feed", tab, tag, challengeFilter?.id ?? 0];
   const feed = useInfiniteQuery({
     queryKey: feedKey,
     initialPageParam: null as number | null,
-    queryFn: ({ pageParam }) => socialApi.feed(tab, pageParam, tag || undefined),
+    queryFn: ({ pageParam }) => socialApi.feed(tab, pageParam, tag || undefined, challengeFilter?.id),
     getNextPageParam: (last: Page) => last.nextCursor,
   });
   const posts = feed.data?.pages.flatMap((p) => p.posts) ?? [];
@@ -75,13 +81,22 @@ export default function SocialPage() {
     setCommentsFor((c) => (c && c.id === postId ? { ...c, commentCount: Math.max(0, c.commentCount + delta) } : c));
   };
   const posted = (p: Post) => {
-    qc.setQueryData<InfiniteData<Page>>(["social-feed", tab, ""], (old) => old && { ...old, pages: old.pages.map((pg, i) => (i === 0 ? { ...pg, posts: [p, ...pg.posts] } : pg)) });
+    qc.setQueryData<InfiniteData<Page>>(["social-feed", tab, "", 0], (old) => old && { ...old, pages: old.pages.map((pg, i) => (i === 0 ? { ...pg, posts: [p, ...pg.posts] } : pg)) });
     if (tag) setTag("");
+    if (challengeFilter) setChallengeFilter(null);
     if (p.kind === "moment") void qc.invalidateQueries({ queryKey: ["social-moment"] });
     void qc.invalidateQueries({ queryKey: ["social-trending"] });
   };
 
-  const pickTag = (t: string) => { setTag(t); root.current?.scrollTo({ top: 0, behavior: "smooth" }); };
+  const pickTag = (t: string) => { setTag(t); setChallengeFilter(null); setChallengeOpen(null); root.current?.scrollTo({ top: 0, behavior: "smooth" }); };
+  const pick = (mode: CreatePick, idea?: string) => {
+    setCreateOpen(false);
+    if (mode === "ask") setAskOpen(true);
+    else setCompose({ mode, idea });
+  };
+  const joinChallenge = (c: Challenge) => { setChallengeOpen(null); setCompose({ mode: "challenge", challengeId: c.id }); };
+  const seeAllEntries = (c: Challenge) => { setChallengeOpen(null); setTag(""); setChallengeFilter({ id: c.id, title: c.title }); root.current?.scrollTo({ top: 0, behavior: "smooth" }); };
+  const filtered = !!tag || !!challengeFilter;
   const tags = trending.data?.length ? trending.data : STARTER_TAGS.map((t) => ({ tag: t, count: 0 }));
 
   return (
@@ -117,6 +132,8 @@ export default function SocialPage() {
           ))}
         </div>
 
+        <ChallengesRow onOpen={setChallengeOpen} onStart={() => setStartOpen(true)} />
+
         {/* Tabs */}
         <div role="tablist" aria-label="Feed" style={{ display: "flex", gap: 22, borderBottom: `1px solid ${S.line}`, fontSize: 14, fontWeight: 700 }}>
           {([["foryou", "For You"], ["following", "Following"]] as const).map(([id, label]) => (
@@ -127,17 +144,17 @@ export default function SocialPage() {
           ))}
         </div>
 
-        {tag ? (
+        {filtered ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700 }}>Posts tagged <span style={{ color: S.gold }}>#{tag}</span></span>
-            <button onClick={() => setTag("")} aria-label="Clear tag" style={{ display: "flex", alignItems: "center", gap: 4, height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${S.line2}`, background: "rgba(255,255,255,0.05)", color: S.ink2, fontSize: 12, fontWeight: 700, cursor: "pointer" }}><X size={13} /> Clear</button>
+            <span style={{ fontSize: 13.5, fontWeight: 700 }}>{challengeFilter ? <>Entries for <span style={{ color: S.gold }}>{challengeFilter.title}</span></> : <>Posts tagged <span style={{ color: S.gold }}>#{tag}</span></>}</span>
+            <button onClick={() => { setTag(""); setChallengeFilter(null); }} aria-label="Clear filter" style={{ display: "flex", alignItems: "center", gap: 4, height: 28, padding: "0 10px", borderRadius: 14, border: `1px solid ${S.line2}`, background: "rgba(255,255,255,0.05)", color: S.ink2, fontSize: 12, fontWeight: 700, cursor: "pointer" }}><X size={13} /> Clear</button>
           </div>
         ) : null}
 
-        {shared.data && !tag ? (
+        {shared.data && !filtered ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <SectionLabel>Shared with you</SectionLabel>
-            <PostCard post={shared.data} onChange={updatePost} onRemove={() => qc.setQueryData(["social-shared", sharedId], null)} onOpenComments={setCommentsFor} onTag={pickTag} />
+            <PostCard post={shared.data} onChange={updatePost} onRemove={() => qc.setQueryData(["social-shared", sharedId], null)} onOpenComments={setCommentsFor} onTag={pickTag} onChallenge={setChallengeOpen} />
           </div>
         ) : null}
 
@@ -146,18 +163,18 @@ export default function SocialPage() {
         {feed.error ? <div style={{ ...card, padding: 16, fontSize: 13.5, color: "#FF8A8A" }}>{(feed.error as Error).message}</div> : null}
         {!feed.isLoading && !posts.length && !feed.error ? (
           <div style={{ ...card, padding: 24, textAlign: "center", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
-            <div style={{ fontFamily: "Sora, sans-serif", fontSize: 17, fontWeight: 700 }}>{tab === "following" ? "Nothing from people you follow yet" : tag ? `No posts tagged #${tag} yet` : "No posts yet"}</div>
+            <div style={{ fontFamily: "Sora, sans-serif", fontSize: 17, fontWeight: 700 }}>{tab === "following" ? "Nothing from people you follow yet" : challengeFilter ? "No entries you can see yet" : tag ? `No posts tagged #${tag} yet` : "No posts yet"}</div>
             <div style={{ fontSize: 13.5, color: S.ink2 }}>{tab === "following" ? "Follow a few creators and their posts will show up here." : "Be the first. Share what you're working on."}</div>
             <button onClick={() => setCreateOpen(true)} style={primaryBtn({ marginTop: 4 })}><Plus size={16} /> Create a post</button>
           </div>
         ) : null}
         {posts.map((p, i) => (
           <Fragment key={p.id}>
-            <PostCard post={p} onChange={updatePost} onRemove={removePost} onOpenComments={setCommentsFor} onTag={pickTag} />
-            {i === 1 && tab === "foryou" && !tag ? <PeopleToFollow /> : null}
+            <PostCard post={p} onChange={updatePost} onRemove={removePost} onOpenComments={setCommentsFor} onTag={pickTag} onChallenge={setChallengeOpen} />
+            {i === 1 && tab === "foryou" && !filtered ? <PeopleToFollow /> : null}
           </Fragment>
         ))}
-        {posts.length === 1 && tab === "foryou" && !tag ? <PeopleToFollow /> : null}
+        {posts.length === 1 && tab === "foryou" && !filtered ? <PeopleToFollow /> : null}
         <div ref={sentinel} />
         {feed.isFetchingNextPage ? <div style={{ display: "flex", justifyContent: "center", padding: 12, color: S.ink3 }}><Loader2 size={20} className="animate-spin" /></div> : null}
         {!feed.hasNextPage && posts.length > 4 ? <div style={{ textAlign: "center", fontSize: 12.5, color: S.ink3, padding: 8 }}>You're all caught up</div> : null}
@@ -171,8 +188,12 @@ export default function SocialPage() {
         document.body,
       )}
 
-      <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} onPick={(mode, idea) => { setCreateOpen(false); setCompose({ mode, idea }); }} />
-      <Composer open={!!compose} mode={compose?.mode ?? "text"} idea={compose?.idea} prompt={moment.data?.prompt} onClose={() => setCompose(null)} onPosted={posted} />
+      <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} onPick={pick} />
+      <Composer open={!!compose} mode={compose?.mode ?? "text"} idea={compose?.idea} challengeId={compose?.challengeId} prompt={moment.data?.prompt} onClose={() => setCompose(null)} onPosted={posted} />
+      <AskSheet open={askOpen} onClose={() => setAskOpen(false)} onPosted={posted} />
+      <ChallengeSheet id={challengeOpen} onClose={() => setChallengeOpen(null)} onJoin={joinChallenge} onSeeAll={seeAllEntries}
+        onPostChange={updatePost} onOpenComments={(p) => { setChallengeOpen(null); setCommentsFor(p); }} onTag={pickTag} />
+      <StartChallengeSheet open={startOpen} onClose={() => setStartOpen(false)} onStarted={(c) => { setStartOpen(false); setChallengeOpen(c.id); }} />
       <CommentsSheet post={commentsFor} onClose={() => setCommentsFor(null)} onCountChange={countChange} />
     </div>
   );
