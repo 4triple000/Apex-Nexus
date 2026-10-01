@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { WebhookHandlers } from "./lib/webhookHandlers";
+import { handleStripeWebhook } from "./server/billing/webhookHandler";
 
 const app: Express = express();
 
@@ -28,6 +29,9 @@ app.post(
     }
   }
 );
+
+// Apex billing webhook (subscriptions + credit packs): also needs the raw body
+app.post("/api/billing/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
 
 // ─── Other middleware (after webhook so body is still raw for Stripe) ─────────
 app.use(

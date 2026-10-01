@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "./use-session";
+import { authHeaders } from "@/lib/authSession";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 function api(path: string) { return `${BASE}/api${path}`; }
@@ -72,16 +73,19 @@ export function usePlans() {
 
 // ── Checkout ───────────────────────────────────────────────────────────────
 
+/** Starts Pro checkout (monthly). Older callers still pass a priceId; Apex's own prices are used instead. */
 export function useCheckout() {
-  const sessionId = useSession();
   return useMutation({
-    mutationFn: async (data: { priceId: string; projectId?: number; successPath?: string; cancelPath?: string }) => {
-      const result = await req<{ url: string }>(api("/stripe/checkout"), {
+    mutationFn: async (data: { priceId?: string; projectId?: number; successPath?: string; cancelPath?: string; interval?: "month" | "year" }) => {
+      const res = await fetch(api("/store/pro/checkout"), {
         method: "POST",
-        body: JSON.stringify({ sessionId, ...data }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ interval: data.interval ?? "month", returnTo: `${window.location.origin}${BASE}${data.successPath?.split("?")[0] ?? "/pricing"}` }),
       });
-      if (result.url) window.location.href = result.url;
-      return result;
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; data?: { url: string }; error?: string } | null;
+      if (!res.ok || !json?.data?.url) throw new Error(json?.error ?? "Couldn't start checkout");
+      window.location.href = json.data.url;
+      return { url: json.data.url };
     },
   });
 }
@@ -89,14 +93,16 @@ export function useCheckout() {
 // ── Customer portal ────────────────────────────────────────────────────────
 
 export function useCustomerPortal() {
-  const sessionId = useSession();
   return useMutation({
     mutationFn: async () => {
-      const result = await req<{ url: string }>(api("/stripe/portal"), {
+      const res = await fetch(api("/store/portal"), {
         method: "POST",
-        body: JSON.stringify({ sessionId }),
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ returnTo: `${window.location.origin}${BASE}/pricing` }),
       });
-      if (result.url) window.location.href = result.url;
+      const json = (await res.json().catch(() => null)) as { data?: { url: string }; error?: string } | null;
+      if (!res.ok || !json?.data?.url) throw new Error(json?.error ?? "Couldn't open subscription settings");
+      window.location.href = json.data.url;
     },
   });
 }

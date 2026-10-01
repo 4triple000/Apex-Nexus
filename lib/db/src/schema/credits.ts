@@ -58,3 +58,21 @@ export const userConnectorsTable = pgTable(
 );
 
 export type UserConnector = typeof userConnectorsTable.$inferSelect;
+
+/** Credits a person bought in packs. Never expire; used after the daily allowance runs out. */
+export const creditWalletTable = pgTable("credit_wallet", {
+  userId: integer("user_id").primaryKey(),
+  balance: integer("balance").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One row per paid pack (the Stripe checkout session makes it safe to process twice). */
+export const creditPurchasesTable = pgTable("credit_purchases", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  packId: text("pack_id").notNull(),
+  credits: integer("credits").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  stripeSessionId: text("stripe_session_id").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});

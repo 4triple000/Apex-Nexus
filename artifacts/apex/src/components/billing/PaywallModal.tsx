@@ -54,13 +54,9 @@ export function PaywallModal({
     const plan = plansData?.plans.find(p =>
       normalizeTierClient(p.tier) === tier
     );
-    const monthlyPrice = plan?.prices.find(p => p.interval === "month");
-    if (monthlyPrice) {
-      checkout.mutate({
-        priceId:     monthlyPrice.id,
-        successPath: `/pricing?checkout=success`,
-        cancelPath:  "/pricing",
-      });
+    void plan;
+    if (tier === "pro") {
+      checkout.mutate({ successPath: "/pricing", cancelPath: "/pricing" });
     } else {
       nav("/pricing");
     }

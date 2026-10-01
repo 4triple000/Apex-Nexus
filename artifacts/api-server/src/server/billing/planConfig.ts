@@ -87,8 +87,8 @@ export const PLAN_METADATA: Record<PlanTier, PlanMetadata> = {
     currency: "usd",
     badgeColor: "#6B7280",
     features: [
+      "20 AI credits a day",
       `${PLAN_LIMITS.free.buildsPerDay} builds / day`,
-      `${PLAN_LIMITS.free.aiCallsPerDay} AI calls / day`,
       `${PLAN_LIMITS.free.deploymentsPerMonth} deployments / month`,
       `Up to ${PLAN_LIMITS.free.maxProjects} projects`,
       "AI Studio access",
@@ -102,13 +102,13 @@ export const PLAN_METADATA: Record<PlanTier, PlanMetadata> = {
     tier: "pro",
     name: "Pro",
     description: "Full AI power for serious builders",
-    priceMonthly: 1900, // $19/mo
-    priceYearly:  19000, // $190/yr
+    priceMonthly: 1499, // $14.99/mo
+    priceYearly:  12900, // $129/yr
     currency: "usd",
     badgeColor: "#FFCC33",
     features: [
+      "60 AI credits a day (3x Free)",
       `${PLAN_LIMITS.pro.buildsPerDay} builds / day`,
-      `${PLAN_LIMITS.pro.aiCallsPerDay} AI calls / day`,
       `${PLAN_LIMITS.pro.deploymentsPerMonth} deployments / month`,
       `Up to ${PLAN_LIMITS.pro.maxProjects} projects`,
       "Autopilot (autonomous monitoring)",

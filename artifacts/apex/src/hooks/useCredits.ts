@@ -7,8 +7,12 @@ export interface Credits {
   /** Daily allowance plus today's bonus; -1 = unlimited */
   limit: number;
   bonus: number;
-  /** -1 = unlimited */
+  /** Daily credits left plus bought credits; -1 = unlimited */
   remaining: number;
+  /** Left from today's allowance */
+  dailyRemaining: number;
+  /** Bought in packs (never expire) */
+  purchased: number;
   unlimited: boolean;
   resetsAt: string;
   /** Credits per reply, by model id */
