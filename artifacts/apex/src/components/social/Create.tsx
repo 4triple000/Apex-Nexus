@@ -101,7 +101,7 @@ const inputStyle: React.CSSProperties = { width: "100%", boxSizing: "border-box"
 const hidden: React.CSSProperties = { position: "absolute", left: -9999 };
 const aiBtn = (extra?: React.CSSProperties) => ghostBtn({ height: 32, padding: "0 11px", borderRadius: 16, fontSize: 12, color: S.gold, borderColor: "rgba(226,193,126,0.28)", ...extra });
 
-export function Composer({ open, mode, idea, prompt, challengeId: startChallenge, onClose, onPosted }: {
+export function Composer({ open, mode, idea, prompt, challengeId: startChallenge, onClose, onPosted, onStartChallenge }: {
   open: boolean;
   mode: ComposeMode;
   /** Starter idea from "Surprise me" */
@@ -112,6 +112,8 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
   challengeId?: number;
   onClose: () => void;
   onPosted: (p: Post) => void;
+  /** Opens "Start a challenge" (challenge mode) */
+  onStartChallenge?: () => void;
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -260,7 +262,15 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
         {m === "challenge" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {challenges.isLoading ? <div style={{ fontSize: 13, color: S.ink3 }}>Loading challenges…</div> : null}
+            {challenges.error ? <div role="alert" style={{ fontSize: 13, color: "#FF8A8A" }}>Couldn't load challenges: {(challenges.error as Error).message}</div> : null}
+            {!challenges.isLoading && !challenges.error && !activeChallenges.length ? <div style={{ fontSize: 13, color: S.ink2 }}>No challenges running right now. Start one!</div> : null}
             <div role="radiogroup" aria-label="Challenge" style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+              {onStartChallenge ? (
+                <button onClick={onStartChallenge}
+                  style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", borderRadius: 17, background: S.btn, border: 0, color: S.btnText, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
+                  <Plus size={14} /> Start your own
+                </button>
+              ) : null}
               {activeChallenges.map((c) => (
                 <button key={c.id} role="radio" aria-checked={challengeId === c.id} onClick={() => setChallengeId(c.id)}
                   style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", borderRadius: 17, background: challengeId === c.id ? S.goldSoft : S.surf, border: `1px solid ${challengeId === c.id ? S.gold : S.line}`, color: challengeId === c.id ? S.gold : S.ink2, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>

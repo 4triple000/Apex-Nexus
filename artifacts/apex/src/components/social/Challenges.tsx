@@ -10,11 +10,16 @@ import { S, card, Sheet, primaryBtn, ghostBtn, sceneFor, SectionLabel } from "./
 import { PostCard } from "./PostCard";
 
 export function ChallengesRow({ onOpen, onStart }: { onOpen: (id: number) => void; onStart: () => void }) {
-  const { data } = useQuery({ queryKey: ["social-challenges"], queryFn: socialApi.challenges, staleTime: 60_000 });
+  const { data, error, refetch } = useQuery({ queryKey: ["social-challenges"], queryFn: socialApi.challenges, staleTime: 60_000 });
   const active = data?.active ?? [];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <SectionLabel sub="Join in, or start your own">Challenges</SectionLabel>
+      {error ? (
+        <div role="alert" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: "#FF8A8A" }}>
+          Couldn't load challenges. <button onClick={() => void refetch()} style={ghostBtn({ height: 28, padding: "0 10px", fontSize: 12 })}>Try again</button>
+        </div>
+      ) : null}
       <div style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", margin: "0 -16px", padding: "0 16px" }}>
         {active.map((c) => (
           <button key={c.id} onClick={() => onOpen(c.id)}

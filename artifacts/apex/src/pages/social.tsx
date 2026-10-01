@@ -29,7 +29,8 @@ export default function SocialPage() {
   const [commentsFor, setCommentsFor] = useState<Post | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState<number | null>(null);
-  const [startOpen, setStartOpen] = useState(false);
+  // "Start a challenge" remembers where it was opened: from the composer it goes straight back to entering it
+  const [startOpen, setStartOpen] = useState<null | "row" | "composer">(null);
   const [challengeFilter, setChallengeFilter] = useState<{ id: number; title: string } | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -100,9 +101,11 @@ export default function SocialPage() {
   const tags = trending.data?.length ? trending.data : STARTER_TAGS.map((t) => ({ tag: t, count: 0 }));
 
   return (
-    <div ref={root} className="mg-font" style={{ flex: 1, overflowY: "auto", background: S.bg, color: S.ink, padding: "0 16px 140px" }}>
+    <div ref={root} className="mg-font" style={{ flex: 1, overflowY: "auto", background: S.bg, color: S.ink, padding: "0 16px 48px" }}>
+      {/* Social is a full screen: it starts at the very top, and posts scroll under the ☰ button behind this fade */}
+      <div aria-hidden style={{ position: "sticky", top: 0, zIndex: 5, height: 64, margin: "0 -16px", background: `linear-gradient(${S.bg} 45%, rgba(10,10,12,0))`, pointerEvents: "none" }} />
       <div style={{ maxWidth: 620, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 6 }}>
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: -4 }}>
           <h1 className="mg-display" style={{ margin: 0, fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em" }}>Social</h1>
           <NotificationBell />
         </header>
@@ -132,7 +135,7 @@ export default function SocialPage() {
           ))}
         </div>
 
-        <ChallengesRow onOpen={setChallengeOpen} onStart={() => setStartOpen(true)} />
+        <ChallengesRow onOpen={setChallengeOpen} onStart={() => setStartOpen("row")} />
 
         {/* Tabs */}
         <div role="tablist" aria-label="Feed" style={{ display: "flex", gap: 22, borderBottom: `1px solid ${S.line}`, fontSize: 14, fontWeight: 700 }}>
@@ -189,11 +192,13 @@ export default function SocialPage() {
       )}
 
       <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} onPick={pick} />
-      <Composer open={!!compose} mode={compose?.mode ?? "text"} idea={compose?.idea} challengeId={compose?.challengeId} prompt={moment.data?.prompt} onClose={() => setCompose(null)} onPosted={posted} />
+      <Composer open={!!compose} mode={compose?.mode ?? "text"} idea={compose?.idea} challengeId={compose?.challengeId} prompt={moment.data?.prompt} onClose={() => setCompose(null)} onPosted={posted}
+        onStartChallenge={() => { setCompose(null); setStartOpen("composer"); }} />
       <AskSheet open={askOpen} onClose={() => setAskOpen(false)} onPosted={posted} />
       <ChallengeSheet id={challengeOpen} onClose={() => setChallengeOpen(null)} onJoin={joinChallenge} onSeeAll={seeAllEntries}
         onPostChange={updatePost} onOpenComments={(p) => { setChallengeOpen(null); setCommentsFor(p); }} onTag={pickTag} />
-      <StartChallengeSheet open={startOpen} onClose={() => setStartOpen(false)} onStarted={(c) => { setStartOpen(false); setChallengeOpen(c.id); }} />
+      <StartChallengeSheet open={!!startOpen} onClose={() => setStartOpen(null)}
+        onStarted={(c) => { const from = startOpen; setStartOpen(null); if (from === "composer") setCompose({ mode: "challenge", challengeId: c.id }); else setChallengeOpen(c.id); }} />
       <CommentsSheet post={commentsFor} onClose={() => setCommentsFor(null)} onCountChange={countChange} />
     </div>
   );

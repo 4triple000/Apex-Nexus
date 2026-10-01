@@ -893,12 +893,14 @@ export default function Home() {
           </div>
         )}
 
-        <ChatInput
-          onSend={handleSend}
-          disabled={sendChat.isPending}
-          onVoiceStart={voiceTone.enabled ? voiceTone.start : undefined}
-          onVoiceStop={voiceTone.stop}
-        />
+        <div className="apex-dock">
+          <ChatInput
+            onSend={handleSend}
+            disabled={sendChat.isPending}
+            onVoiceStart={voiceTone.enabled ? voiceTone.start : undefined}
+            onVoiceStop={voiceTone.stop}
+          />
+        </div>
       </div>
     </div>
     </>

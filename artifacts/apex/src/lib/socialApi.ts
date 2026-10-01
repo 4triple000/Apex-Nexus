@@ -77,7 +77,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}/api${path}`, { ...init, headers: { "Content-Type": "application/json", ...authHeaders(), ...init?.headers } });
   const json = (await res.json().catch(() => null)) as { ok?: boolean; data?: T; error?: string; code?: string } | null;
   if (!res.ok || !json?.ok) {
-    const message = json?.error ?? `Something went wrong (${res.status})`;
+    // A 404 with no JSON means the server hasn't got this feature yet (the website was updated first)
+    const message = json?.error ?? (res.status === 404 ? "This part of Social isn't on the server yet. It'll work after the next server update." : `Something went wrong (${res.status})`);
     if (json?.code === "OUT_OF_CREDITS") openCreditsSheet("out", message);
     throw new Error(message);
   }
