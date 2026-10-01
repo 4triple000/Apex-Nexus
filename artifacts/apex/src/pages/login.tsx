@@ -478,6 +478,10 @@ export default function LoginPage() {
             {isLogin ? "Sign up free" : "Sign in"}
           </button>
         </p>
+        <p style={{ textAlign: "center", marginTop: 12, fontSize: 12, color: "rgba(255,255,255,0.30)" }}>
+          By continuing you agree to the <a href={`${BASE}/terms`} style={{ color: "rgba(162,155,254,0.8)" }}>Terms</a> and{" "}
+          <a href={`${BASE}/privacy`} style={{ color: "rgba(162,155,254,0.8)" }}>Privacy Policy</a>.
+        </p>
 
         {/* ── Guest access ── */}
         <div style={{ marginTop: 16, textAlign: "center" }}>
