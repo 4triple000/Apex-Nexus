@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon background: the Apex purple-to-pink gradient -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient android:angle="315" android:startColor="#6C5CE7" android:centerColor="#A29BFE" android:endColor="#FD79A8" />
+</shape>
