@@ -59,7 +59,7 @@ export function CreateSheet({ open, onClose, onPick }: { open: boolean; onClose:
           );
         })}
       </div>
-      <div style={{ marginTop: 16, padding: 16, borderRadius: 20, background: "linear-gradient(135deg, #1B1B20, #121215)", border: `1px solid ${S.line2}`, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ marginTop: 16, padding: 16, borderRadius: 20, background: "linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04))", border: `1px solid ${S.line2}`, display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", gap: 12 }}>
           <span style={{ width: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: S.goldSoft, flexShrink: 0 }}><Lightbulb size={19} color={S.gold} /></span>
           <div><div style={{ fontSize: 14, fontWeight: 800 }}>Not sure what to post?</div><div style={{ fontSize: 12.5, color: S.ink2, marginTop: 3 }}>Apex can give you an idea to start from.</div></div>
@@ -306,7 +306,7 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
     <Sheet open={open} onClose={onClose} label={title} title={title}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {(m === "moment" || momentAnswer) && prompt ? (
-          <div style={{ padding: 14, borderRadius: 16, background: "linear-gradient(135deg, #1D1D22, #141417)", border: `1px solid ${S.line}` }}>
+          <div style={{ padding: 14, borderRadius: 16, background: "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))", border: `1px solid ${S.line}` }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", color: S.gold }}>TODAY'S PROMPT</div>
             <div style={{ fontFamily: "Sora, sans-serif", fontSize: 18, fontWeight: 700, marginTop: 6, lineHeight: 1.3 }}>{prompt}</div>
           </div>

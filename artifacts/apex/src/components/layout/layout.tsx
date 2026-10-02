@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { BottomNav } from "./bottom-nav";
+import { SocialNav } from "@/components/social/SocialNav";
+import { SocialBackdrop } from "@/components/social/ui";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./topbar";
 import { RightPanel } from "./right-panel";
@@ -22,6 +24,8 @@ function PageTransition({ children, location, phone = false }: { children: React
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        position: "relative",
+        zIndex: 1,
         animation: "page-enter 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both",
         willChange: "opacity, transform",
       }}
@@ -47,6 +51,7 @@ export function Layout({ children }: { children: ReactNode }) {
         style={{ background: "transparent", borderColor: "rgba(139,123,255,0.12)", color: "var(--mg-ink)" }}
       >
         <ApexControlPanel />
+        {isFullScreen(location) ? <SocialBackdrop /> : null}
 
         {/* Pages run to the bottom edge so the tab bar floats over them; each page's scroll area leaves room for it (--apex-nav-space).
             Full-screen pages (Social) also paint behind the ☰ button and add their own top space. */}
@@ -54,7 +59,8 @@ export function Layout({ children }: { children: ReactNode }) {
           <PageTransition location={location} phone>{children}</PageTransition>
         </div>
 
-        <BottomNav />
+        {/* Social has its own tab bar; it replaces the app's while you're in Social */}
+        {isFullScreen(location) ? <SocialNav /> : <BottomNav />}
         <AvatarOverlay store={avatarStore} />
       </div>
 
@@ -76,6 +82,7 @@ export function Layout({ children }: { children: ReactNode }) {
             {/* Page content */}
             <main className="flex-1 flex flex-col overflow-hidden relative">
               <ApexControlPanel />
+              {isFullScreen(location) ? <SocialBackdrop /> : null}
               <PageTransition location={location}>{children}</PageTransition>
             </main>
 

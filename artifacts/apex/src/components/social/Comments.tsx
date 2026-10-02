@@ -155,7 +155,7 @@ export function CommentsPanel({ post, onCountChange, inSheet = false }: { post: 
           <div key={c.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>{row(c)}{(c.replies ?? []).map((r) => row(r, true))}</div>
         ))}
       </div>
-      <div className={inSheet ? undefined : "apex-sticky-dock"} style={{ position: "sticky", bottom: inSheet ? -20 : undefined, marginTop: 16, padding: inSheet ? "10px 0 0" : "10px 0", background: inSheet ? "#121215" : S.surf }}>
+      <div className={inSheet ? undefined : "apex-sticky-dock"} style={{ position: "sticky", bottom: inSheet ? -20 : undefined, marginTop: 16, padding: inSheet ? "10px 0 0" : "10px 0", background: inSheet ? "#13112A" : "rgba(19,17,42,0.9)", backdropFilter: "blur(18px)" }}>
         {suggestion ? (
           <div style={{ ...apexCard, marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>

@@ -7,14 +7,13 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { createPortal } from "react-dom";
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, X, Loader2, Search, MessageSquareText } from "lucide-react";
+import { Plus, X, Loader2, MessageSquareText, ChevronLeft } from "lucide-react";
 import { NotificationBell } from "@/components/social/NotificationBell";
 import { PostCard } from "@/components/social/PostCard";
 import { ChallengesRow, ChallengeSheet } from "@/components/social/Challenges";
 import { StoryTray, StoryViewer } from "@/components/social/Stories";
 import { CirclesRow, CircleSheet, FindCirclesSheet } from "@/components/social/Circles";
 import { ReelsStrip } from "@/components/social/Reels";
-import { SearchSheet } from "@/components/social/Search";
 import { useCreateFlow } from "@/components/social/CreateFlow";
 import { S, card, Avatar, SectionLabel, primaryBtn, sceneFor, iconBtn } from "@/components/social/ui";
 import { socialApi, compact, type Challenge, type Post, type StoryGroup } from "@/lib/socialApi";
@@ -28,12 +27,11 @@ export default function SocialPage() {
   const qc = useQueryClient();
   const [, nav] = useLocation();
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const [tab, setTab] = useState<Tab>("foryou");
+  const [tab, setTab] = useState<Tab>(() => (["following", "trending"].includes(params.get("tab") ?? "") ? (params.get("tab") as Tab) : "foryou"));
   const [tag, setTag] = useState<string>(() => params.get("tag") ?? "");
   const [stories, setStories] = useState<{ groups: StoryGroup[]; index: number } | null>(null);
   const [circleOpen, setCircleOpen] = useState<number | null>(null);
   const [findCircles, setFindCircles] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState<number | null>(null);
   const [challengeFilter, setChallengeFilter] = useState<{ id: number; title: string } | null>(() => (Number(params.get("challenge")) ? { id: Number(params.get("challenge")), title: "this challenge" } : null));
   const sentinel = useRef<HTMLDivElement>(null);
@@ -94,16 +92,18 @@ export default function SocialPage() {
   const headerBtn = { ...iconBtn, color: S.ink, width: 38, height: 38 };
 
   return (
-    <div ref={root} className="mg-font" style={{ flex: 1, overflowY: "auto", background: S.bg, color: S.ink, padding: "0 16px 48px" }}>
+    <div ref={root} className="mg-font" style={{ flex: 1, overflowY: "auto", background: "transparent", color: S.ink, padding: "0 16px 48px" }}>
       {/* Social is a full screen: it starts at the very top, and posts scroll under the ☰ button behind this fade */}
-      <div aria-hidden style={{ position: "sticky", top: 0, zIndex: 5, height: 64, margin: "0 -16px", background: `linear-gradient(${S.bg} 45%, rgba(10,10,12,0))`, pointerEvents: "none" }} />
+      <div aria-hidden style={{ position: "sticky", top: 0, zIndex: 5, height: 64, margin: "0 -16px", background: "linear-gradient(rgba(10,9,24,0.7) 40%, rgba(10,9,24,0))", pointerEvents: "none" }} />
       <div style={{ maxWidth: 620, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
         <header style={{ display: "flex", alignItems: "center", gap: 2, marginTop: -4 }}>
-          <h1 className="mg-display" style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", flexGrow: 1 }}>Apex</h1>
-          <button onClick={() => setSearchOpen(true)} aria-label="Search" style={headerBtn}><Search size={20} /></button>
+          <button onClick={() => nav("/")} aria-label="Back to Apex" className="mg-press"
+            style={{ height: 32, padding: "0 11px 0 6px", marginRight: 10, borderRadius: 16, display: "flex", alignItems: "center", gap: 2, color: S.ink, fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, background: "linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))", border: `1px solid ${S.line2}`, cursor: "pointer" }}>
+            <ChevronLeft size={16} strokeWidth={2.4} />Apex
+          </button>
+          <h1 className="mg-display" style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", flexGrow: 1 }}>Social</h1>
           <NotificationBell />
           <button onClick={() => nav("/dm")} aria-label="Messages" style={headerBtn}><MessageSquareText size={20} /></button>
-          <button onClick={() => nav("/u/me")} aria-label="Your profile" style={{ ...headerBtn, marginLeft: 2 }}><MeAvatar /></button>
         </header>
 
         <StoryTray onOpen={(groups, index) => setStories({ groups, index })} onAdd={() => create.start("story")} />
@@ -176,9 +176,10 @@ export default function SocialPage() {
         {!feed.hasNextPage && posts.length > 4 ? <div style={{ textAlign: "center", fontSize: 12.5, color: S.ink3, padding: 8 }}>You're all caught up</div> : null}
       </div>
 
+      {/* Phones create from the + in Social's tab bar; wide screens (no tab bar) keep this button */}
       {shown && createPortal(
-        <button onClick={() => nav("/feed/create")} aria-label="Create"
-          style={{ position: "fixed", right: 22, bottom: 104, zIndex: 50, width: 56, height: 56, borderRadius: "50%", border: 0, background: S.btn, color: S.btnText, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 10px 28px rgba(0,0,0,0.55)" }}>
+        <button onClick={() => nav("/feed/create")} aria-label="Create" className="hidden lg:flex"
+          style={{ position: "fixed", right: 22, bottom: 32, zIndex: 50, width: 56, height: 56, borderRadius: "50%", border: 0, background: S.btn, color: S.btnText, alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 10px 28px rgba(0,0,0,0.55)" }}>
           <Plus size={26} strokeWidth={2.4} />
         </button>,
         document.body,
@@ -190,20 +191,14 @@ export default function SocialPage() {
       <FindCirclesSheet open={findCircles} onClose={() => setFindCircles(false)} onOpen={(id) => { setFindCircles(false); setCircleOpen(id); }} />
       <ChallengeSheet id={challengeOpen} onClose={() => setChallengeOpen(null)} onJoin={joinChallenge} onSeeAll={seeAllEntries}
         onPostChange={updatePost} onOpenComments={(p) => { setChallengeOpen(null); nav(`/feed/post/${p.id}`); }} onTag={pickTag} />
-      <SearchSheet open={searchOpen} onClose={() => setSearchOpen(false)} onTag={pickTag} onCircle={setCircleOpen} />
       {create.ui}
     </div>
   );
 }
 
-function MeAvatar() {
-  const me = useMyProfile().data?.user;
-  return <Avatar user={{ username: me?.username ?? "You", avatarUrl: null, avatarEmoji: null }} size={28} />;
-}
-
 function MomentCard({ prompt, answered, answers, friends, onRespond }: { prompt?: string; answered: boolean; answers: number; friends: { username: string; avatarUrl: string | null; avatarEmoji: string | null }[]; onRespond: () => void }) {
   return (
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: 20, padding: 18, background: "linear-gradient(135deg, #1B1B20, #121215)", border: `1px solid ${S.line2}`, minHeight: 150 }}>
+    <div style={{ position: "relative", overflow: "hidden", borderRadius: 20, padding: 18, background: "linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))", border: `1px solid ${S.line2}`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35), 0 10px 30px rgba(0,0,0,0.25)", minHeight: 150 }}>
       <style>{`@keyframes apexFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}@keyframes apexPulse{0%,100%{opacity:.55}50%{opacity:.9}}@media (prefers-reduced-motion: reduce){.apex-orb{animation:none!important}}`}</style>
       <div aria-hidden className="apex-orb" style={{ position: "absolute", right: -18, top: "50%", marginTop: -62, width: 124, height: 124, borderRadius: "50%", background: "radial-gradient(circle at 35% 30%, rgba(255,244,220,0.95), rgba(226,193,126,0.8) 35%, rgba(130,96,44,0.35) 65%, rgba(24,18,10,0) 72%)", animation: "apexFloat 6s ease-in-out infinite" }} />
       <div aria-hidden className="apex-orb" style={{ position: "absolute", right: -40, top: "50%", marginTop: -84, width: 168, height: 168, borderRadius: "50%", border: "1px solid rgba(226,193,126,0.22)", animation: "apexPulse 5s ease-in-out infinite" }} />

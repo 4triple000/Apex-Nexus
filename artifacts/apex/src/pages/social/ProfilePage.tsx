@@ -67,9 +67,9 @@ export default function SocialProfilePage() {
   );
 
   return (
-    <div className="mg-font" style={{ flex: 1, overflowY: "auto", background: S.bg, color: S.ink }}>
+    <div className="mg-font" style={{ flex: 1, overflowY: "auto", background: "transparent", color: S.ink }}>
       <div style={{ position: "relative", height: 200, background: COVERS[p?.profile.cover ?? "city"] ?? COVERS.city }}>
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(10,10,12,0) 40%, ${S.bg})` }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg, rgba(10,9,24,0) 40%, ${S.bg})` }} />
         <div className="profile-top" style={{ position: "absolute", top: 14, left: 10, right: 10, display: "flex", justifyContent: "space-between" }}>
           <button onClick={goBack} aria-label="Back" style={{ width: 38, height: 38, borderRadius: "50%", border: 0, background: "rgba(0,0,0,0.35)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><ChevronLeft size={22} /></button>
           <button onClick={() => setMenu(true)} aria-label="More" style={{ width: 38, height: 38, borderRadius: "50%", border: 0, background: "rgba(0,0,0,0.35)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><MoreHorizontal size={20} /></button>

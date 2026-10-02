@@ -41,6 +41,7 @@ const SocialDebatePage = lazy(() => import("@/pages/social/DebatePage"));
 const SocialChallengesPage = lazy(() => import("@/pages/social/ChallengesPage"));
 const SocialProfilePage = lazy(() => import("@/pages/social/ProfilePage"));
 const SocialReelsPage = lazy(() => import("@/pages/social/ReelsPage"));
+const SocialExplorePage = lazy(() => import("@/pages/social/ExplorePage"));
 const ConnectorsPage = lazy(() => import("@/pages/connectors"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const PricingPage = lazy(() => import("@/pages/pricing"));
@@ -177,11 +178,12 @@ function Router() {
               <Route path="/feed/debate/:id" component={SocialDebatePage} />
               <Route path="/feed/challenges" component={SocialChallengesPage} />
               <Route path="/feed/reels" component={SocialReelsPage} />
+              <Route path="/feed/explore" component={SocialExplorePage} />
               <Route path="/u/:id" component={SocialProfilePage} />
               <Route path="/connectors" component={ConnectorsPage} />
               <Route path="/profile" component={ProfilePage} />
               <Route path="/profile/:userId" component={ProfilePage} />
-              <Route path="/explore"><Redirect to="/feed" replace /></Route>
+              <Route path="/explore"><Redirect to="/feed/explore" replace /></Route>
               <Route path="/pricing" component={PricingPage} />
               <Route path="/creator-dashboard" component={CreatorDashboardPage} />
               <Route path="/insights" component={InsightsPage} />
