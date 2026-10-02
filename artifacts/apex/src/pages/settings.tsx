@@ -4,7 +4,7 @@
  */
 import { useRef, type ReactNode } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, ChevronRight, Moon, Mic, Brain, Speech, Volume2, FastForward, UserRound, Gauge, Shield, LogOut, Globe, Plug, type LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Moon, Mic, Brain, Speech, Volume2, FastForward, UserRound, Gauge, Shield, LogOut, Globe, Plug, Smartphone, type LucideIcon } from "lucide-react";
 import { useApexState } from "@/contexts/ApexStateContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { planLabel } from "@/components/layout/topbar";
@@ -93,6 +93,7 @@ export default function SettingsPage() {
             <Row icon={Plug} title="Connectors" note="Your AI accounts and apps" onClick={() => nav("/connectors")} />
             <Row icon={Shield} title="Privacy & notifications" onClick={() => nav("/profile")} />
             <Row icon={Globe} title="Custom domain" onClick={() => nav("/domain-settings")} />
+            <Row icon={Smartphone} title="Get the phone app" note="Android and iPhone" onClick={() => nav("/install")} />
             {user && <Row icon={LogOut} title="Sign out" danger onClick={() => { logout(); nav("/login"); }} />}
           </div>
         </section>

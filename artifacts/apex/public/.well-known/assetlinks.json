@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.apexnexus.app",
+      "sha256_cert_fingerprints": ["CB:F1:40:35:5E:AD:EB:2F:87:0D:50:86:C7:70:74:42:26:82:BE:8D:1C:C2:C9:81:DF:F3:55:F2:2F:EB:66:6E"]
+    }
+  }
+]

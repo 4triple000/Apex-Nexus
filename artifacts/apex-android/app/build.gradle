@@ -1,0 +1,46 @@
+plugins {
+    id "com.android.application"
+}
+
+// CI passes the version (from the build number) and the signing key; see .github/workflows/android.yml
+def env = System.getenv()
+
+android {
+    namespace "com.apexnexus.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.apexnexus.app"
+        minSdk 21
+        targetSdk 34
+        versionCode((env.APEX_VERSION_CODE ?: "1") as int)
+        versionName(env.APEX_VERSION_NAME ?: "1.0.0")
+    }
+
+    signingConfigs {
+        release {
+            if (env.APEX_KEYSTORE_PATH) {
+                storeFile file(env.APEX_KEYSTORE_PATH)
+                storePassword env.APEX_KEYSTORE_PASSWORD
+                keyAlias env.APEX_KEY_ALIAS
+                keyPassword env.APEX_KEYSTORE_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig env.APEX_KEYSTORE_PATH ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation "com.google.androidbrowserhelper:androidbrowserhelper:2.5.0"
+}
