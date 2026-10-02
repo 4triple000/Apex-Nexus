@@ -175,13 +175,13 @@ function Reel({ post, index, active, muted, onToggleMute, onChange, onComments, 
         {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
       </button>
 
-      <div style={{ position: "absolute", right: 10, bottom: "calc(110px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+      <div style={{ position: "absolute", right: 10, bottom: "calc(186px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
         <button onClick={onProfile} aria-label={`${post.author.username}'s profile`} style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}><Avatar user={post.author} size={44} ring /></button>
         {side(<Heart size={24} fill={post.reacted ? S.heart : "none"} color={post.reacted ? S.heart : "#fff"} />, post.reacted ? "Unlike" : "Like", compact(post.reactionCount), () => void like(), post.reacted)}
         {side(<MessageCircle size={23} />, "Comments", compact(post.commentCount), onComments)}
         {side(<Share2 size={22} />, "Share", null, () => void share())}
       </div>
-      <div style={{ position: "absolute", left: 14, right: 76, bottom: "calc(28px + env(safe-area-inset-bottom, 0px))", color: "#fff", textShadow: "0 1px 6px rgba(0,0,0,0.6)", display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ position: "absolute", left: 14, right: 76, bottom: "calc(104px + env(safe-area-inset-bottom, 0px))", color: "#fff", textShadow: "0 1px 6px rgba(0,0,0,0.6)", display: "flex", flexDirection: "column", gap: 6 }}>
         <button onClick={onProfile} style={{ alignSelf: "flex-start", background: "none", border: 0, padding: 0, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>{post.author.username}</button>
         {post.body ? <div style={{ fontSize: 14, lineHeight: 1.45, maxHeight: 84, overflow: "hidden" }}><RichText text={post.body} /></div> : null}
       </div>

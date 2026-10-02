@@ -46,7 +46,7 @@ export default function CreatePage() {
           </button>
         ))}
       </div>
-      <div style={{ marginTop: 22, padding: 16, borderRadius: 20, background: "linear-gradient(135deg, #1B1B20, #121215)", border: `1px solid ${S.line2}`, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ marginTop: 22, padding: 16, borderRadius: 20, background: "linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04))", border: `1px solid ${S.line2}`, display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
           <span style={{ width: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: S.goldSoft, flexShrink: 0 }}><Lightbulb size={20} color="#EED9A8" /></span>
           <div><div style={{ fontSize: 14, fontWeight: 800 }}>Not sure what to post?</div><div style={{ fontSize: 12, color: S.ink2, marginTop: 3 }}>Apex can help you create something.</div></div>

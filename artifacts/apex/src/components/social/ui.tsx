@@ -8,14 +8,14 @@ import { X } from "lucide-react";
 import { mediaSrc, type Author } from "@/lib/socialApi";
 
 export const S = {
-  bg: "#0A0A0C",
-  surf: "#141417",
-  surf2: "#1B1B20",
-  line: "rgba(255,255,255,0.08)",
-  line2: "rgba(255,255,255,0.13)",
-  ink: "#F5F5F7",
-  ink2: "#B0B0B8",
-  ink3: "#8C8C95",
+  bg: "#0A0918",
+  surf: "rgba(255,255,255,0.07)",
+  surf2: "rgba(255,255,255,0.11)",
+  line: "rgba(255,255,255,0.12)",
+  line2: "rgba(255,255,255,0.18)",
+  ink: "#F3F0FF",
+  ink2: "rgba(243,240,255,0.72)",
+  ink3: "rgba(243,240,255,0.52)",
   gold: "#E2C17E",
   goldSoft: "rgba(226,193,126,0.14)",
   goldLine: "rgba(226,193,126,0.4)",
@@ -27,7 +27,25 @@ export const S = {
   btnText: "#0A0A0C",
 };
 
-export const card: React.CSSProperties = { background: S.surf, border: `1px solid ${S.line}`, borderRadius: 20 };
+/** Midnight Glass panel: a light frosted gradient with a bright top edge. */
+export const card: React.CSSProperties = {
+  background: "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))",
+  border: `1px solid ${S.line}`,
+  borderRadius: 20,
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 30px rgba(0,0,0,0.22)",
+};
+
+/** Social's Midnight Glass background: deep navy with soft violet, cyan and pink light behind the glass. */
+export function SocialBackdrop() {
+  const blob = (style: React.CSSProperties) => <div style={{ position: "absolute", borderRadius: "50%", filter: "blur(70px)", ...style }} />;
+  return (
+    <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "hidden", background: S.bg, pointerEvents: "none" }}>
+      {blob({ left: "-25%", top: "-8%", width: "80%", height: 340, background: "rgba(139,123,255,0.5)" })}
+      {blob({ right: "-30%", top: "38%", width: "75%", height: 300, background: "rgba(0,194,255,0.26)" })}
+      {blob({ left: "5%", bottom: "-12%", width: "85%", height: 280, background: "rgba(255,79,163,0.32)" })}
+    </div>
+  );
+}
 
 export function primaryBtn(extra?: React.CSSProperties): React.CSSProperties {
   return { height: 40, padding: "0 18px", borderRadius: 12, border: 0, background: S.btn, color: S.btnText, fontFamily: "Manrope, sans-serif", fontSize: 13.5, fontWeight: 800, cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, whiteSpace: "nowrap", ...extra };
@@ -66,7 +84,7 @@ export function Sheet({ open, onClose, title, children, maxWidth = 520, label, z
       style={{ position: "fixed", inset: 0, zIndex: z, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
       <style>{`@keyframes apexSheetUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}@media (prefers-reduced-motion: reduce){.apex-sheet{animation:none!important}}`}</style>
       <div className="apex-sheet" onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth, maxHeight: "92vh", display: "flex", flexDirection: "column", background: "#121215", color: S.ink, border: `1px solid ${S.line2}`, borderBottom: 0, borderRadius: "26px 26px 0 0", animation: "apexSheetUp .22s ease-out" }}>
+        style={{ width: "100%", maxWidth, maxHeight: "92vh", display: "flex", flexDirection: "column", background: "#13112A", color: S.ink, border: `1px solid ${S.line2}`, borderBottom: 0, borderRadius: "26px 26px 0 0", animation: "apexSheetUp .22s ease-out" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px 8px" }}>
           <div style={{ flexGrow: 1, fontFamily: "Sora, sans-serif", fontSize: 17, fontWeight: 700 }}>{title}</div>
           <button onClick={onClose} aria-label="Close" style={iconBtn}><X size={20} /></button>
