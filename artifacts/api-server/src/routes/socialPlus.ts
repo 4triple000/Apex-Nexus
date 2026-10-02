@@ -15,8 +15,8 @@
  */
 import { Router, type IRouter } from "express";
 import { z } from "zod";
-import { db, usersTable, socialChallengesTable, socialPostsTable, postCommentsTable } from "@workspace/db";
-import { and, desc, eq, gt, gte, inArray, lte, sql } from "drizzle-orm";
+import { db, usersTable, socialChallengesTable, socialPostsTable, postCommentsTable, pollVotesTable } from "@workspace/db";
+import { and, desc, eq, gt, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import { requireUser } from "../shared/middleware/requireAuth";
 import type { ApexRequest } from "../shared/types";
 import { weekStart, weeklyChallengeFor } from "../lib/moments";
@@ -38,16 +38,25 @@ async function ensureWeekly(): Promise<void> {
 
 type ChallengeRow = typeof socialChallengesTable.$inferSelect;
 
+/** Day X of Y. Apex's weekly challenge runs Monday to Monday, whenever it was first opened. */
+function progress(r: ChallengeRow) {
+  const start = r.slug ? r.endsAt.getTime() - 7 * 86_400_000 : r.createdAt.getTime();
+  const totalDays = Math.max(1, Math.round((r.endsAt.getTime() - start) / 86_400_000));
+  return { startsAt: new Date(start), totalDays, day: Math.min(totalDays, Math.max(1, Math.ceil((Date.now() - start) / 86_400_000))) };
+}
+
 async function presentChallenges(rows: ChallengeRow[], me: number) {
   if (!rows.length) return [];
   const ids = rows.map((r) => r.id);
   const creatorIds = [...new Set(rows.map((r) => r.creatorId).filter((x): x is number => !!x))];
-  const [counts, mine, creators] = await Promise.all([
+  const [counts, mine, creators, myCounts] = await Promise.all([
     db.select({ id: socialPostsTable.challengeId, n: sql<number>`count(*)::int` }).from(socialPostsTable)
       .where(and(inArray(socialPostsTable.challengeId, ids), eq(socialPostsTable.deleted, false))).groupBy(socialPostsTable.challengeId),
     db.selectDistinct({ id: socialPostsTable.challengeId }).from(socialPostsTable)
       .where(and(inArray(socialPostsTable.challengeId, ids), eq(socialPostsTable.userId, me), eq(socialPostsTable.deleted, false))),
     creatorIds.length ? db.select({ id: usersTable.id, username: usersTable.username, avatarEmoji: usersTable.avatarEmoji, avatarUrl: usersTable.avatarUrl }).from(usersTable).where(inArray(usersTable.id, creatorIds)) : Promise.resolve([]),
+    db.select({ id: socialPostsTable.challengeId, n: sql<number>`count(*)::int`, first: sql<Date>`min(${socialPostsTable.createdAt})` }).from(socialPostsTable)
+      .where(and(inArray(socialPostsTable.challengeId, ids), eq(socialPostsTable.userId, me), eq(socialPostsTable.deleted, false))).groupBy(socialPostsTable.challengeId),
   ]);
   const byCreator = new Map(creators.map((c) => [c.id, c]));
   const joined = new Set(mine.map((m) => m.id));
@@ -63,6 +72,9 @@ async function presentChallenges(rows: ChallengeRow[], me: number) {
     creator: r.creatorId ? byCreator.get(r.creatorId) ?? null : null,
     entries: counts.find((c) => c.id === r.id)?.n ?? 0,
     joined: joined.has(r.id),
+    // Progress: which day of the challenge it is, out of how many, and how many entries you've posted
+    ...progress(r),
+    myEntries: myCounts.find((c) => c.id === r.id)?.n ?? 0,
   }));
 }
 
@@ -136,7 +148,7 @@ router.delete("/challenges/:id", requireUser, async (req: ApexRequest, res): Pro
 // ── AI helpers ────────────────────────────────────────────────────────────────
 
 const AssistBody = z.object({
-  action: z.enum(["draft", "improve", "hashtags", "poll", "debate"]),
+  action: z.enum(["draft", "improve", "hashtags", "poll", "debate", "reply"]),
   text: z.string().trim().min(1, "Write a few words first.").max(2000),
 });
 
@@ -145,6 +157,7 @@ const ASSIST: Record<z.infer<typeof AssistBody>["action"], (text: string) => str
   improve: (t) => `Make this post clearer and more engaging. Keep the meaning, the voice, any @mentions and #hashtags, and keep it about the same length. Reply with just the post.\n\n${t}`,
   hashtags: (t) => `Suggest up to 5 hashtags for this post. Reply only with JSON: {"tags":["tag1","tag2"]} (no # signs).\n\n${t}`,
   poll: (t) => `Turn this into a fun poll. Reply only with JSON: {"question":"...","options":["...","..."]} with 2 to 4 short options (under 40 characters each).\n\n${t}`,
+  reply: (t) => `Suggest one short, friendly reply (under 25 words) that someone could post under this. Sound like a real person. Reply with just the reply.\n\n${t}`,
   debate: (t) => `Turn this into a friendly debate with two clear sides. Reply only with JSON: {"question":"...","sides":["...","..."]} with each side under 40 characters.\n\n${t}`,
 };
 
@@ -223,6 +236,36 @@ router.post("/posts/:id/summary", requireUser, async (req: ApexRequest, res): Pr
   const summaryAt = new Date();
   await db.update(socialPostsTable).set({ aiText: r.text, aiAt: summaryAt }).where(eq(socialPostsTable.id, row.id));
   res.json({ ok: true, data: { summary: r.text, summaryAt, cached: false, credits: r.credits } });
+});
+
+// ── Debate Arena ─────────────────────────────────────────────────────────────
+
+/** A debate's arena: each side's supporters and best arguments. */
+router.get("/posts/:id/debate", requireUser, async (req: ApexRequest, res): Promise<void> => {
+  const me = req.userId!;
+  const id = idParam(req.params.id);
+  const row = id ? await loadVisible(id, me) : null;
+  if (!row || row.kind !== "debate") { res.status(404).json(bad("This debate isn't available.")); return; }
+  const blocked = await blockedIds(me);
+  const sides = row.pollOptions ?? [];
+  const userCols = { id: usersTable.id, username: usersTable.username, avatarEmoji: usersTable.avatarEmoji, avatarUrl: usersTable.avatarUrl };
+  const result = await Promise.all(sides.map(async (label, side) => {
+    const [supporters, args] = await Promise.all([
+      db.select(userCols).from(pollVotesTable).innerJoin(usersTable, eq(usersTable.id, pollVotesTable.userId))
+        .where(and(eq(pollVotesTable.postId, row.id), eq(pollVotesTable.option, side))).orderBy(pollVotesTable.id).limit(6),
+      db.select({ id: postCommentsTable.id, body: postCommentsTable.body, reactionCount: postCommentsTable.reactionCount, createdAt: postCommentsTable.createdAt, userId: postCommentsTable.userId, author: userCols })
+        .from(postCommentsTable).innerJoin(usersTable, eq(usersTable.id, postCommentsTable.userId))
+        .where(and(eq(postCommentsTable.postId, row.id), eq(postCommentsTable.side, side), eq(postCommentsTable.deleted, false), eq(postCommentsTable.ai, false), isNull(postCommentsTable.parentId)))
+        .orderBy(desc(postCommentsTable.reactionCount), desc(postCommentsTable.id)).limit(5),
+    ]);
+    return {
+      side, label,
+      supporters: supporters.filter((u) => !blocked.includes(u.id)).slice(0, 3),
+      arguments: args.filter((a) => !blocked.includes(a.userId)).map(({ userId: _u, ...a }) => a),
+    };
+  }));
+  const [view] = await present([row], me);
+  res.json({ ok: true, data: { post: view, sides: result } });
 });
 
 export default router;

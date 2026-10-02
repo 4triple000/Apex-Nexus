@@ -9,8 +9,8 @@ import { useAvatar } from "@/contexts/AvatarContext";
 import { ApexControlPanel } from "@/components/apex/ApexControlPanel";
 import { useStreakCheckin } from "@/lib/dailyStreak";
 
-/** Pages that paint their own full-screen background, including behind the ☰ button. */
-const FULL_SCREEN = ["/feed"];
+/** Pages that paint their own full-screen background, including behind the ☰ button: all of Social. */
+const isFullScreen = (path: string) => path === "/feed" || path.startsWith("/feed/") || path.startsWith("/u/");
 
 function PageTransition({ children, location, phone = false }: { children: ReactNode; location: string; phone?: boolean }) {
   return (
@@ -50,7 +50,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
         {/* Pages run to the bottom edge so the tab bar floats over them; each page's scroll area leaves room for it (--apex-nav-space).
             Full-screen pages (Social) also paint behind the ☰ button and add their own top space. */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingTop: FULL_SCREEN.includes(location) ? 0 : location === "/" || location.startsWith("/dm") ? 4 : location === "/settings" ? 20 : 64 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative", zIndex: 10, paddingTop: isFullScreen(location) ? 0 : location === "/" || location.startsWith("/dm") ? 4 : location === "/settings" ? 20 : 64 }}>
           <PageTransition location={location} phone>{children}</PageTransition>
         </div>
 

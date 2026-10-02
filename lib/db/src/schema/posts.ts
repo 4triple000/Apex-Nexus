@@ -1,9 +1,12 @@
-import { pgTable, serial, integer, text, timestamp, boolean, jsonb, unique, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, boolean, jsonb, unique, index, customType } from "drizzle-orm/pg-core";
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
 
 /**
  * Social posts. `kind` decides how the card renders:
  *   text · photo · poll · game (links a game-feed entry) · moment (an answer to the daily Apex Moment)
  *   debate (two sides in poll_options) · ask (a question with Apex's answer in ai_text)
+ *   video (a reel: blob_id is the video, media_id its cover frame) · voice (blob_id is the recording)
  * `visibility`: public · followers · private.
  */
 export const socialPostsTable = pgTable(
@@ -13,8 +16,10 @@ export const socialPostsTable = pgTable(
     userId: integer("user_id").notNull(),
     kind: text("kind").notNull().default("text"),
     body: text("body").notNull().default(""),
-    /** Uploaded photo (social_post_media.id) */
+    /** Uploaded photo (social_post_media.id); for reels, the cover frame */
     mediaId: integer("media_id"),
+    /** Uploaded video or voice recording (social_media_blobs.id) */
+    blobId: integer("blob_id"),
     /** Poll choices, e.g. ["Battle Royale", "Search & Destroy"] */
     pollOptions: jsonb("poll_options").$type<string[]>(),
     /** game_feed.id for game posts */
@@ -38,6 +43,33 @@ export const socialPostsTable = pgTable(
   },
   (t) => [index("social_posts_created_idx").on(t.createdAt), index("social_posts_user_idx").on(t.userId), index("social_posts_challenge_idx").on(t.challengeId), index("social_posts_circle_idx").on(t.circleId)],
 );
+
+/**
+ * Videos (reels) and voice recordings, as raw bytes. Kept in Postgres until object storage is set up;
+ * served with byte ranges so phones can stream and seek.
+ */
+export const socialMediaBlobsTable = pgTable("social_media_blobs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  key: text("key").notNull().unique(),
+  mime: text("mime").notNull(),
+  kind: text("kind").notNull(), // video · audio
+  size: integer("size").notNull(),
+  durationMs: integer("duration_ms"),
+  width: integer("width"),
+  height: integer("height"),
+  data: bytea("data").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Profile extras for Social: cover art and a short tagline line under the name. */
+export const socialProfilesTable = pgTable("social_profiles", {
+  userId: integer("user_id").primaryKey(),
+  cover: text("cover").notNull().default("city"),
+  tagline: text("tagline").notNull().default(""),
+  interests: text("interests").notNull().default(""),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Photos are resized on the device and kept here until object storage is set up on the server. */
 export const socialPostMediaTable = pgTable("social_post_media", {
