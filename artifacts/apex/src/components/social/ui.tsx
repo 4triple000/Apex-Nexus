@@ -105,6 +105,17 @@ const SCENES = [
   "radial-gradient(45% 55% at 55% 50%, rgba(255,120,100,0.28), transparent 70%), linear-gradient(160deg,#241718,#0D0A0B)",
   "radial-gradient(50% 50% at 50% 40%, rgba(170,180,195,0.22), transparent 70%), linear-gradient(180deg,#1A1C20,#0A0B0D)",
 ];
+/** Profile cover art, by name. */
+export const COVERS: Record<string, string> = {
+  city: "radial-gradient(3px 3px at 20% 62%, #FFD9A0, transparent), radial-gradient(3px 3px at 38% 58%, #FFE3B8, transparent), radial-gradient(3px 3px at 62% 55%, #E8E8F0, transparent), radial-gradient(3px 3px at 78% 64%, #FFD9A0, transparent), linear-gradient(180deg, #1E2230 0%, #2A2733 45%, #111014 75%, #0B0A0C 100%)",
+  sunset: "radial-gradient(40% 35% at 50% 70%, rgba(255,214,140,0.95), rgba(255,140,70,0.6) 45%, rgba(255,120,60,0) 75%), linear-gradient(180deg, #3E2A34 0%, #C2603E 55%, #2A1A20 78%, #0E0B0C 100%)",
+  studio: "radial-gradient(55% 50% at 40% 40%, rgba(226,193,126,0.35), transparent 70%), linear-gradient(180deg, #24201A, #0C0B0A)",
+  neon: "radial-gradient(60% 55% at 30% 35%, rgba(255,150,100,0.35), transparent 70%), radial-gradient(45% 45% at 80% 70%, rgba(90,160,255,0.3), transparent 70%), linear-gradient(180deg,#1A1820,#0B0A0D)",
+  arcade: "radial-gradient(50% 55% at 75% 40%, rgba(255,120,100,0.35), transparent 70%), linear-gradient(120deg, #24181A, #0C0A0B)",
+  gold: "linear-gradient(160deg, #EBCB8B, #8A6A34 60%, #2A2214)",
+  night: "radial-gradient(2px 2px at 15% 30%, #fff, transparent), radial-gradient(2px 2px at 70% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 45% 50%, #ddd, transparent), linear-gradient(180deg, #16161C, #0A0A0C)",
+};
+
 export function sceneFor(seed: string | number): string {
   const s = String(seed);
   let h = 0;

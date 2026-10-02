@@ -1357,7 +1357,14 @@ function ProfilePageInner() {
         <div style={{ fontSize: 14, fontWeight: 800, color: isMe ? "white" : "rgba(255,255,255,0.65)" }}>
           {isMe ? "My Identity" : profile.username}
         </div>
-        <NotificationBell />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* The Social profile (cover, posts, followers) lives at /u/... */}
+          <button onClick={() => nav(isMe ? "/u/me" : `/u/${profile.id}`)}
+            style={{ height: 30, padding: "0 12px", borderRadius: 15, border: "1px solid rgba(226,193,126,0.45)", background: "rgba(226,193,126,0.12)", color: "#EED9A8", fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+            Social profile
+          </button>
+          <NotificationBell />
+        </div>
       </div>
 
       {/* ── MY DASHBOARD ──────────────────────────────────── */}

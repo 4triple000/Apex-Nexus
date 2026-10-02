@@ -679,6 +679,13 @@
   grid-column: 1 / -1;
   height: var(--apex-nav-space);
 }
+/* Profile cover buttons move right of the ☰ button on phones */
+.apex-page .profile-top { left: 66px !important; }
+/* Social page title bars sit below the fixed ☰ button on phones */
+.apex-page .social-bar { padding-top: 60px !important; }
+/* Bars that stick to the bottom while a page scrolls (comment box on a post) */
+.apex-sticky-dock { bottom: 0; z-index: 4; }
+.apex-page .apex-sticky-dock { bottom: calc(var(--apex-nav-space) - 12px); }
 /* Bars pinned to the bottom of a page (like the chat box) sit just above the tab bar */
 .apex-page .apex-dock { margin-bottom: calc(var(--apex-nav-space) - 12px); }
 .mg-display { font-family: var(--mg-display); letter-spacing: -0.02em; }

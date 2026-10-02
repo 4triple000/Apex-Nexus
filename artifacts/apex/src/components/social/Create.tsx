@@ -1,29 +1,32 @@
 /**
  * The + button: "Create on Apex" grid, and the composer it opens.
- * Ready now: post (with an optional photo), poll, debate, game, challenge entry, Apex Moment answer,
- * AI Creation (Apex drafts, you edit) and Ask Apex (opens its own sheet).
+ * Every tile works: post (with an optional photo), video (reel), voice note, meme, Ask Apex (its own sheet),
+ * AI Creation (Apex drafts, you edit), poll or debate, game, and challenge entry. Plus Apex Moment answers.
  * Apex's suggestions only fill the composer; nothing posts until the person taps Post.
  */
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { PenLine, Video, Mic, HelpCircle, Sparkles, BarChart3, Gamepad2, Trophy, Lightbulb, Image as ImageIcon, X, Globe, Users, Lock, Plus, Loader2, Scale, Wand2, Hash } from "lucide-react";
-import { socialApi, resizePhoto, endsIn, type Post, type Visibility } from "@/lib/socialApi";
+import { PenLine, Video, Mic, Smile, HelpCircle, Sparkles, BarChart3, Gamepad2, Trophy, Lightbulb, Image as ImageIcon, X, Globe, Users, Lock, Plus, Loader2, Scale, Wand2, Hash, Square, RotateCcw, Film } from "lucide-react";
+import { socialApi, resizePhoto, endsIn, uploadMedia, clock, type Post, type Visibility } from "@/lib/socialApi";
+import { prepareVideo, useVoiceRecorder, renderMeme, MEME_BACKDROPS, VOICE_MAX_MS, type PreparedVideo } from "./media";
+import { AudiencePill, ShareWithSheet, type Audience } from "./ShareWith";
+import { VoiceCard } from "./Voice";
 import { useAuth } from "@/contexts/AuthContext";
 import { S, Avatar, Sheet, primaryBtn, ghostBtn, sceneFor, ApexTag, apexCard } from "./ui";
 
-export type ComposeMode = "text" | "poll" | "game" | "moment" | "debate" | "ai" | "challenge";
+export type ComposeMode = "text" | "poll" | "game" | "moment" | "debate" | "ai" | "challenge" | "video" | "voice" | "meme";
 export type CreatePick = ComposeMode | "ask";
 
-const TILES: { id: CreatePick | null; icon: typeof PenLine; title: string; sub: string }[] = [
+export const TILES: { id: CreatePick; icon: typeof PenLine; title: string; sub: string }[] = [
   { id: "text", icon: PenLine, title: "Post", sub: "Share anything" },
-  { id: "poll", icon: BarChart3, title: "Poll", sub: "Ask the community" },
-  { id: "debate", icon: Scale, title: "Debate", sub: "Pick a side" },
+  { id: "video", icon: Video, title: "Video", sub: "Record or upload" },
+  { id: "voice", icon: Mic, title: "Voice", sub: "Speak your mind" },
+  { id: "meme", icon: Smile, title: "Meme", sub: "Make it funny" },
   { id: "ask", icon: HelpCircle, title: "Ask Apex", sub: "Get answers" },
-  { id: "ai", icon: Sparkles, title: "AI Creation", sub: "Apex drafts it" },
-  { id: "challenge", icon: Trophy, title: "Challenge", sub: "Join or start one" },
-  { id: "game", icon: Gamepad2, title: "Game", sub: "Share a game" },
-  { id: null, icon: Video, title: "Video", sub: "Record or upload" },
-  { id: null, icon: Mic, title: "Voice", sub: "Speak your mind" },
+  { id: "ai", icon: Sparkles, title: "AI Creation", sub: "Create with AI" },
+  { id: "poll", icon: BarChart3, title: "Poll", sub: "Ask the community" },
+  { id: "game", icon: Gamepad2, title: "Game", sub: "Create or share" },
+  { id: "challenge", icon: Trophy, title: "Challenge", sub: "Start something" },
 ];
 
 export function CreateSheet({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (mode: CreatePick, idea?: string) => void }) {
@@ -43,7 +46,7 @@ export function CreateSheet({ open, onClose, onPick }: { open: boolean; onClose:
     <Sheet open={open} onClose={onClose} label="Create on Apex" title={<span>Create on Apex<span style={{ display: "block", fontFamily: "Manrope, sans-serif", fontSize: 13, fontWeight: 500, color: S.ink2, marginTop: 2 }}>What do you want to make?</span></span>}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
         {TILES.map((t) => {
-          const ready = !!t.id;
+          const ready = true;
           return (
             <button key={t.title} disabled={!ready} onClick={() => t.id && onPick(t.id)}
               style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, padding: "14px 12px", minHeight: 96, borderRadius: 16, background: S.surf, border: `1px solid ${S.line}`, color: S.ink, textAlign: "left", cursor: ready ? "pointer" : "default", opacity: ready ? 1 : 0.5, fontFamily: "Manrope, sans-serif" }}>
@@ -101,7 +104,7 @@ const inputStyle: React.CSSProperties = { width: "100%", boxSizing: "border-box"
 const hidden: React.CSSProperties = { position: "absolute", left: -9999 };
 const aiBtn = (extra?: React.CSSProperties) => ghostBtn({ height: 32, padding: "0 11px", borderRadius: 16, fontSize: 12, color: S.gold, borderColor: "rgba(226,193,126,0.28)", ...extra });
 
-export function Composer({ open, mode, idea, prompt, challengeId: startChallenge, circle, onClose, onPosted, onStartChallenge }: {
+export function Composer({ open, mode, idea, prompt, challengeId: startChallenge, circle, momentAnswer = false, onClose, onPosted, onStartChallenge, onNewCircle }: {
   open: boolean;
   mode: ComposeMode;
   /** Starter idea from "Surprise me" */
@@ -116,6 +119,10 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
   onPosted: (p: Post) => void;
   /** Opens "Start a challenge" (challenge mode) */
   onStartChallenge?: () => void;
+  /** "New circle" in Share With */
+  onNewCircle?: () => void;
+  /** Answering today's Apex Moment with a video, voice note, photo or poll */
+  momentAnswer?: boolean;
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -125,7 +132,15 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
   const [options, setOptions] = useState(["", ""]);
   const [gameId, setGameId] = useState<number | null>(null);
   const [challengeId, setChallengeId] = useState<number | null>(null);
-  const [visibility, setVisibility] = useState<Visibility>("public");
+  const [audience, setAudience] = useState<Audience>({ visibility: "public" as Visibility });
+  const [shareOpen, setShareOpen] = useState(false);
+  const [video, setVideo] = useState<PreparedVideo | null>(null);
+  const [videoStage, setVideoStage] = useState<{ p: number; label: string } | null>(null);
+  const [upload, setUpload] = useState<number | null>(null);
+  const voice = useVoiceRecorder();
+  const [meme, setMeme] = useState<{ top: string; bottom: string; backdrop: number; photo: string | null; preview: string | null }>({ top: "", bottom: "", backdrop: 0, photo: null, preview: null });
+  const videoRef = useRef<HTMLInputElement>(null);
+  const memeRef = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<{ dataUrl: string; width: number; height: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,7 +154,38 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
     if (!open) return;
     setM(mode); setBody(""); setOptions(["", ""]); setGameId(null); setPhoto(null); setError(null);
     setAbout(""); setSuggestion(null); setTagIdeas([]); setChallengeId(startChallenge ?? null);
-  }, [open, mode, startChallenge]);
+    setAudience(circle ? { visibility: "public", circle } : { visibility: "public" });
+    setVideo(null); setVideoStage(null); setUpload(null); voice.reset();
+    setMeme({ top: "", bottom: "", backdrop: 0, photo: null, preview: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, startChallenge, circle]);
+
+  // Live meme preview
+  useEffect(() => {
+    if (m !== "meme") return;
+    const t = setTimeout(() => {
+      void renderMeme({ photo: meme.photo ?? undefined, backdrop: meme.backdrop, top: meme.top || (meme.photo ? "" : "TOP TEXT"), bottom: meme.bottom || (meme.photo ? "" : "BOTTOM TEXT") })
+        .then((r) => setMeme((x) => ({ ...x, preview: r.dataUrl }))).catch(() => undefined);
+    }, 200);
+    return () => clearTimeout(t);
+  }, [m, meme.top, meme.bottom, meme.backdrop, meme.photo]);
+
+  const pickVideo = async (file?: File) => {
+    if (!file) return;
+    setError(null); setVideo(null);
+    try {
+      setVideoStage({ p: 0, label: "Reading video…" });
+      setVideo(await prepareVideo(file, (p, stage) => setVideoStage({ p, label: stage === "compressing" ? "Shrinking to fit… keep this screen open" : "Reading video…" })));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setVideoStage(null);
+    }
+  };
+  const pickMemePhoto = async (file?: File) => {
+    if (!file) return;
+    try { const r = await resizePhoto(file); setMeme((x) => ({ ...x, photo: r.dataUrl })); } catch (e) { setError((e as Error).message || "Couldn't read that photo."); }
+  };
 
   const games = useQuery({
     queryKey: ["social-game-picker"],
@@ -188,7 +234,10 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
   const addTag = (t: string) => { setBody((b) => (b.toLowerCase().includes(`#${t}`) ? b : `${b.trimEnd()} #${t}`)); setTagIdeas((list) => list.filter((x) => x !== t)); };
 
   const filledOptions = options.map((o) => o.trim()).filter(Boolean);
-  const canPost = !busy && !aiBusy && (
+  const canPost = !busy && !aiBusy && !videoStage && (
+    m === "video" ? !!video :
+    m === "voice" ? !!voice.result :
+    m === "meme" ? !!(meme.top.trim() || meme.bottom.trim()) :
     m === "poll" ? !!body.trim() && filledOptions.length >= 2 :
     m === "debate" ? !!body.trim() && filledOptions.length === 2 :
     m === "game" ? !!gameId :
@@ -201,16 +250,34 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
     setBusy(true); setError(null);
     try {
       let mediaId: number | undefined;
+      let blobId: number | undefined;
       if (photo) mediaId = (await socialApi.uploadPhoto(photo.dataUrl, photo.width, photo.height)).id;
-      const kind: Post["kind"] = m === "moment" ? "moment" : m === "poll" ? "poll" : m === "debate" ? "debate" : m === "game" ? "game" : photo ? "photo" : "text";
+      if (m === "video" && video) {
+        mediaId = (await socialApi.uploadPhoto(video.poster.dataUrl, video.poster.width, video.poster.height)).id;
+        setUpload(0);
+        blobId = (await uploadMedia(video.blob, { kind: "video", durationMs: video.durationMs, width: video.width, height: video.height }, setUpload)).id;
+      }
+      if (m === "voice" && voice.result) {
+        setUpload(0);
+        blobId = (await uploadMedia(voice.result.blob, { kind: "audio", durationMs: voice.result.durationMs }, setUpload)).id;
+      }
+      if (m === "meme") {
+        const r = await renderMeme({ photo: meme.photo ?? undefined, backdrop: meme.backdrop, top: meme.top, bottom: meme.bottom });
+        mediaId = (await socialApi.uploadPhoto(r.dataUrl, r.width, r.height)).id;
+      }
+      const kind: Post["kind"] = m === "video" ? "video" : m === "voice" ? "voice" : m === "meme" ? "photo" : m === "moment" ? "moment" : m === "poll" ? "poll" : m === "debate" ? "debate" : m === "game" ? "game" : photo ? "photo" : "text";
+      const target = audience.circle;
       const created = await socialApi.create({
-        kind, body: body.trim(), mediaId, visibility,
+        kind, body: body.trim(), mediaId, blobId, visibility: audience.visibility,
         pollOptions: m === "poll" || m === "debate" ? filledOptions : undefined,
         gameId: gameId ?? undefined,
         challengeId: m === "challenge" ? challengeId ?? undefined : undefined,
-        circleId: circle?.id,
+        circleId: target?.id,
+        momentAnswer: momentAnswer || undefined,
       });
-      if (circle) void qc.invalidateQueries({ queryKey: ["social-circle-posts", circle.id] });
+      if (momentAnswer || m === "moment") void qc.invalidateQueries({ queryKey: ["social-moment"] });
+      if (target) void qc.invalidateQueries({ queryKey: ["social-circle-posts", target.id] });
+      if (m === "video") { void qc.invalidateQueries({ queryKey: ["social-reels"] }); void qc.invalidateQueries({ queryKey: ["social-reels-strip"] }); }
       onPosted(created);
       if (m === "challenge") void qc.invalidateQueries({ queryKey: ["social-challenges"] });
       onClose();
@@ -218,23 +285,27 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      setUpload(null);
     }
   };
 
-  const title = circle && m === "text" ? `Post in ${circle.name}` : { poll: "New poll", debate: "New debate", game: "Share a game", moment: "Apex Moment", ai: "Create with AI", challenge: "Enter a challenge", text: "New post" }[m];
+  const title = audience.circle && m === "text" ? `Post in ${audience.circle.name}` : { poll: "New poll", debate: "New debate", game: "Share a game", moment: "Apex Moment", ai: "Create with AI", challenge: "Enter a challenge", text: "New post", video: "New reel", voice: "Voice note", meme: "Make a meme" }[m];
   const placeholder =
     m === "poll" ? "Ask a question…" :
     m === "debate" ? "What's the debate? e.g. Is pineapple on pizza okay?" :
     m === "game" ? "Say something about it (optional)" :
     m === "moment" ? "Your answer…" :
     m === "challenge" ? (chosen ? chosen.description || `Your entry for #${chosen.tag}` : "Your entry…") :
+    m === "video" ? "Write a caption… #tags help people find it" :
+    m === "voice" ? "Say what it's about (optional)" :
+    m === "meme" ? "Caption (optional)" :
     idea ? idea : "What's on your mind? Use #tags to join a trend";
   const writes = m === "text" || m === "moment" || m === "challenge";
 
   return (
     <Sheet open={open} onClose={onClose} label={title} title={title}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {m === "moment" && prompt ? (
+        {(m === "moment" || momentAnswer) && prompt ? (
           <div style={{ padding: 14, borderRadius: 16, background: "linear-gradient(135deg, #1D1D22, #141417)", border: `1px solid ${S.line}` }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", color: S.gold }}>TODAY'S PROMPT</div>
             <div style={{ fontFamily: "Sora, sans-serif", fontSize: 18, fontWeight: 700, marginTop: 6, lineHeight: 1.3 }}>{prompt}</div>
@@ -292,9 +363,7 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
               {user ? <Avatar user={{ username: user.username, avatarUrl: (user as { avatarUrl?: string | null }).avatarUrl ?? null, avatarEmoji: null }} size={40} /> : null}
               <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start", flexGrow: 1 }}>
                 <span style={{ fontSize: 14, fontWeight: 700 }}>{user?.username ?? "You"}</span>
-                {circle ? (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 28, padding: "0 10px", borderRadius: 14, background: S.goldSoft, color: S.gold, fontSize: 12, fontWeight: 800 }}>{circle.emoji} Posting in {circle.name}</span>
-                ) : <VisibilityPicker value={visibility} onChange={setVisibility} />}
+                <AudiencePill value={audience} onClick={() => setShareOpen(true)} />
               </div>
             </div>
 
@@ -331,6 +400,14 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
 
         {m === "poll" || m === "debate" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div role="tablist" aria-label="Poll or debate" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: S.surf, border: `1px solid ${S.line}` }}>
+              {(["poll", "debate"] as const).map((k) => (
+                <button key={k} role="tab" aria-selected={m === k} onClick={() => { setM(k); setOptions((o) => (k === "debate" ? [o[0] ?? "", o[1] ?? ""] : o)); }}
+                  style={{ flex: 1, height: 32, borderRadius: 9, border: 0, background: m === k ? "rgba(255,255,255,0.1)" : "none", color: m === k ? S.ink : S.ink3, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  {k === "poll" ? <><BarChart3 size={14} /> Poll</> : <><Scale size={14} /> Debate · two sides</>}
+                </button>
+              ))}
+            </div>
             {options.map((o, i) => (
               <div key={i} style={{ display: "flex", gap: 8 }}>
                 <label style={{ flexGrow: 1 }}>
@@ -366,6 +443,75 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
           </div>
         ) : null}
 
+        {m === "video" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input ref={videoRef} type="file" accept="video/mp4,video/quicktime,video/webm,video/*" hidden onChange={(e) => void pickVideo(e.target.files?.[0])} />
+            {video ? (
+              <div style={{ position: "relative", alignSelf: "center", width: video.height >= video.width ? "70%" : "100%" }}>
+                <video src={video.previewUrl} controls playsInline style={{ width: "100%", maxHeight: 420, borderRadius: 16, border: `1px solid ${S.line}`, background: "#000" }} />
+                <span style={{ position: "absolute", top: 8, left: 8, padding: "2px 8px", borderRadius: 8, background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11.5, fontWeight: 800 }}>{clock(video.durationMs)} · {(video.blob.size / 1048576).toFixed(1)} MB</span>
+                <button onClick={() => setVideo(null)} aria-label="Remove video" style={{ position: "absolute", top: 8, right: 8, width: 34, height: 34, borderRadius: "50%", border: 0, background: "rgba(0,0,0,0.65)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><X size={16} /></button>
+              </div>
+            ) : videoStage ? (
+              <div style={{ padding: 18, borderRadius: 16, background: S.surf, border: `1px solid ${S.line}`, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 13, color: S.ink2 }}>{videoStage.label}</div>
+                <div style={{ height: 6, borderRadius: 3, background: S.surf2, overflow: "hidden" }}><div style={{ height: "100%", width: `${Math.round(videoStage.p * 100)}%`, background: S.gold, transition: "width .2s" }} /></div>
+              </div>
+            ) : (
+              <button onClick={() => videoRef.current?.click()} style={{ height: 180, borderRadius: 18, border: `1px dashed ${S.line2}`, background: S.surf, color: S.ink, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "Manrope, sans-serif" }}>
+                <span style={{ width: 52, height: 52, borderRadius: "50%", background: S.goldSoft, display: "flex", alignItems: "center", justifyContent: "center" }}><Film size={24} color={S.gold} /></span>
+                <span style={{ fontSize: 14, fontWeight: 800 }}>Record or choose a video</span>
+                <span style={{ fontSize: 12, color: S.ink3 }}>Up to 60 seconds · vertical looks best</span>
+              </button>
+            )}
+          </div>
+        ) : null}
+
+        {m === "voice" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+            {voice.result ? (
+              <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
+                <VoiceCard src={voice.result.url} durationMs={voice.result.durationMs} title="Your voice note" />
+                <button onClick={voice.reset} style={ghostBtn({ height: 34, alignSelf: "center", fontSize: 12.5 })}><RotateCcw size={14} /> Record again</button>
+              </div>
+            ) : (
+              <>
+                <button onClick={() => (voice.state === "recording" ? voice.stop() : void voice.start())} aria-label={voice.state === "recording" ? "Stop recording" : "Start recording"}
+                  style={{ width: 96, height: 96, borderRadius: "50%", border: 0, cursor: "pointer", background: voice.state === "recording" ? S.heart : S.gold, color: voice.state === "recording" ? "#fff" : S.btnText, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: voice.state === "recording" ? "0 0 0 10px rgba(255,77,103,0.15)" : "0 0 0 10px rgba(226,193,126,0.12)" }}>
+                  {voice.state === "recording" ? <Square size={30} fill="#fff" /> : <Mic size={38} />}
+                </button>
+                <div style={{ fontFamily: "Sora, sans-serif", fontSize: 22, fontWeight: 700 }}>{clock(voice.elapsed)}<span style={{ fontSize: 13, color: S.ink3, fontWeight: 600 }}> / {clock(VOICE_MAX_MS)}</span></div>
+                <div style={{ fontSize: 12.5, color: S.ink3 }}>{voice.state === "recording" ? "Recording… tap to stop" : "Tap to record up to 60 seconds"}</div>
+                {voice.error ? <div role="alert" style={{ fontSize: 13, color: "#FF8A8A", textAlign: "center" }}>{voice.error}</div> : null}
+              </>
+            )}
+          </div>
+        ) : null}
+
+        {m === "meme" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <input ref={memeRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => void pickMemePhoto(e.target.files?.[0])} />
+            {meme.preview ? <img src={meme.preview} alt="Meme preview" style={{ width: "100%", maxHeight: 380, objectFit: "contain", borderRadius: 16, border: `1px solid ${S.line}`, background: "#000" }} /> : <div style={{ height: 240, borderRadius: 16, background: S.surf }} />}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <button onClick={() => memeRef.current?.click()} style={ghostBtn({ height: 34, fontSize: 12.5 })}><ImageIcon size={14} /> {meme.photo ? "Change photo" : "Use a photo"}</button>
+              {meme.photo ? <button onClick={() => setMeme((x) => ({ ...x, photo: null }))} style={ghostBtn({ height: 34, fontSize: 12.5 })}>Plain background</button> : (
+                <div role="radiogroup" aria-label="Background" style={{ display: "flex", gap: 6 }}>
+                  {MEME_BACKDROPS.map((bg, i) => <button key={i} role="radio" aria-checked={meme.backdrop === i} aria-label={`Background ${i + 1}`} onClick={() => setMeme((x) => ({ ...x, backdrop: i }))} style={{ width: 28, height: 28, borderRadius: "50%", background: bg, border: meme.backdrop === i ? `2px solid ${S.ink}` : `1px solid ${S.line2}`, cursor: "pointer", padding: 0 }} />)}
+                </div>
+              )}
+            </div>
+            <input value={meme.top} onChange={(e) => setMeme((x) => ({ ...x, top: e.target.value }))} maxLength={80} placeholder="Top text" aria-label="Top text" style={inputStyle} />
+            <input value={meme.bottom} onChange={(e) => setMeme((x) => ({ ...x, bottom: e.target.value }))} maxLength={80} placeholder="Bottom text" aria-label="Bottom text" style={inputStyle} />
+          </div>
+        ) : null}
+
+        {upload !== null ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 12.5, color: S.ink2 }}>Uploading… {Math.round(upload * 100)}%</div>
+            <div style={{ height: 6, borderRadius: 3, background: S.surf2, overflow: "hidden" }}><div style={{ height: "100%", width: `${Math.round(upload * 100)}%`, background: S.gold }} /></div>
+          </div>
+        ) : null}
+
         {photo ? (
           <div style={{ position: "relative" }}>
             <img src={photo.dataUrl} alt="Selected photo" style={{ width: "100%", maxHeight: 320, objectFit: "cover", borderRadius: 16, border: `1px solid ${S.line}` }} />
@@ -390,6 +536,8 @@ export function Composer({ open, mode, idea, prompt, challengeId: startChallenge
           </div>
         ) : null}
       </div>
+      <ShareWithSheet open={shareOpen} value={audience} onClose={() => setShareOpen(false)} onChange={setAudience}
+        allowCircle={m !== "challenge" && m !== "moment"} onNewCircle={onNewCircle ? () => { setShareOpen(false); onNewCircle(); } : undefined} />
     </Sheet>
   );
 }

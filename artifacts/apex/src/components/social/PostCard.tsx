@@ -4,9 +4,11 @@
  */
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Play, Lock, Users, Sparkles, Flag, Ban, Trash2, Check, Trophy, Loader2, Scale } from "lucide-react";
+import { Heart, MessageCircle, Share2, MoreHorizontal, Play, Lock, Users, Sparkles, Flag, Ban, Trash2, Check, Trophy, Loader2, Scale, Repeat2, ChevronRight } from "lucide-react";
 import { socialApi, mediaSrc, timeAgo, compact, type Post, type ReportReason } from "@/lib/socialApi";
 import { S, card, Avatar, RichText, Sheet, primaryBtn, ghostBtn, iconBtn, sceneFor, ApexTag, apexCard } from "./ui";
+import { ReelCard } from "./Reels";
+import { VoiceCard } from "./Voice";
 
 const REASONS: { id: ReportReason; label: string }[] = [
   { id: "spam", label: "Spam or scam" },
@@ -19,11 +21,14 @@ const REASONS: { id: ReportReason; label: string }[] = [
   { id: "other", label: "Something else" },
 ];
 
-export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onChallenge, onCircle }: {
+export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onChallenge, onCircle, detail = false }: {
   post: Post;
   onChange: (p: Post) => void;
   onRemove: (id: number, authorBlocked?: number) => void;
-  onOpenComments: (p: Post) => void;
+  /** Defaults to opening the post's page */
+  onOpenComments?: (p: Post) => void;
+  /** On the post's own page: no "open" taps */
+  detail?: boolean;
   onTag: (tag: string) => void;
   onChallenge?: (id: number) => void;
   onCircle?: (id: number) => void;
@@ -95,7 +100,7 @@ export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onCh
   };
 
   const share = async () => {
-    const url = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/feed?post=${post.id}`;
+    const url = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/feed/post/${post.id}`;
     try {
       if (navigator.share) await navigator.share({ title: `${post.author.username} on Apex`, url });
       else { await navigator.clipboard.writeText(url); flash("Link copied"); }
@@ -117,14 +122,17 @@ export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onCh
     try { await socialApi.report("post", post.id, reason); flash("Thanks. We'll review this post."); } catch (e) { flash((e as Error).message); }
   };
 
+  const openPost = () => { if (!detail) nav(`/feed/post/${post.id}`); };
+  const openComments = () => (onOpenComments ? onOpenComments(post) : nav(`/feed/post/${post.id}`));
+  const openProfile = () => nav(`/u/${post.author.id}`);
   const VisIcon = post.visibility === "private" ? Lock : post.visibility === "followers" ? Users : null;
 
   return (
     <article style={{ ...card, padding: 14, display: "flex", flexDirection: "column", gap: 12 }} aria-label={`Post by ${post.author.username}`}>
       <header style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Avatar user={post.author} size={38} />
+        <button onClick={openProfile} aria-label={`${post.author.username}'s profile`} style={{ background: "none", border: 0, padding: 0, cursor: "pointer", borderRadius: "50%" }}><Avatar user={post.author} size={38} /></button>
         <div style={{ flexGrow: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 700, color: S.ink }}>{post.author.username}</div>
+          <button onClick={openProfile} style={{ background: "none", border: 0, padding: 0, fontSize: 13.5, fontWeight: 700, color: S.ink, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>{post.author.username}</button>
           <div style={{ fontSize: 11.5, color: S.ink3, display: "flex", alignItems: "center", gap: 5 }}>
             {timeAgo(post.createdAt)}{post.location ? ` · ${post.location}` : ""}
             {post.circle ? <> · <button onClick={() => onCircle?.(post.circle!.id)} style={{ background: "none", border: 0, padding: 0, color: S.ink2, font: "inherit", fontWeight: 700, cursor: onCircle ? "pointer" : "default" }}>{post.circle.emoji} {post.circle.name}</button></> : null}
@@ -149,7 +157,7 @@ export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onCh
       {post.kind === "ask" ? <div style={{ fontSize: 11.5, fontWeight: 700, color: S.ink3, marginBottom: -6 }}>Asked Apex</div> : null}
       {post.kind === "debate" ? <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 800, color: S.ink2, marginBottom: -6 }}><Scale size={13} /> Debate</div> : null}
 
-      {post.body ? <div style={{ fontSize: post.kind === "debate" || post.kind === "ask" ? 16 : 14.5, fontWeight: post.kind === "debate" || post.kind === "ask" ? 700 : 400, lineHeight: 1.5, color: S.ink, whiteSpace: "pre-wrap", wordBreak: "break-word" }}><RichText text={post.body} onTag={onTag} /></div> : null}
+      {post.body ? <div onClick={(e) => { if (!(e.target as HTMLElement).closest("button")) openPost(); }} style={{ cursor: detail ? "auto" : "pointer", fontSize: post.kind === "debate" || post.kind === "ask" ? 16 : 14.5, fontWeight: post.kind === "debate" || post.kind === "ask" ? 700 : 400, lineHeight: 1.5, color: S.ink, whiteSpace: "pre-wrap", wordBreak: "break-word" }}><RichText text={post.body} onTag={onTag} /></div> : null}
 
       {post.answer ? (
         <div style={apexCard}>
@@ -186,6 +194,11 @@ export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onCh
                 {summarizing ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} {summaryOpen ? "Hide summary" : "Apex summary"}
               </button>
             </div>
+            {!detail ? (
+              <button onClick={() => nav(`/feed/debate/${post.id}`)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, height: 36, borderRadius: 12, border: `1px solid ${S.line2}`, background: "rgba(255,255,255,0.04)", color: S.ink, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
+                Open Debate Arena <ChevronRight size={15} />
+              </button>
+            ) : null}
             {summaryOpen && d.summary ? (
               <div style={apexCard}>
                 <ApexTag>Both sides, summed up by Apex</ApexTag>
@@ -197,9 +210,12 @@ export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onCh
         );
       })() : null}
 
+      {post.video ? <ReelCard post={post} /> : null}
+      {post.audio ? <VoiceCard post={post} /> : null}
+
       {post.media ? (
-        <img src={mediaSrc(post.media.url)} alt="" loading="lazy" decoding="async"
-          style={{ width: "100%", maxHeight: 520, objectFit: "cover", borderRadius: 16, border: `1px solid ${S.line}`, background: S.surf2, aspectRatio: post.media.width && post.media.height ? `${post.media.width} / ${post.media.height}` : undefined }} />
+        <img onClick={openPost} src={mediaSrc(post.media.url)} alt="" loading="lazy" decoding="async"
+          style={{ cursor: detail ? "auto" : "pointer", width: "100%", maxHeight: 520, objectFit: "cover", borderRadius: 16, border: `1px solid ${S.line}`, background: S.surf2, aspectRatio: post.media.width && post.media.height ? `${post.media.width} / ${post.media.height}` : undefined }} />
       ) : null}
 
       {post.poll ? (
@@ -228,10 +244,10 @@ export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onCh
           <div aria-hidden style={{ width: 72, height: 72, borderRadius: 10, flexShrink: 0, background: sceneFor(post.game.name), border: `1px solid ${S.line}` }} />
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: 3, flexGrow: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 800 }}>{post.game.name}</div>
-            <div style={{ fontSize: 11.5, color: S.ink3 }}>by {post.game.creatorName} · {compact(post.game.playCount)} plays</div>
+            <div style={{ fontSize: 11.5, color: S.ink3 }}>{post.game.mode ? `${post.game.mode[0]!.toUpperCase()}${post.game.mode.slice(1)} · ` : ""}{compact(post.game.playCount)} plays · by {post.game.creatorName}</div>
           </div>
-          <button onClick={() => nav(`/games?play=${post.game!.id}`)} style={primaryBtn({ alignSelf: "center", height: 34, borderRadius: 10, fontSize: 12, padding: "0 14px" })}>
-            <Play size={13} fill={S.btnText} /> Play now
+          <button onClick={() => nav(`/games?play=${post.game!.id}`)} style={primaryBtn({ alignSelf: "flex-end", height: 30, borderRadius: 8, fontSize: 11, padding: "0 12px", letterSpacing: "0.02em" })}>
+            <Play size={12} fill={S.btnText} /> PLAY NOW
           </button>
         </div>
       ) : null}
@@ -241,12 +257,13 @@ export function PostCard({ post, onChange, onRemove, onOpenComments, onTag, onCh
           style={{ ...iconBtn, width: "auto", padding: "0 8px", borderRadius: 18, gap: 6, fontSize: 12.5, fontWeight: 700, color: post.reacted ? S.heart : S.ink2 }}>
           <Heart size={18} fill={post.reacted ? S.heart : "none"} /> {compact(post.reactionCount)}
         </button>
-        <button onClick={() => onOpenComments(post)} aria-label="Comments" style={{ ...iconBtn, width: "auto", padding: "0 8px", borderRadius: 18, gap: 6, fontSize: 12.5, fontWeight: 700 }}>
+        <button onClick={openComments} aria-label="Comments" style={{ ...iconBtn, width: "auto", padding: "0 8px", borderRadius: 18, gap: 6, fontSize: 12.5, fontWeight: 700 }}>
           <MessageCircle size={18} /> {compact(post.commentCount)}
         </button>
-        <button onClick={() => void share()} aria-label="Share" style={iconBtn}><Share2 size={17} /></button>
+        <button onClick={() => void share()} aria-label="Share" style={{ ...iconBtn, width: "auto", padding: "0 8px", borderRadius: 18 }}><Repeat2 size={18} /></button>
         <span style={{ flexGrow: 1 }} />
         {notice ? <span role="status" style={{ fontSize: 12, color: S.ink2 }}>{notice}</span> : null}
+        <button onClick={() => setMenu(true)} aria-label="More" style={{ ...iconBtn, color: S.ink3 }}><MoreHorizontal size={17} /></button>
       </footer>
 
       <Sheet open={menu} onClose={() => setMenu(false)} label="Post options" title="Post options" maxWidth={440}>

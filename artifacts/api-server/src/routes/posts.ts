@@ -24,7 +24,7 @@ import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import {
   db, usersTable, followsTable, gameFeedTable,
-  socialPostsTable, socialPostMediaTable, postReactionsTable, postCommentsTable, socialChallengesTable,
+  socialPostsTable, socialPostMediaTable, postReactionsTable, postCommentsTable, socialChallengesTable, socialMediaBlobsTable,
   commentReactionsTable, pollVotesTable, contentReportsTable, userBlocksTable,
 } from "@workspace/db";
 import { and, desc, eq, gt, inArray, lt, or, sql, type SQL } from "drizzle-orm";
@@ -43,7 +43,8 @@ const PAGE = 15;
 
 router.get("/posts/feed", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const me = req.userId!;
-  const tab = req.query.tab === "following" ? "following" : "foryou";
+  const tab = req.query.tab === "following" ? "following" : req.query.tab === "trending" ? "trending" : "foryou";
+  const momentToday = req.query.moment === "today";
   const rawCursor = typeof req.query.cursor === "string" ? req.query.cursor : "";
   const tag = typeof req.query.tag === "string" ? req.query.tag.replace(/^#/, "").toLowerCase().slice(0, 30) : "";
   const challenge = idParam(req.query.challenge);
@@ -62,9 +63,21 @@ router.get("/posts/feed", requireUser, async (req: ApexRequest, res): Promise<vo
   if (tab === "following" && !circle) where.push(inArray(socialPostsTable.userId, [me, ...following]));
   if (tag) where.push(sql`${socialPostsTable.tags} @> ${JSON.stringify([tag])}::jsonb`);
   if (challenge) where.push(eq(socialPostsTable.challengeId, challenge));
+  if (momentToday) where.push(eq(socialPostsTable.momentDay, momentDay()));
+
+  // Trending: the most liked and discussed posts of the last 7 days (cursor "t<offset>")
+  if (tab === "trending" && !circle) {
+    const offset = rawCursor.startsWith("t") ? Math.max(0, parseInt(rawCursor.slice(1), 10) || 0) : 0;
+    const rows = await db.select().from(socialPostsTable)
+      .where(and(...where, gt(socialPostsTable.createdAt, new Date(Date.now() - 7 * 86_400_000))))
+      .orderBy(desc(sql`${socialPostsTable.reactionCount} + 2 * ${socialPostsTable.commentCount}`), desc(socialPostsTable.id)).limit(PAGE + 1).offset(offset);
+    const page = rows.slice(0, PAGE);
+    res.json({ ok: true, data: { posts: await present(page, me), nextCursor: rows.length > PAGE ? `t${offset + PAGE}` : null } });
+    return;
+  }
 
   // For You without filters is ranked (cursor "r<offset>"); everything else, and older posts after the ranked list, is newest first
-  if (tab === "foryou" && !tag && !challenge && !circle && (!rawCursor || rawCursor.startsWith("r"))) {
+  if (tab === "foryou" && !tag && !challenge && !circle && !momentToday && (!rawCursor || rawCursor.startsWith("r"))) {
     const offset = rawCursor ? Math.max(0, parseInt(rawCursor.slice(1), 10) || 0) : 0;
     const order = await forYouOrder(me, following, where, offset === 0);
     const pageIds = order.slice(offset, offset + PAGE);
@@ -115,13 +128,17 @@ router.get("/posts/ideas", requireUser, (_req, res): void => {
 // ── Creating ──────────────────────────────────────────────────────────────────
 
 const PostBody = z.object({
-  kind: z.enum(["text", "photo", "poll", "game", "moment", "debate", "ask"]),
+  kind: z.enum(["text", "photo", "poll", "game", "moment", "debate", "ask", "video", "voice"]),
   body: z.string().trim().max(2000).default(""),
   mediaId: z.number().int().positive().optional(),
+  /** Reel or voice note from /media/upload */
+  blobId: z.number().int().positive().optional(),
   pollOptions: z.array(z.string().trim().min(1).max(80)).min(2).max(4).optional(),
   gameId: z.number().int().positive().optional(),
   location: z.string().trim().max(60).optional(),
   challengeId: z.number().int().positive().optional(),
+  /** Counts as an answer to today's Apex Moment (any kind of post: text, photo, video, voice, poll) */
+  momentAnswer: z.boolean().optional(),
   /** Post into a circle you're in */
   circleId: z.number().int().positive().optional(),
   /** ask posts: Apex's answer and the token /social-ai/ask returned with it */
@@ -140,6 +157,11 @@ router.post("/posts", requireUser, async (req: ApexRequest, res): Promise<void> 
   const [recent] = await db.select({ n: sql<number>`count(*)::int` }).from(socialPostsTable).where(and(eq(socialPostsTable.userId, me), gt(socialPostsTable.createdAt, new Date(Date.now() - 3_600_000))));
   if ((recent?.n ?? 0) >= 30) { res.status(429).json({ ok: false, error: "You're posting a lot. Take a breather and try again in a bit." }); return; }
 
+  if ((p.kind === "video" || p.kind === "voice") && !p.blobId) { res.status(400).json({ ok: false, error: p.kind === "video" ? "Add a video first." : "Record something first." }); return; }
+  if (p.blobId) {
+    const [b] = await db.select({ userId: socialMediaBlobsTable.userId, kind: socialMediaBlobsTable.kind }).from(socialMediaBlobsTable).where(eq(socialMediaBlobsTable.id, p.blobId)).limit(1);
+    if (!b || b.userId !== me || b.kind !== (p.kind === "video" ? "video" : "audio")) { res.status(400).json({ ok: false, error: "That upload didn't finish. Try again." }); return; }
+  }
   if (p.kind === "photo" && !p.mediaId) { res.status(400).json({ ok: false, error: "Add a photo first." }); return; }
   if (p.kind === "poll" && !p.pollOptions) { res.status(400).json({ ok: false, error: "A poll needs at least two choices." }); return; }
   if (p.kind === "game" && !p.gameId) { res.status(400).json({ ok: false, error: "Pick a game to share." }); return; }
@@ -169,9 +191,10 @@ router.post("/posts", requireUser, async (req: ApexRequest, res): Promise<void> 
     kind: p.kind,
     body: p.body,
     mediaId: p.mediaId ?? null,
+    blobId: p.kind === "video" || p.kind === "voice" ? p.blobId ?? null : null,
     pollOptions: p.kind === "poll" || p.kind === "debate" ? p.pollOptions : null,
     gameId: p.gameId ?? null,
-    momentDay: p.kind === "moment" ? momentDay() : null,
+    momentDay: p.kind === "moment" || p.momentAnswer ? momentDay() : null,
     location: p.location || null,
     challengeId: p.challengeId ?? null,
     circleId: p.circleId ?? null,
@@ -225,8 +248,10 @@ router.get("/posts/:id", requireUser, async (req: ApexRequest, res): Promise<voi
 router.delete("/posts/:id", requireUser, async (req: ApexRequest, res): Promise<void> => {
   const id = idParam(req.params.id);
   if (!id) { res.status(404).json({ ok: false, error: "Not found." }); return; }
-  const updated = await db.update(socialPostsTable).set({ deleted: true }).where(and(eq(socialPostsTable.id, id), eq(socialPostsTable.userId, req.userId!))).returning({ id: socialPostsTable.id });
+  const updated = await db.update(socialPostsTable).set({ deleted: true }).where(and(eq(socialPostsTable.id, id), eq(socialPostsTable.userId, req.userId!))).returning({ id: socialPostsTable.id, blobId: socialPostsTable.blobId });
   if (!updated.length) { res.status(404).json({ ok: false, error: "You can only delete your own posts." }); return; }
+  // A deleted reel or voice note frees the person's storage
+  if (updated[0]!.blobId) await db.delete(socialMediaBlobsTable).where(eq(socialMediaBlobsTable.id, updated[0]!.blobId));
   res.json({ ok: true, data: { deleted: true } });
 });
 

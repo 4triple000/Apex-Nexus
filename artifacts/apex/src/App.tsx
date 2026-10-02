@@ -34,6 +34,13 @@ const StudioPage = lazy(() => import("@/pages/studio"));
 const StudioProjectPage = lazy(() => import("@/pages/studio").then((m) => ({ default: m.StudioProjectPage })));
 const MarketplacePage = lazy(() => import("@/pages/marketplace"));
 const SocialPage = lazy(() => import("@/pages/social"));
+const SocialCreatePage = lazy(() => import("@/pages/social/CreatePage"));
+const SocialMomentsPage = lazy(() => import("@/pages/social/MomentsPage"));
+const SocialPostPage = lazy(() => import("@/pages/social/PostPage"));
+const SocialDebatePage = lazy(() => import("@/pages/social/DebatePage"));
+const SocialChallengesPage = lazy(() => import("@/pages/social/ChallengesPage"));
+const SocialProfilePage = lazy(() => import("@/pages/social/ProfilePage"));
+const SocialReelsPage = lazy(() => import("@/pages/social/ReelsPage"));
 const ConnectorsPage = lazy(() => import("@/pages/connectors"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const PricingPage = lazy(() => import("@/pages/pricing"));
@@ -164,6 +171,13 @@ function Router() {
               <Route path="/studio" component={StudioPage} />
               <Route path="/marketplace" component={MarketplacePage} />
               <Route path="/feed" component={SocialPage} />
+              <Route path="/feed/create" component={SocialCreatePage} />
+              <Route path="/feed/moments" component={SocialMomentsPage} />
+              <Route path="/feed/post/:id" component={SocialPostPage} />
+              <Route path="/feed/debate/:id" component={SocialDebatePage} />
+              <Route path="/feed/challenges" component={SocialChallengesPage} />
+              <Route path="/feed/reels" component={SocialReelsPage} />
+              <Route path="/u/:id" component={SocialProfilePage} />
               <Route path="/connectors" component={ConnectorsPage} />
               <Route path="/profile" component={ProfilePage} />
               <Route path="/profile/:userId" component={ProfilePage} />

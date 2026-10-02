@@ -9,12 +9,15 @@ import { socialApi, compact, endsIn, type Challenge, type Post } from "@/lib/soc
 import { S, card, Sheet, primaryBtn, ghostBtn, sceneFor, SectionLabel } from "./ui";
 import { PostCard } from "./PostCard";
 
-export function ChallengesRow({ onOpen, onStart }: { onOpen: (id: number) => void; onStart: () => void }) {
+export function ChallengesRow({ onOpen, onStart, onSeeAll }: { onOpen: (id: number) => void; onStart: () => void; onSeeAll?: () => void }) {
   const { data, error, refetch } = useQuery({ queryKey: ["social-challenges"], queryFn: socialApi.challenges, staleTime: 60_000 });
   const active = data?.active ?? [];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <SectionLabel sub="Join in, or start your own">Challenges</SectionLabel>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+        <SectionLabel sub="Join in, or start your own">Challenges</SectionLabel>
+        {onSeeAll ? <button onClick={onSeeAll} style={{ background: "none", border: 0, color: S.gold, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>See all</button> : null}
+      </div>
       {error ? (
         <div role="alert" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: "#FF8A8A" }}>
           Couldn't load challenges. <button onClick={() => void refetch()} style={ghostBtn({ height: 28, padding: "0 10px", fontSize: 12 })}>Try again</button>

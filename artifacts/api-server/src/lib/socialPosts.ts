@@ -2,7 +2,7 @@
 import {
   db, usersTable, followsTable, notificationsTable, gameFeedTable, socialChallengesTable,
   socialPostsTable, socialPostMediaTable, postReactionsTable, pollVotesTable, userBlocksTable,
-  socialCirclesTable, circleMembersTable,
+  socialCirclesTable, circleMembersTable, socialMediaBlobsTable,
 } from "@workspace/db";
 import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { promptFor } from "./moments";
@@ -69,9 +69,10 @@ export async function present(rows: PostRow[], viewerId: number) {
   const gameIds = rows.map((r) => r.gameId).filter((x): x is number => !!x);
   const pollIds = rows.filter((r) => r.kind === "poll" || r.kind === "debate").map((r) => r.id);
   const challengeIds = [...new Set(rows.map((r) => r.challengeId).filter((x): x is number => !!x))];
+  const blobIds = rows.map((r) => r.blobId).filter((x): x is number => !!x);
   const circleIdsHere = [...new Set(rows.map((r) => r.circleId).filter((x): x is number => !!x))];
 
-  const [authors, reacted, media, games, votes, myVotes, challenges, circles] = await Promise.all([
+  const [authors, reacted, media, games, votes, myVotes, challenges, circles, blobs] = await Promise.all([
     db.select({ id: usersTable.id, username: usersTable.username, avatarEmoji: usersTable.avatarEmoji, avatarUrl: usersTable.avatarUrl }).from(usersTable).where(inArray(usersTable.id, authorIds)),
     db.select({ postId: postReactionsTable.postId }).from(postReactionsTable).where(and(eq(postReactionsTable.userId, viewerId), inArray(postReactionsTable.postId, ids))),
     mediaIds.length ? db.select({ id: socialPostMediaTable.id, key: socialPostMediaTable.key, width: socialPostMediaTable.width, height: socialPostMediaTable.height }).from(socialPostMediaTable).where(inArray(socialPostMediaTable.id, mediaIds)) : Promise.resolve([]),
@@ -80,7 +81,9 @@ export async function present(rows: PostRow[], viewerId: number) {
     pollIds.length ? db.select({ postId: pollVotesTable.postId, option: pollVotesTable.option }).from(pollVotesTable).where(and(eq(pollVotesTable.userId, viewerId), inArray(pollVotesTable.postId, pollIds))) : Promise.resolve([]),
     challengeIds.length ? db.select({ id: socialChallengesTable.id, title: socialChallengesTable.title, tag: socialChallengesTable.tag }).from(socialChallengesTable).where(inArray(socialChallengesTable.id, challengeIds)) : Promise.resolve([]),
     circleIdsHere.length ? db.select({ id: socialCirclesTable.id, name: socialCirclesTable.name, emoji: socialCirclesTable.emoji }).from(socialCirclesTable).where(inArray(socialCirclesTable.id, circleIdsHere)) : Promise.resolve([]),
+    blobIds.length ? db.select({ id: socialMediaBlobsTable.id, key: socialMediaBlobsTable.key, kind: socialMediaBlobsTable.kind, mime: socialMediaBlobsTable.mime, durationMs: socialMediaBlobsTable.durationMs, width: socialMediaBlobsTable.width, height: socialMediaBlobsTable.height }).from(socialMediaBlobsTable).where(inArray(socialMediaBlobsTable.id, blobIds)) : Promise.resolve([]),
   ]);
+  const byBlob = new Map(blobs.map((b) => [b.id, b]));
   const byCircle = new Map(circles.map((c) => [c.id, c]));
   const byChallenge = new Map(challenges.map((c) => [c.id, c]));
   const byAuthor = new Map(authors.map((a) => [a.id, a]));
@@ -107,7 +110,7 @@ export async function present(rows: PostRow[], viewerId: number) {
       reacted: reactedSet.has(r.id),
       mine: r.userId === viewerId,
       author: byAuthor.get(r.userId) ?? { id: r.userId, username: "Someone", avatarEmoji: "🙂", avatarUrl: null },
-      media: m ? { url: `/api/posts/media/${m.key}`, width: m.width, height: m.height } : null,
+      media: m && r.kind !== "video" ? { url: `/api/posts/media/${m.key}`, width: m.width, height: m.height } : null,
       poll: r.kind === "poll" ? { options, counts, total: counts.reduce((a, b) => a + b, 0), myVote: myVote.get(r.id) ?? null } : null,
       game: g ? { id: g.id, name: g.name, creatorName: g.creatorName, playCount: g.playCount, likeCount: g.likeCount, mode: (g.gameConfig as { gameMode?: string } | null)?.gameMode ?? null } : null,
       moment: r.momentDay ? { day: r.momentDay, prompt: promptFor(r.momentDay) } : null,
@@ -115,6 +118,8 @@ export async function present(rows: PostRow[], viewerId: number) {
       answer: r.kind === "ask" ? r.aiText : null,
       challenge: r.challengeId && byChallenge.get(r.challengeId) ? byChallenge.get(r.challengeId)! : null,
       circle: r.circleId && byCircle.get(r.circleId) ? byCircle.get(r.circleId)! : null,
+      video: r.kind === "video" && r.blobId && byBlob.get(r.blobId) ? (() => { const b = byBlob.get(r.blobId!)!; return { url: `/api/media/${b.key}`, mime: b.mime, durationMs: b.durationMs, width: b.width, height: b.height, poster: m ? `/api/posts/media/${m.key}` : null }; })() : null,
+      audio: r.kind === "voice" && r.blobId && byBlob.get(r.blobId) ? (() => { const b = byBlob.get(r.blobId!)!; return { url: `/api/media/${b.key}`, mime: b.mime, durationMs: b.durationMs }; })() : null,
     };
   });
 }

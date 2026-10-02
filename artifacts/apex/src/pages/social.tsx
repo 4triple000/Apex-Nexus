@@ -1,45 +1,44 @@
 /**
- * Social — the Apex feed. Apex Moment, trending tags, For You / Following, posts that load as you scroll,
- * and the + button that opens Create. Near-black glass with a soft gold accent.
+ * Social home (the mockup's "Apex" screen): stories, today's Apex Moment, trending tags, reels,
+ * challenges and circles, then the feed with For You / Following / Trending.
+ * Creating happens on /feed/create (the + button); each post opens on its own page.
  */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, X, Loader2 } from "lucide-react";
+import { Plus, X, Loader2, Search, MessageSquareText } from "lucide-react";
 import { NotificationBell } from "@/components/social/NotificationBell";
 import { PostCard } from "@/components/social/PostCard";
-import { CreateSheet, Composer, type ComposeMode, type CreatePick } from "@/components/social/Create";
-import { CommentsSheet } from "@/components/social/Comments";
-import { AskSheet } from "@/components/social/AskApex";
-import { ChallengesRow, ChallengeSheet, StartChallengeSheet } from "@/components/social/Challenges";
-import { StoryTray, StoryViewer, StoryComposer } from "@/components/social/Stories";
+import { ChallengesRow, ChallengeSheet } from "@/components/social/Challenges";
+import { StoryTray, StoryViewer } from "@/components/social/Stories";
 import { CirclesRow, CircleSheet, FindCirclesSheet } from "@/components/social/Circles";
-import { S, card, Avatar, SectionLabel, primaryBtn, sceneFor } from "@/components/social/ui";
-import { socialApi, compact, type Challenge, type Circle, type Post, type StoryGroup } from "@/lib/socialApi";
+import { ReelsStrip } from "@/components/social/Reels";
+import { SearchSheet } from "@/components/social/Search";
+import { useCreateFlow } from "@/components/social/CreateFlow";
+import { S, card, Avatar, SectionLabel, primaryBtn, sceneFor, iconBtn } from "@/components/social/ui";
+import { socialApi, compact, type Challenge, type Post, type StoryGroup } from "@/lib/socialApi";
 import { useExplore, useFollow, useMyProfile } from "@/hooks/useSocial";
 
 type Page = { posts: Post[]; nextCursor: string | null };
+type Tab = "foryou" | "following" | "trending";
 const STARTER_TAGS = ["apexmoments", "showyoursetup", "finishthebar", "gaming", "aiart", "music"];
 
 export default function SocialPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"foryou" | "following">("foryou");
-  const [tag, setTag] = useState<string>("");
-  const [createOpen, setCreateOpen] = useState(false);
-  const [compose, setCompose] = useState<{ mode: ComposeMode; idea?: string; challengeId?: number; circle?: Circle } | null>(null);
+  const [, nav] = useLocation();
+  const params = useMemo(() => new URLSearchParams(window.location.search), []);
+  const [tab, setTab] = useState<Tab>("foryou");
+  const [tag, setTag] = useState<string>(() => params.get("tag") ?? "");
   const [stories, setStories] = useState<{ groups: StoryGroup[]; index: number } | null>(null);
-  const [storyComposer, setStoryComposer] = useState(false);
   const [circleOpen, setCircleOpen] = useState<number | null>(null);
   const [findCircles, setFindCircles] = useState(false);
-  const [commentsFor, setCommentsFor] = useState<Post | null>(null);
-  const [askOpen, setAskOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [challengeOpen, setChallengeOpen] = useState<number | null>(null);
-  // "Start a challenge" remembers where it was opened: from the composer it goes straight back to entering it
-  const [startOpen, setStartOpen] = useState<null | "row" | "composer">(null);
-  const [challengeFilter, setChallengeFilter] = useState<{ id: number; title: string } | null>(null);
+  const [challengeFilter, setChallengeFilter] = useState<{ id: number; title: string } | null>(() => (Number(params.get("challenge")) ? { id: Number(params.get("challenge")), title: "this challenge" } : null));
   const sentinel = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
+  const create = useCreateFlow();
   // Layout renders this page for both mobile and desktop and hides one with CSS; only the shown copy gets the + button
   const [shown, setShown] = useState(false);
   useEffect(() => {
@@ -48,11 +47,13 @@ export default function SocialPage() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-  const sharedId = useMemo(() => Number(new URLSearchParams(window.location.search).get("post")) || null, []);
+  // /feed?circle=3 opens that circle (only in the copy of the page that's on screen)
+  useEffect(() => { const id = Number(params.get("circle")); if (shown && id) setCircleOpen(id); }, [shown, params]);
+  // Old share links (/feed?post=12) open the post's page
+  useEffect(() => { const id = Number(params.get("post")); if (id) nav(`/feed/post/${id}`, { replace: true }); }, [params, nav]);
 
   const moment = useQuery({ queryKey: ["social-moment"], queryFn: socialApi.moment, staleTime: 60_000 });
   const trending = useQuery({ queryKey: ["social-trending"], queryFn: socialApi.trending, staleTime: 120_000 });
-  const shared = useQuery({ queryKey: ["social-shared", sharedId], enabled: !!sharedId, queryFn: () => socialApi.get(sharedId!).catch(() => null), retry: false });
 
   const feedKey = ["social-feed", tab, tag, challengeFilter?.id ?? 0];
   const feed = useInfiniteQuery({
@@ -81,80 +82,66 @@ export default function SocialPage() {
   const editPages = useCallback((fn: (p: Post[]) => Post[]) => {
     qc.setQueriesData<InfiniteData<Page>>({ queryKey: ["social-feed"] }, (old) => old && { ...old, pages: old.pages.map((pg) => ({ ...pg, posts: fn(pg.posts) })) });
   }, [qc]);
-
-  const updatePost = (p: Post) => {
-    editPages((list) => list.map((x) => (x.id === p.id ? p : x)));
-    if (shared.data?.id === p.id) qc.setQueryData(["social-shared", sharedId], p);
-  };
+  const updatePost = (p: Post) => editPages((list) => list.map((x) => (x.id === p.id ? p : x)));
   const removePost = (id: number, blockedAuthor?: number) => editPages((list) => list.filter((x) => x.id !== id && x.author.id !== blockedAuthor));
-  const countChange = (postId: number, delta: number) => {
-    editPages((list) => list.map((x) => (x.id === postId ? { ...x, commentCount: Math.max(0, x.commentCount + delta) } : x)));
-    setCommentsFor((c) => (c && c.id === postId ? { ...c, commentCount: Math.max(0, c.commentCount + delta) } : c));
-  };
-  const posted = (p: Post) => {
-    qc.setQueryData<InfiniteData<Page>>(["social-feed", tab, "", 0], (old) => old && { ...old, pages: old.pages.map((pg, i) => (i === 0 ? { ...pg, posts: [p, ...pg.posts] } : pg)) });
-    if (tag) setTag("");
-    if (challengeFilter) setChallengeFilter(null);
-    if (p.kind === "moment") void qc.invalidateQueries({ queryKey: ["social-moment"] });
-    void qc.invalidateQueries({ queryKey: ["social-trending"] });
-  };
 
-  const pickTag = (t: string) => { setTag(t); setChallengeFilter(null); setChallengeOpen(null); setCircleOpen(null); root.current?.scrollTo({ top: 0, behavior: "smooth" }); };
-  const pick = (mode: CreatePick, idea?: string) => {
-    setCreateOpen(false);
-    if (mode === "ask") setAskOpen(true);
-    else setCompose({ mode, idea });
-  };
-  const joinChallenge = (c: Challenge) => { setChallengeOpen(null); setCompose({ mode: "challenge", challengeId: c.id }); };
-  const seeAllEntries = (c: Challenge) => { setChallengeOpen(null); setTag(""); setChallengeFilter({ id: c.id, title: c.title }); root.current?.scrollTo({ top: 0, behavior: "smooth" }); };
+  const top = () => root.current?.scrollTo({ top: 0, behavior: "smooth" });
+  const pickTag = (t: string) => { setTag(t); setChallengeFilter(null); setChallengeOpen(null); setCircleOpen(null); top(); };
+  const joinChallenge = (c: Challenge) => { setChallengeOpen(null); create.start("challenge", { challengeId: c.id }); };
+  const seeAllEntries = (c: Challenge) => { setChallengeOpen(null); setTag(""); setChallengeFilter({ id: c.id, title: c.title }); top(); };
   const filtered = !!tag || !!challengeFilter;
   const tags = trending.data?.length ? trending.data : STARTER_TAGS.map((t) => ({ tag: t, count: 0 }));
+  const headerBtn = { ...iconBtn, color: S.ink, width: 38, height: 38 };
 
   return (
     <div ref={root} className="mg-font" style={{ flex: 1, overflowY: "auto", background: S.bg, color: S.ink, padding: "0 16px 48px" }}>
       {/* Social is a full screen: it starts at the very top, and posts scroll under the ☰ button behind this fade */}
       <div aria-hidden style={{ position: "sticky", top: 0, zIndex: 5, height: 64, margin: "0 -16px", background: `linear-gradient(${S.bg} 45%, rgba(10,10,12,0))`, pointerEvents: "none" }} />
       <div style={{ maxWidth: 620, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: -4 }}>
-          <h1 className="mg-display" style={{ margin: 0, fontSize: 26, fontWeight: 700, letterSpacing: "-0.02em" }}>Social</h1>
+        <header style={{ display: "flex", alignItems: "center", gap: 2, marginTop: -4 }}>
+          <h1 className="mg-display" style={{ margin: 0, fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em", flexGrow: 1 }}>Apex</h1>
+          <button onClick={() => setSearchOpen(true)} aria-label="Search" style={headerBtn}><Search size={20} /></button>
           <NotificationBell />
+          <button onClick={() => nav("/dm")} aria-label="Messages" style={headerBtn}><MessageSquareText size={20} /></button>
+          <button onClick={() => nav("/u/me")} aria-label="Your profile" style={{ ...headerBtn, marginLeft: 2 }}><MeAvatar /></button>
         </header>
 
-        <StoryTray onOpen={(groups, index) => setStories({ groups, index })} onAdd={() => setStoryComposer(true)} />
+        <StoryTray onOpen={(groups, index) => setStories({ groups, index })} onAdd={() => create.start("story")} />
 
         {/* Apex Moment */}
-        <SectionLabel>Apex Moment</SectionLabel>
+        <SectionLabel>APEX MOMENT</SectionLabel>
         <MomentCard
           prompt={moment.data?.prompt}
           answered={!!moment.data?.answered}
           answers={moment.data?.answers ?? 0}
           friends={moment.data?.friends ?? []}
-          onRespond={() => setCompose({ mode: "moment" })}
+          onRespond={() => nav("/feed/moments")}
         />
 
         {/* Trending */}
-        <SectionLabel sub={trending.data?.length ? "See what's buzzing on Apex" : "Post with a tag to start a trend"}>Trending now</SectionLabel>
+        <SectionLabel sub={trending.data?.length ? "See what's buzzing on Apex" : "Post with a tag to start a trend"}>TRENDING NOW</SectionLabel>
         <div style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", margin: "0 -16px", padding: "0 16px" }}>
           {tags.map((t) => (
             <button key={t.tag} onClick={() => pickTag(t.tag)} aria-pressed={tag === t.tag}
-              style={{ width: 116, flexShrink: 0, borderRadius: 14, overflow: "hidden", background: S.surf, border: `1px solid ${tag === t.tag ? "rgba(255,255,255,0.4)" : S.line}`, padding: 0, cursor: "pointer", textAlign: "left", color: S.ink, fontFamily: "Manrope, sans-serif" }}>
-              <span aria-hidden style={{ display: "block", height: 74, background: sceneFor(t.tag) }} />
+              style={{ width: 112, flexShrink: 0, borderRadius: 14, overflow: "hidden", background: S.surf, border: `1px solid ${tag === t.tag ? "rgba(255,255,255,0.4)" : S.line}`, padding: 0, cursor: "pointer", textAlign: "left", color: S.ink, fontFamily: "Manrope, sans-serif" }}>
+              <span aria-hidden style={{ display: "block", height: 78, background: sceneFor(t.tag) }} />
               <span style={{ display: "block", padding: "8px 9px" }}>
-                <span style={{ display: "block", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>#{t.tag}</span>
+                <span style={{ display: "block", fontSize: 11.5, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>#{t.tag}</span>
                 <span style={{ display: "block", fontSize: 10.5, color: S.ink3, marginTop: 2 }}>{t.count ? `${compact(t.count)} post${t.count === 1 ? "" : "s"}` : "Be the first"}</span>
               </span>
             </button>
           ))}
         </div>
 
-        <ChallengesRow onOpen={setChallengeOpen} onStart={() => setStartOpen("row")} />
+        <ReelsStrip onCreate={() => create.start("video")} />
+        <ChallengesRow onOpen={setChallengeOpen} onStart={create.startChallenge} onSeeAll={() => nav("/feed/challenges")} />
         <CirclesRow onOpen={setCircleOpen} onFind={() => setFindCircles(true)} />
 
         {/* Tabs */}
-        <div role="tablist" aria-label="Feed" style={{ display: "flex", gap: 22, borderBottom: `1px solid ${S.line}`, fontSize: 14, fontWeight: 700 }}>
-          {([["foryou", "For You"], ["following", "Following"]] as const).map(([id, label]) => (
+        <div role="tablist" aria-label="Feed" style={{ display: "flex", gap: 22, borderBottom: `1px solid ${S.line}`, fontSize: 13.5, fontWeight: 700 }}>
+          {([["foryou", "For You"], ["following", "Following"], ["trending", "Trending"]] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-              style={{ background: "none", border: 0, padding: "10px 0", marginBottom: -1, color: tab === id ? S.ink : S.ink3, borderBottom: `2px solid ${tab === id ? S.gold : "transparent"}`, font: "inherit", cursor: "pointer" }}>
+              style={{ background: "none", border: 0, padding: "8px 0", marginBottom: -1, color: tab === id ? S.ink : S.ink3, borderBottom: `2px solid ${tab === id ? S.gold : "transparent"}`, font: "inherit", cursor: "pointer" }}>
               {label}
             </button>
           ))}
@@ -167,26 +154,19 @@ export default function SocialPage() {
           </div>
         ) : null}
 
-        {shared.data && !filtered ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <SectionLabel>Shared with you</SectionLabel>
-            <PostCard post={shared.data} onChange={updatePost} onRemove={() => qc.setQueryData(["social-shared", sharedId], null)} onOpenComments={setCommentsFor} onTag={pickTag} onChallenge={setChallengeOpen} onCircle={setCircleOpen} />
-          </div>
-        ) : null}
-
         {/* Feed */}
         {feed.isLoading ? <Skeletons /> : null}
         {feed.error ? <div style={{ ...card, padding: 16, fontSize: 13.5, color: "#FF8A8A" }}>{(feed.error as Error).message}</div> : null}
         {!feed.isLoading && !posts.length && !feed.error ? (
           <div style={{ ...card, padding: 24, textAlign: "center", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
-            <div style={{ fontFamily: "Sora, sans-serif", fontSize: 17, fontWeight: 700 }}>{tab === "following" ? "Nothing from people you follow yet" : challengeFilter ? "No entries you can see yet" : tag ? `No posts tagged #${tag} yet` : "No posts yet"}</div>
+            <div style={{ fontFamily: "Sora, sans-serif", fontSize: 17, fontWeight: 700 }}>{tab === "following" ? "Nothing from people you follow yet" : tab === "trending" ? "Nothing trending this week yet" : challengeFilter ? "No entries you can see yet" : tag ? `No posts tagged #${tag} yet` : "No posts yet"}</div>
             <div style={{ fontSize: 13.5, color: S.ink2 }}>{tab === "following" ? "Follow a few creators and their posts will show up here." : "Be the first. Share what you're working on."}</div>
-            <button onClick={() => setCreateOpen(true)} style={primaryBtn({ marginTop: 4 })}><Plus size={16} /> Create a post</button>
+            <button onClick={() => nav("/feed/create")} style={primaryBtn({ marginTop: 4 })}><Plus size={16} /> Create a post</button>
           </div>
         ) : null}
         {posts.map((p, i) => (
           <Fragment key={p.id}>
-            <PostCard post={p} onChange={updatePost} onRemove={removePost} onOpenComments={setCommentsFor} onTag={pickTag} onChallenge={setChallengeOpen} onCircle={setCircleOpen} />
+            <PostCard post={p} onChange={updatePost} onRemove={removePost} onTag={pickTag} onChallenge={setChallengeOpen} onCircle={setCircleOpen} />
             {i === 1 && tab === "foryou" && !filtered ? <PeopleToFollow /> : null}
           </Fragment>
         ))}
@@ -197,30 +177,28 @@ export default function SocialPage() {
       </div>
 
       {shown && createPortal(
-        <button onClick={() => setCreateOpen(true)} aria-label="Create"
+        <button onClick={() => nav("/feed/create")} aria-label="Create"
           style={{ position: "fixed", right: 22, bottom: 104, zIndex: 50, width: 56, height: 56, borderRadius: "50%", border: 0, background: S.btn, color: S.btnText, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 10px 28px rgba(0,0,0,0.55)" }}>
           <Plus size={26} strokeWidth={2.4} />
         </button>,
         document.body,
       )}
 
-      <CreateSheet open={createOpen} onClose={() => setCreateOpen(false)} onPick={pick} />
-      <Composer open={!!compose} mode={compose?.mode ?? "text"} idea={compose?.idea} challengeId={compose?.challengeId} circle={compose?.circle} prompt={moment.data?.prompt} onClose={() => setCompose(null)} onPosted={posted}
-        onStartChallenge={() => { setCompose(null); setStartOpen("composer"); }} />
       {stories ? <StoryViewer groups={stories.groups} start={stories.index} onClose={() => setStories(null)} /> : null}
-      <StoryComposer open={storyComposer} onClose={() => setStoryComposer(false)} />
-      <CircleSheet id={circleOpen} onClose={() => setCircleOpen(null)} onPost={(c) => { setCircleOpen(null); setCompose({ mode: "text", circle: c }); }}
-        onOpenComments={(p) => { setCircleOpen(null); setCommentsFor(p); }} onTag={pickTag} onPostChange={updatePost} />
+      <CircleSheet id={circleOpen} onClose={() => setCircleOpen(null)} onPost={(c) => { setCircleOpen(null); create.start("text", { circle: { id: c.id, name: c.name, emoji: c.emoji } }); }}
+        onOpenComments={(p) => { setCircleOpen(null); nav(`/feed/post/${p.id}`); }} onTag={pickTag} onPostChange={updatePost} />
       <FindCirclesSheet open={findCircles} onClose={() => setFindCircles(false)} onOpen={(id) => { setFindCircles(false); setCircleOpen(id); }} />
-      <AskSheet open={askOpen} onClose={() => setAskOpen(false)} onPosted={posted} />
       <ChallengeSheet id={challengeOpen} onClose={() => setChallengeOpen(null)} onJoin={joinChallenge} onSeeAll={seeAllEntries}
-        onPostChange={updatePost} onOpenComments={(p) => { setChallengeOpen(null); setCommentsFor(p); }} onTag={pickTag} />
-      <StartChallengeSheet open={!!startOpen} onClose={() => setStartOpen(null)}
-        onStarted={(c) => { const from = startOpen; setStartOpen(null); if (from === "composer") setCompose({ mode: "challenge", challengeId: c.id }); else setChallengeOpen(c.id); }} />
-      <CommentsSheet post={commentsFor} onClose={() => setCommentsFor(null)} onCountChange={countChange} />
+        onPostChange={updatePost} onOpenComments={(p) => { setChallengeOpen(null); nav(`/feed/post/${p.id}`); }} onTag={pickTag} />
+      <SearchSheet open={searchOpen} onClose={() => setSearchOpen(false)} onTag={pickTag} onCircle={setCircleOpen} />
+      {create.ui}
     </div>
   );
+}
 
+function MeAvatar() {
+  const me = useMyProfile().data?.user;
+  return <Avatar user={{ username: me?.username ?? "You", avatarUrl: null, avatarEmoji: null }} size={28} />;
 }
 
 function MomentCard({ prompt, answered, answers, friends, onRespond }: { prompt?: string; answered: boolean; answers: number; friends: { username: string; avatarUrl: string | null; avatarEmoji: string | null }[]; onRespond: () => void }) {
@@ -260,7 +238,7 @@ function PeopleToFollow() {
       <div style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", margin: "0 -16px", padding: "0 16px" }}>
         {people.map((c) => (
           <div key={c.id} style={{ ...card, width: 128, flexShrink: 0, padding: "14px 10px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, textAlign: "center" }}>
-            <button onClick={() => nav(`/profile/${c.id}`)} aria-label={`Open ${c.username}'s profile`} style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}>
+            <button onClick={() => nav(`/u/${c.id}`)} aria-label={`Open ${c.username}'s profile`} style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}>
               <Avatar user={{ username: c.username, avatarUrl: null, avatarEmoji: c.avatarEmoji }} size={52} />
             </button>
             <div style={{ fontSize: 13, fontWeight: 700, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.username}</div>
