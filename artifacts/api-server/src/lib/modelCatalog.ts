@@ -4,6 +4,7 @@
  * Chat models answer in Apex chat; the others power creative tools (worlds, 3D, images, voices, video).
  */
 import { isOpenAIConfigured } from "@workspace/integrations-openai-ai-server";
+import { freePoolConfigured } from "./freeModels";
 
 export type ModelCategory = "chat" | "game" | "image" | "audio" | "video" | "editing";
 export type BestFor = "Everyday" | "Game dev" | "Video" | "Creators" | "Research" | "Code";
@@ -41,6 +42,8 @@ export const MODEL_CATALOG: CatalogModel[] = [
     tagline: "Strong reasoning and code at a low cost", bestFor: ["Code", "Game dev"] },
   { id: "mistral", name: "Mistral", maker: "Mistral AI", category: "chat", chat: true, color: "#FF7000", envKey: "MISTRAL_API_KEY", keyUrl: "https://console.mistral.ai/api-keys",
     tagline: "Fast and great in many languages", bestFor: ["Everyday"] },
+  { id: "free", name: "Apex Free", maker: "Groq · Cerebras · GitHub", category: "chat", chat: true, color: "#86EFAC", envKey: "GROQ_API_KEY", keyUrl: "https://console.groq.com/keys",
+    tagline: "Free open models, no credits used", bestFor: ["Everyday", "Code"] },
   { id: "llama", name: "Llama", maker: "Meta · via Groq", category: "chat", chat: true, color: "#0866FF", envKey: "GROQ_API_KEY", keyUrl: "https://console.groq.com/keys",
     tagline: "Open model with lightning-fast replies", bestFor: ["Everyday", "Game dev"] },
 
@@ -107,5 +110,6 @@ export const CATEGORY_LABELS: Record<ModelCategory, string> = {
 };
 
 export function isConnected(m: CatalogModel): boolean {
+  if (m.id === "free") return freePoolConfigured();
   return m.envKey === "OPENAI_API_KEY" ? isOpenAIConfigured() : !!process.env[m.envKey];
 }

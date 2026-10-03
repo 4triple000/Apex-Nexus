@@ -76,3 +76,20 @@ export const creditPurchasesTable = pgTable("credit_purchases", {
   stripeSessionId: text("stripe_session_id").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Daily use of the free model pool (Groq, Cerebras, GitHub Models, OpenRouter free).
+ * `key` is `model:<id>` (one free model), `group:<name>` (a limit several models share) or `user:<id>` (one person's free messages).
+ */
+export const freeModelUsageTable = pgTable(
+  "free_model_usage",
+  {
+    id: serial("id").primaryKey(),
+    day: text("day").notNull(), // YYYY-MM-DD (UTC)
+    key: text("key").notNull(),
+    requests: integer("requests").notNull().default(0),
+    tokens: bigint("tokens", { mode: "number" }).notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("free_model_usage_day_key").on(t.day, t.key)],
+);

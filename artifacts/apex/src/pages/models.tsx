@@ -5,7 +5,7 @@
 import { useMemo, useState, type ComponentType } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, ArrowUpRight, MessageCircle, Gamepad2 } from "lucide-react";
+import { Search, ArrowUpRight, MessageCircle, Gamepad2, Gift } from "lucide-react";
 import { RiOpenaiFill } from "react-icons/ri";
 import { SiClaude, SiPerplexity, SiGooglegemini, SiGoogle, SiX, SiDeepseek, SiMistralai, SiMeta, SiElevenlabs } from "react-icons/si";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,7 +21,7 @@ interface CatalogModel {
 const LOGOS: Record<string, ComponentType<{ size?: number; color?: string }>> = {
   openai: RiOpenaiFill, "gpt-image": RiOpenaiFill, whisper: RiOpenaiFill, sora: RiOpenaiFill,
   claude: SiClaude, perplexity: SiPerplexity, gemini: SiGooglegemini, veo: SiGoogle,
-  grok: SiX, deepseek: SiDeepseek, mistral: SiMistralai, llama: SiMeta, elevenlabs: SiElevenlabs,
+  grok: SiX, deepseek: SiDeepseek, mistral: SiMistralai, llama: SiMeta, free: Gift, elevenlabs: SiElevenlabs,
 };
 
 const USE_IN: Partial<Record<string, { label: string; to: string }>> = {

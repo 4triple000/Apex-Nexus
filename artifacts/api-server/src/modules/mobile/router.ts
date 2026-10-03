@@ -27,6 +27,7 @@ import {
 } from "@workspace/db";
 import { hashPassword, verifyPassword } from "./crypto";
 import { chatWithHistory, pickProvider, hasOwnKey } from "../../lib/aiRouter";
+import { freeLeftFor } from "../../lib/freeModels";
 import { creditUserFor, canSpend, outOfCredits, recordUsage, getBalance, creditCost } from "../../lib/credits";
 import { getUserKeys, appContextFor } from "../../lib/connectors";
 import { extractMemoryFromMessage, buildMemorySystemPrompt } from "../memory/extractor";
@@ -160,7 +161,7 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
   const schema = z.object({
     message: z.string().min(1).max(4000),
     conversationId: z.number().int().positive().optional(),
-    provider: z.enum(["auto", "openai", "claude", "perplexity", "gemini", "grok", "deepseek", "mistral", "llama"]).optional(),
+    provider: z.enum(["auto", "openai", "claude", "perplexity", "gemini", "grok", "deepseek", "mistral", "llama", "free"]).optional(),
     // From the app's Settings page
     tone: z.enum(["friend", "assistant", "formal", "creative"]).optional(),
     memory: z.boolean().optional(),
@@ -185,6 +186,10 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
   const check = await canSpend(who, needed);
   if (!check.ok) {
     res.status(429).json(outOfCredits(check.balance, needed));
+    return;
+  }
+  if (target === "free" && (await freeLeftFor(userId, who.isOwner)) === 0) {
+    res.status(429).json({ ok: false, error: "You've used today's free messages. They come back at midnight UTC, or pick another model.", code: "FREE_LIMIT" });
     return;
   }
 

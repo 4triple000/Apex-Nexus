@@ -7,12 +7,20 @@ import { requireUser } from "../shared/middleware/requireAuth";
 import type { ApexRequest } from "../shared/types";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { trackInteraction, getUserPersonalization } from "../lib/learningEngine";
+import { freeLeftFor, freePoolStatus } from "../lib/freeModels";
 
 const router: IRouter = Router();
 
 // Which AI models are connected, so the app can mark the others as "not connected"
 router.get("/chat/providers", (_req, res): void => {
   res.json({ providers: providerStatus() });
+});
+
+// Every free model and what's left of its daily allowance (plus this person's own free messages when signed in)
+router.get("/chat/free-models", async (req, res): Promise<void> => {
+  const pool = await freePoolStatus();
+  const who = await creditUserForSession(String(req.headers["x-session-id"] ?? "")).catch(() => null);
+  res.json({ ok: true, data: { ...pool, yourFreeLeft: who ? await freeLeftFor(who.userId, who.isOwner) : null } });
 });
 
 router.post("/chat", async (req, res): Promise<void> => {
@@ -40,6 +48,11 @@ router.post("/chat", async (req, res): Promise<void> => {
   const check = await canSpend(who, needed);
   if (!check.ok) {
     res.status(429).json(outOfCredits(check.balance, needed));
+    return;
+  }
+  // Apex Free costs no credits, but each person has a daily number of free messages
+  if (providers.includes("free") && (await freeLeftFor(who.userId, who.isOwner)) === 0) {
+    res.status(429).json({ error: "You've used today's free messages. They come back at midnight UTC, or pick another model.", code: "FREE_LIMIT" });
     return;
   }
 

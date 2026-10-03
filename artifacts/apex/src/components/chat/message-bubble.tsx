@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { RiOpenaiFill } from "react-icons/ri";
 import { SiClaude, SiPerplexity } from "react-icons/si";
-import { Volume2, VolumeX, ThumbsUp, Check, Sparkles, Zap, Copy, CheckCheck, Share2 } from "lucide-react";
+import { Volume2, VolumeX, ThumbsUp, Check, Sparkles, Zap, Copy, CheckCheck, Share2, Gift } from "lucide-react";
 import { ShareModal } from "@/components/share/ShareModal";
 import { ApexLogoMini } from "@/components/ui/ApexLogo";
 
@@ -100,6 +100,16 @@ export const PROVIDER_CONFIG: Record<string, ProviderCfg> = {
     border: "rgba(190,75,219,0.22)",
     rankBorder: "#BE4BDB",
   },
+  free: {
+    name: "Apex Free",
+    color: "#86EFAC",
+    glow: "rgba(134,239,172,0.24)",
+    glowStrong: "rgba(134,239,172,0.5)",
+    icon: Gift,
+    gradient: "linear-gradient(135deg, rgba(134,239,172,0.09) 0%, rgba(134,239,172,0.03) 100%)",
+    border: "rgba(134,239,172,0.22)",
+    rankBorder: "#86EFAC",
+  },
   auto: {
     name: "Apex AI",
     color: "#A29BFE",
@@ -118,6 +128,8 @@ interface MessageBubbleProps {
   content: string;
   prompt?: string;       // optional: user's question before this response
   provider?: string;
+  /** The exact model that answered (Apex Free picks one) */
+  model?: string;
   responseTime?: number;
   error?: string;
   showVoteButton?: boolean;
@@ -164,6 +176,7 @@ function AiBubble({
   content,
   prompt,
   provider,
+  model,
   responseTime,
   error,
   showVoteButton,
@@ -230,7 +243,7 @@ function AiBubble({
       >
         {/* Provider header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9, gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
             {safeProvider === "auto" ? (
               <ApexLogoMini size={14} state="idle" />
             ) : (
@@ -248,11 +261,12 @@ function AiBubble({
                 <ProviderIcon style={{ width: 10, height: 10, color: cfg.color, opacity: 0.85 }} />
               </>
             )}
-            <span style={{ fontSize: 10, fontWeight: 700, color: cfg.color, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: cfg.color, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>
               {cfg.name}
             </span>
+            {model ? <span style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{model}</span> : null}
             {responseTime !== undefined && (
-              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: "0.02em" }}>
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
                 {responseTime}ms
               </span>
             )}
@@ -565,6 +579,7 @@ export function MessageBubble({
   content,
   prompt,
   provider,
+  model,
   responseTime,
   error,
   showVoteButton,
@@ -577,6 +592,7 @@ export function MessageBubble({
       content={content}
       prompt={prompt}
       provider={provider}
+      model={model}
       responseTime={responseTime}
       error={error}
       showVoteButton={showVoteButton}

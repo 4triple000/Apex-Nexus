@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { openai, isOpenAIConfigured } from "@workspace/integrations-openai-ai-server";
 import { openRouterClient, openRouterModel } from "./openRouter";
+import { askFree, freePoolConfigured } from "./freeModels";
 
 // Real provider clients. Each is created on first use, so the server starts without keys;
 // a provider with no key answers with a clear "not connected" error instead of pretending.
@@ -61,6 +62,7 @@ export function providerStatus(keys?: UserKeys): Record<AiProvider, boolean> {
     deepseek:   !!process.env.DEEPSEEK_API_KEY,
     mistral:    !!process.env.MISTRAL_API_KEY,
     llama:      !!process.env.GROQ_API_KEY,
+    free:       freePoolConfigured(),
   };
   if (!keys) return server;
   return Object.fromEntries(AI_PROVIDERS.map((p) => [p, server[p] || hasOwnKey(keys, p)])) as Record<AiProvider, boolean>;
@@ -81,8 +83,9 @@ const HUMAN_VOICE_RULES = `VOICE — You are Apex. Speak like a real human frien
 - Match the user's energy — casual gets casual back, serious gets dialed-in focus
 - It's okay to start a sentence with "And", "But", or "So" — real humans do it all the time`;
 
-export type AiProvider = "openai" | "claude" | "perplexity" | CompatProvider;
-export const AI_PROVIDERS: AiProvider[] = ["openai", "claude", "perplexity", "gemini", "grok", "deepseek", "mistral", "llama"];
+/** "free" is Apex Free: a pool of free models, each with its own daily limit (lib/freeModels.ts) */
+export type AiProvider = "openai" | "claude" | "perplexity" | CompatProvider | "free";
+export const AI_PROVIDERS: AiProvider[] = ["openai", "claude", "perplexity", "gemini", "grok", "deepseek", "mistral", "llama", "free"];
 
 export interface AiResponse {
   provider: AiProvider | "hive";
@@ -91,6 +94,8 @@ export interface AiResponse {
   error?: string;
   /** Answered with the person's own linked key (costs them no credits) */
   ownKey?: boolean;
+  /** The exact model that answered, when the provider picks one (Apex Free) */
+  model?: string;
   inputTokens?: number;
   outputTokens?: number;
 }
@@ -100,6 +105,8 @@ export type UserKeys = Partial<Record<AiProvider | "openrouter", string>>;
 
 /** Whether this provider would run on the person's own account (a direct key or OpenRouter). */
 export function hasOwnKey(keys: UserKeys | undefined, provider: string): boolean {
+  // Apex Free always runs on the app's free keys, never on a person's account
+  if (provider === "free") return false;
   return !!keys && (!!keys[provider as AiProvider] || (!!keys.openrouter && (AI_PROVIDERS as string[]).includes(provider)));
 }
 
@@ -112,6 +119,7 @@ const SYSTEM_BY_PROVIDER: Record<AiProvider, string> = {
   deepseek: "You are Apex (DeepSeek mode), a helpful AI assistant. Be clear, accurate and friendly.",
   mistral: "You are Apex (Mistral mode), a helpful AI assistant. Be clear, accurate and friendly.",
   llama: "You are Apex (Llama mode), a helpful AI assistant. Be clear, accurate and friendly.",
+  free: "You are Apex, a helpful AI assistant. Be clear, accurate and friendly.",
 };
 
 /** Ask a provider's model through the person's OpenRouter account. */
@@ -130,7 +138,7 @@ async function callViaOpenRouter(provider: AiProvider, key: string, system: stri
 
 /** One message to a provider: the person's direct key, then their OpenRouter account, then the server's key. */
 function ask(provider: AiProvider, message: string, hint: string | undefined, keys: UserKeys | undefined): Promise<AiResponse> {
-  if (!keys?.[provider] && keys?.openrouter) {
+  if (provider !== "free" && !keys?.[provider] && keys?.openrouter) {
     const base = `${SYSTEM_BY_PROVIDER[provider]}\n\n${HUMAN_VOICE_RULES}`;
     return callViaOpenRouter(provider, keys.openrouter, hint ? `${base}\n${hint}` : base, [{ role: "user", content: message }]);
   }
@@ -167,6 +175,8 @@ function routeToProvider(message: string, preferredProvider?: string, keys?: Use
   if (own) return own;
   const status = providerStatus();
   if (status[ideal]) return ideal;
+  // Free models before any other paid model
+  if (status.free) return "free";
   return (Object.keys(status) as AiProvider[]).find((p) => status[p]) ?? ideal;
 }
 
@@ -179,7 +189,19 @@ const CALLERS: Record<AiProvider, (message: string, hint?: string, key?: string)
   deepseek:   (m, h, k) => callCompat("deepseek", m, h, k),
   mistral:    (m, h, k) => callCompat("mistral", m, h, k),
   llama:      (m, h, k) => callCompat("llama", m, h, k),
+  free:       (m, h) => callFree([{ role: "user", content: m }], h ? `${SYSTEM_BY_PROVIDER.free}\n\n${HUMAN_VOICE_RULES}\n${h}` : `${SYSTEM_BY_PROVIDER.free}\n\n${HUMAN_VOICE_RULES}`),
 };
+
+/** Apex Free: the best free model with room today (see lib/freeModels.ts). */
+async function callFree(turns: ChatTurn[], system: string): Promise<AiResponse> {
+  const start = Date.now();
+  try {
+    const r = await askFree([{ role: "system", content: system }, ...turns]);
+    return { provider: "free", content: r.content, model: r.model, responseTime: Date.now() - start, inputTokens: r.inputTokens, outputTokens: r.outputTokens };
+  } catch (err) {
+    return { provider: "free", content: "", responseTime: Date.now() - start, error: err instanceof Error ? err.message : "Apex Free error" };
+  }
+}
 
 // Battle and Hive use every connected provider (the original three if none are, so the errors explain why)
 function activeProviders(keys?: UserKeys): AiProvider[] {
@@ -385,6 +407,7 @@ export async function chatWithHistory(
   const ownKey = !!userKey;
   const start = Date.now();
   const turns = [...history, { role: "user" as const, content: message }];
+  if (provider === "free") return callFree(turns, system);
   if (!userKey && keys?.openrouter) return callViaOpenRouter(provider, keys.openrouter, system, turns);
   try {
     if (provider === "claude") {

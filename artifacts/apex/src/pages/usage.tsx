@@ -17,7 +17,7 @@ const card: React.CSSProperties = { borderWidth: 1, borderRadius: 22, padding: 1
 
 const NAMES: Record<string, string> = {
   openai: "ChatGPT", claude: "Claude", perplexity: "Perplexity", gemini: "Gemini", grok: "Grok",
-  deepseek: "DeepSeek", mistral: "Mistral", llama: "Llama", elevenlabs: "ElevenLabs voice",
+  deepseek: "DeepSeek", mistral: "Mistral", llama: "Llama", free: "Apex Free", elevenlabs: "ElevenLabs voice",
 };
 
 const usd = (n: number) => (n >= 100 ? `$${n.toFixed(0)}` : n >= 1 ? `$${n.toFixed(2)}` : `$${n.toFixed(3)}`);
@@ -75,11 +75,81 @@ export default function Usage() {
           </div>
         )}
 
+        <FreeModels />
+
         {credits?.isOwner && <OwnerSpending />}
 
         <Leaderboard />
       </div>
     </div>
+  );
+}
+
+type FreePool = {
+  configured: boolean;
+  resetsInMs: number;
+  perUserDaily: number | null;
+  yourFreeLeft: number | null;
+  models: { id: string; name: string; provider: string; status: "ready" | "used-up" | "busy" | "off"; requestsToday: number | null; requestLimit: number | null; tokensToday: number; tokenLimit: number | null; shared: boolean }[];
+};
+
+const STATUS: Record<FreePool["models"][number]["status"], { text: string; color: string }> = {
+  ready: { text: "Available", color: "#86EFAC" },
+  busy: { text: "Busy, back soon", color: "#FFD479" },
+  "used-up": { text: "Used up today", color: "#FF8A8A" },
+  off: { text: "Not set up", color: "var(--mg-ink-3)" },
+};
+
+const short = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}K` : String(n));
+
+/** Apex Free: each free model and how much of its own daily allowance is left. */
+function FreeModels() {
+  const { data } = useQuery({
+    queryKey: ["free-models"],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/chat/free-models`, { headers: authHeaders() });
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; data?: FreePool } | null;
+      if (!res.ok || !json?.data) throw new Error("Couldn't load free models");
+      return json.data;
+    },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+  if (!data) return null;
+  const hours = Math.max(1, Math.round(data.resetsInMs / 3_600_000));
+  return (
+    <section className="mg-cc-card" style={card} aria-label="Free models today">
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <p style={label}>Apex Free · free models today</p>
+        <span style={{ fontSize: 12, color: "var(--mg-ink-3)" }}>Resets in about {hours} h</span>
+      </div>
+      {!data.configured ? (
+        <p style={{ margin: 0, fontSize: 14, color: "var(--mg-ink-2)" }}>Free models aren't set up on the server yet.</p>
+      ) : (
+        <>
+          <p style={{ margin: 0, fontSize: 14, color: "var(--mg-ink-2)", lineHeight: 1.5 }}>
+            Pick <b style={{ color: "var(--mg-ink)" }}>Apex Free</b> in chat to use these. They cost no credits, and each one has its own daily limit, so when one runs out the next takes over.
+            {data.yourFreeLeft !== null ? <> You have <b style={{ color: "var(--mg-ink)" }}>{data.yourFreeLeft}</b> of {data.perUserDaily} free messages left today.</> : null}
+          </p>
+          <div style={{ display: "grid", gap: 8 }}>
+            {data.models.filter((m) => m.status !== "off").map((m) => {
+              const usage = m.requestLimit !== null ? `${m.requestsToday ?? 0} / ${m.requestLimit} requests${m.shared ? " (shared)" : ""}`
+                : m.tokenLimit !== null ? `${short(m.tokensToday)} / ${short(m.tokenLimit)} tokens` : "";
+              return (
+                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 12, background: "rgba(255,255,255,0.04)" }}>
+                  <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: STATUS[m.status].color, flexShrink: 0 }} />
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--mg-ink)" }}>{m.name} <span style={{ fontWeight: 500, color: "var(--mg-ink-3)" }}>· {m.provider}</span></span>
+                    <span style={{ display: "block", fontSize: 12, color: "var(--mg-ink-3)" }}>{usage}</span>
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: STATUS[m.status].color, whiteSpace: "nowrap" }}>{STATUS[m.status].text}</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 

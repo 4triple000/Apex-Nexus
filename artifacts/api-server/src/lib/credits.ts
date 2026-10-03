@@ -20,6 +20,7 @@ import { and, eq, sql, desc, gte } from "drizzle-orm";
 import { normalizeTier } from "../server/billing/planConfig";
 import { isOwnerEmail } from "../shared/lib/owner";
 import type { AiProvider } from "./aiRouter";
+import { noteFreeUse } from "./freeModels";
 
 type PlanTier = "free" | "pro" | "enterprise";
 
@@ -32,6 +33,7 @@ const envInt = (key: string, fallback: number) => {
 
 /** Credits one reply costs, by model. */
 const BASE_COST: Record<AiProvider | "elevenlabs", number> = {
+  free: 0,       // Apex Free: free models (each person has a daily free-message allowance instead)
   llama: 1,      // Llama 3.3 70B on Groq
   deepseek: 1,   // DeepSeek V3
   gemini: 1,     // Gemini 2.5 Flash
@@ -58,6 +60,7 @@ const BASE_PRICE: Record<AiProvider | "elevenlabs", [number, number]> = {
   gemini: [0.3, 2.5],
   deepseek: [0.28, 0.42],
   llama: [0.59, 0.79],
+  free: [0, 0],
   elevenlabs: [0, 150], // billed per character: ~$0.15 per 1,000 (pass characters as outputTokens)
 };
 
@@ -241,6 +244,7 @@ export async function recordUsage(who: CreditUser, report: UsageReport): Promise
   const inputTokens = Math.max(0, Math.round(report.inputTokens ?? 0));
   const outputTokens = Math.max(0, Math.round(report.outputTokens ?? 0));
   const costMicros = own ? 0 : estimateCostMicros(report.provider, inputTokens, outputTokens);
+  if (report.provider === "free") await noteFreeUse(who.userId).catch(() => undefined);
   // Whatever today's allowance can't cover comes out of bought credits
   if (credits > 0 && !who.isOwner) {
     const balance = await getBalance(who);

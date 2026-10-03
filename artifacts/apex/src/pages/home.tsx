@@ -36,6 +36,8 @@ type Message = {
   role: "user" | "ai";
   content: string;
   provider?: "openai" | "claude" | "perplexity" | "hive" | "auto";
+  /** The exact model that answered (Apex Free picks one) */
+  model?: string;
   timestamp: number;
   responseTime?: number;
   error?: string;
@@ -225,6 +227,7 @@ export default function Home() {
         const aiMsg: Message = {
           id: crypto.randomUUID(), role: "ai", content: aiContent, error: aiError,
           provider: (response.messages[0]?.provider as any) || "auto",
+          model: (response.messages[0] as { model?: string } | undefined)?.model,
           responseTime: response.messages[0]?.responseTime, timestamp: Date.now(),
         };
         setMessages((prev) => [...prev, aiMsg]);
@@ -236,6 +239,10 @@ export default function Home() {
       }
     } catch (err) {
       // Out of credits or signed out: explain instead of a generic failure
+      if (err instanceof ApiError && err.code === "FREE_LIMIT") {
+        setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "ai", content: err.message, error: "Free messages used up", timestamp: Date.now() }]);
+        return;
+      }
       if (err instanceof ApiError && (err.code === "OUT_OF_CREDITS" || err.status === 401)) {
         const outMsg: Message = { id: crypto.randomUUID(), role: "ai", content: err.message, error: err.code === "OUT_OF_CREDITS" ? "Out of credits" : "Sign in", timestamp: Date.now() };
         setMessages((prev) => [...prev, outMsg]);
@@ -819,6 +826,7 @@ export default function Home() {
               role={msg.role}
               content={msg.content}
               provider={msg.provider}
+              model={msg.model}
               responseTime={msg.responseTime}
               error={msg.error}
             />

@@ -10,7 +10,7 @@ import { X, Zap, KeyRound, Flame, Crown } from "lucide-react";
 import { useCredits, resetsIn } from "@/hooks/useCredits";
 
 const MODEL_NAMES: Record<string, string> = {
-  llama: "Llama", deepseek: "DeepSeek", gemini: "Gemini", mistral: "Mistral",
+  free: "Apex Free", llama: "Llama", deepseek: "DeepSeek", gemini: "Gemini", mistral: "Mistral",
   openai: "ChatGPT", grok: "Grok", perplexity: "Perplexity", claude: "Claude", elevenlabs: "Voice line",
 };
 

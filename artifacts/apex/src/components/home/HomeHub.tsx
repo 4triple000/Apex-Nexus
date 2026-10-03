@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles, Star, Clock, ScanText } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles, Star, Clock, ScanText, Gift } from "lucide-react";
 import { RiOpenaiFill } from "react-icons/ri";
 import { SiClaude, SiPerplexity, SiGooglegemini, SiX, SiDeepseek, SiMistralai, SiMeta } from "react-icons/si";
 import { ApexLogo } from "@/components/ui/ApexLogo";
@@ -10,7 +10,7 @@ import { useCredits, openCreditsSheet, resetsIn } from "@/hooks/useCredits";
 
 // ── Models ─────────────────────────────────────────────────────────────────────
 
-export type ModelId = "auto" | "openai" | "claude" | "perplexity" | "gemini" | "grok" | "deepseek" | "mistral" | "llama";
+export type ModelId = "auto" | "free" | "openai" | "claude" | "perplexity" | "gemini" | "grok" | "deepseek" | "mistral" | "llama";
 export type ChatMode = "chat" | "battle" | "hive";
 
 type Model = {
@@ -29,6 +29,7 @@ function AutoLogo({ size = 40 }: { size?: number }) {
 
 export const MODELS: Model[] = [
   { id: "auto",       name: "Apex Auto",  maker: "Apex",       tagline: "Picks the best model for each message",   color: "#8B7BFF", aliases: ["auto", "apex", "best", "smart"],          Logo: AutoLogo },
+  { id: "free",       name: "Apex Free",  maker: "Groq · Cerebras · GitHub", tagline: "Free open models, no credits used", color: "#86EFAC", aliases: ["free", "apex free", "open", "gpt-oss", "qwen"], Logo: Gift },
   { id: "openai",     name: "ChatGPT",    maker: "OpenAI",     tagline: "Fast, all-round everyday answers",        color: "#10A37F", aliases: ["gpt", "chatgpt", "openai", "chat gpt"],   Logo: RiOpenaiFill },
   { id: "claude",     name: "Claude",     maker: "Anthropic",  tagline: "Deep reasoning, writing and code",        color: "#D97757", aliases: ["claude", "anthropic", "opus", "sonnet"], Logo: SiClaude },
   { id: "perplexity", name: "Perplexity", maker: "Perplexity", tagline: "Live web research with sources",          color: "#20B8CD", aliases: ["perplexity", "sonar", "search", "web"],  Logo: SiPerplexity },
