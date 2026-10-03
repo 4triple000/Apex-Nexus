@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles, Star, Clock, ScanText, Gift } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles, Star, Clock, ScanText, Gift, History } from "lucide-react";
 import { RiOpenaiFill } from "react-icons/ri";
 import { SiClaude, SiPerplexity, SiGooglegemini, SiX, SiDeepseek, SiMistralai, SiMeta } from "react-icons/si";
 import { ApexLogo } from "@/components/ui/ApexLogo";
@@ -69,7 +69,7 @@ export function useProviderStatus(): Partial<Record<ModelId, boolean>> | undefin
 
 // ── Greeting header ────────────────────────────────────────────────────────────
 
-export function HubHeader({ name, onAvatar }: { name?: string; onAvatar: () => void }) {
+export function HubHeader({ name, onAvatar, onHistory }: { name?: string; onAvatar: () => void; onHistory?: () => void }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const initial = (name?.trim()[0] ?? "A").toUpperCase();
@@ -83,6 +83,12 @@ export function HubHeader({ name, onAvatar }: { name?: string; onAvatar: () => v
           Hey, {name?.trim() || "Creator"}
         </div>
       </div>
+      {onHistory ? (
+        <button onClick={onHistory} aria-label="Chat history" className="mg-glass mg-press mg-focus"
+          style={{ width: 42, height: 42, borderRadius: "50%", cursor: "pointer", display: "grid", placeItems: "center", padding: 0, color: "var(--mg-ink)", flexShrink: 0 }}>
+          <History size={18} />
+        </button>
+      ) : null}
       <button
         onClick={onAvatar}
         aria-label="Your profile"

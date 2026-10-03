@@ -16,6 +16,10 @@ export const SendChatBody = z.object({
   mode: z.enum(["chat", "battle", "hive"]).default("chat"),
   sessionId: z.string().optional(),
   preferredProvider: AiProvider.nullish(),
+  /** Continue a saved conversation (chat mode). Omit to start a new one. */
+  conversationId: z.number().int().positive().nullish(),
+  /** What the person typed, without the app's added instructions (saved to history and used for its title) */
+  rawMessage: z.string().max(20000).nullish(),
 });
 export type SendChatBody = z.input<typeof SendChatBody>;
 

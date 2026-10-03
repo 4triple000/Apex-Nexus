@@ -7,6 +7,7 @@ import { PersonalizationBadge } from "@/components/ai/PersonalizationBadge";
 import { useInsights, usePersonalization, useTrends, useTriggerLearning } from "@/hooks/useAILearning";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { goBackInTab } from "@/lib/tabHistory";
 
 type InsightFilter = "all" | "trend" | "optimization" | "recommendation";
 
@@ -50,7 +51,7 @@ export default function InsightsPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => window.history.length > 1 ? window.history.back() : nav('/')} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+          <button onClick={() => goBackInTab(nav)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
             <ArrowLeft size={16} />
           </button>
           <div>

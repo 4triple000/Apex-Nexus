@@ -14,6 +14,8 @@ export const mobileConversationsTable = pgTable("mobile_conversations", {
   userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   title: text("title").notNull().default("New Chat"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  /** Last message time, for sorting the history list */
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const insertMobileConversationSchema = createInsertSchema(mobileConversationsTable).omit({ id: true, createdAt: true });
@@ -25,6 +27,9 @@ export const mobileMessagesTable = pgTable("mobile_messages", {
   conversationId: integer("conversation_id").notNull().references(() => mobileConversationsTable.id, { onDelete: "cascade" }),
   role: text("role").notNull(), // "user" | "assistant"
   content: text("content").notNull(),
+  /** Which AI answered (assistant messages), and the exact model when the provider picks one */
+  provider: text("provider"),
+  model: text("model"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

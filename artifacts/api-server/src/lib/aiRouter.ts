@@ -350,6 +350,14 @@ export async function chatSingle(message: string, preferredProvider?: string, pe
   return [await ask(provider, message, personalizationHint, keys)];
 }
 
+/** A chat reply that remembers the earlier turns of a saved conversation (falls back to chatSingle with none). */
+export async function chatSingleWithHistory(message: string, preferredProvider: string | undefined, personalizationHint: string | undefined, keys: UserKeys | undefined, history: ChatTurn[]): Promise<AiResponse[]> {
+  if (!history.length) return chatSingle(message, preferredProvider, personalizationHint, keys);
+  const provider = routeToProvider(message, preferredProvider, keys);
+  const base = `${SYSTEM_BY_PROVIDER[provider]}\n\n${HUMAN_VOICE_RULES}`;
+  return [await chatWithHistory(provider, personalizationHint ? `${base}\n${personalizationHint}` : base, history, message, keys)];
+}
+
 export async function chatBattle(message: string, keys?: UserKeys): Promise<AiResponse[]> {
   return Promise.all(activeProviders(keys).map((p) => ask(p, message, undefined, keys)));
 }

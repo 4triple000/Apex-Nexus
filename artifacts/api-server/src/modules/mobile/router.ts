@@ -243,8 +243,9 @@ router.post("/mobile/chat", requireUser, async (req: ApexRequest, res): Promise<
     // 6. Store both messages
     await db.insert(mobileMessagesTable).values([
       { conversationId, role: "user", content: message },
-      { conversationId, role: "assistant", content: aiContent },
+      { conversationId, role: "assistant", content: aiContent, provider: reply.provider, model: reply.model ?? null },
     ]);
+    await db.update(mobileConversationsTable).set({ updatedAt: new Date() }).where(eq(mobileConversationsTable.id, conversationId));
 
     // 7. AI memory extraction (async, fire and forget — never blocks response)
     extractMemoryFromMessage(userId, message).catch((err) =>
@@ -270,7 +271,7 @@ router.get("/mobile/conversations", requireUser, async (req: ApexRequest, res): 
   const conversations = await db.select()
     .from(mobileConversationsTable)
     .where(eq(mobileConversationsTable.userId, userId))
-    .orderBy(desc(mobileConversationsTable.createdAt))
+    .orderBy(desc(mobileConversationsTable.updatedAt))
     .limit(50);
 
   success(res, { conversations });

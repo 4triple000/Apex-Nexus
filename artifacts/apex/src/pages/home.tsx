@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageBubble, MessageSkeleton, HiveBubble, PROVIDER_CONFIG } from "@/components/chat/message-bubble";
+import { ChatHistorySheet, HistoryButton, loadConversation } from "@/components/chat/ChatHistory";
 import { ApexLogo, ApexLogoToggle } from "@/components/ui/ApexLogo";
 import { useSendChat, useCastVote, ApiError } from "@workspace/api-client-react";
 import { openCreditsSheet } from "@/hooks/useCredits";
@@ -38,6 +39,8 @@ type Message = {
   provider?: "openai" | "claude" | "perplexity" | "hive" | "auto";
   /** The exact model that answered (Apex Free picks one) */
   model?: string;
+  /** Loaded from history: shown at once, without the typing effect */
+  saved?: boolean;
   timestamp: number;
   responseTime?: number;
   error?: string;
@@ -83,6 +86,11 @@ export default function Home() {
   const [mode, setMode]                 = useState<ChatMode>("chat");
   const [aiPreference, setAiPreference] = useState<AiPreference>(modelFromUrl);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const deskScrollRef = useRef<HTMLDivElement>(null);
+  // The saved conversation this chat belongs to (null = a new chat, saved after the first reply)
+  const [conversationId, setConversationId] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [conversationTitle, setConversationTitle] = useState<string | null>(null);
 
   const sendChat  = useSendChat();
   const { user }  = useAuth();
@@ -124,11 +132,41 @@ export default function Home() {
     gestureTimerRef.current = setTimeout(() => setGesture("none"), 2000);
   };
 
+  // New messages scroll into view; with no messages (the home screen) stay at the top, where the search bar is
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    for (const el of [scrollRef.current, deskScrollRef.current]) {
+      if (!el) continue;
+      if (messages.length) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      else el.scrollTo({ top: 0 });
     }
+    if (!messages.length) return;
+    const t = setTimeout(() => {
+      for (const el of [scrollRef.current, deskScrollRef.current]) el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }, 900);
+    return () => clearTimeout(t);
   }, [messages, sendChat.isPending]);
+
+  const newChat = () => { setMessages([]); setConversationId(null); setConversationTitle(null); };
+  const openConversation = async (id: number) => {
+    try {
+      const { conversation, messages: saved } = await loadConversation(id);
+      setMode("chat");
+      setConversationId(id);
+      setConversationTitle(conversation.title);
+      setMessages(saved.map((m) => ({
+        id: `saved-${m.id}`,
+        role: m.role === "assistant" ? "ai" : "user",
+        content: m.content,
+        provider: m.role === "assistant" ? ((m.provider as Message["provider"]) ?? "auto") : undefined,
+        model: m.model ?? undefined,
+        saved: true,
+        timestamp: new Date(m.createdAt).getTime(),
+        prompt: m.role === "user" ? m.content : undefined,
+      })));
+    } catch (err) {
+      setMessages([{ id: crypto.randomUUID(), role: "ai", content: err instanceof Error ? err.message : "Couldn't open that chat.", error: "Couldn't open chat", timestamp: Date.now() }]);
+    }
+  };
 
   // Sync idle avatar emotion with personality blend
   useEffect(() => {
@@ -195,7 +233,7 @@ export default function Home() {
     setMessages((prev) => [...prev, userMsg]);
     try {
       const response = await sendChat.mutateAsync({
-        data: { message: enrichedMessage, mode, sessionId, preferredProvider: aiPreference === "auto" ? undefined : aiPreference },
+        data: { message: enrichedMessage, rawMessage: content, mode, sessionId, preferredProvider: aiPreference === "auto" ? undefined : aiPreference, conversationId: mode === "chat" ? conversationId : undefined },
       });
       if (mode === "battle" && response.messages.length > 0) {
         const battleMsg: Message = {
@@ -222,6 +260,12 @@ export default function Home() {
         avatar.setEmotion(hiveEmotion);
         triggerGesture(hiveEmotion);
       } else {
+        const savedId = (response as { conversationId?: number | null }).conversationId;
+        if (savedId) {
+          if (savedId !== conversationId) setConversationTitle(content.replace(/\s+/g, " ").trim().slice(0, 60));
+          setConversationId(savedId);
+          void queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+        }
         const aiError   = response.messages[0]?.error;
         const aiContent = response.messages[0]?.content || aiError || "No response received.";
         const aiMsg: Message = {
@@ -301,6 +345,7 @@ export default function Home() {
                 {m.label}
               </button>
             ))}
+            <HistoryButton onClick={() => setHistoryOpen(true)} size={34} />
             {/* TTS toggle */}
             <button onClick={() => { tts.toggle(); if (tts.isEnabled) tts.stop(); }} style={{ width: 34, height: 34, borderRadius: "50%", border: tts.isEnabled ? "1px solid rgba(74,222,128,0.3)" : "1px solid rgba(255,255,255,0.1)", background: tts.isEnabled ? "rgba(74,222,128,0.1)" : "rgba(255,255,255,0.05)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: tts.isEnabled ? "#4ADE80" : "rgba(255,255,255,0.3)" }}>
               {tts.isEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
@@ -325,7 +370,7 @@ export default function Home() {
       </div>
 
       {/* Messages scroll area */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 28px 16px", display: "flex", flexDirection: "column", gap: 16, scrollBehavior: "smooth" }}>
+      <div ref={deskScrollRef} style={{ flex: 1, overflowY: "auto", padding: "24px 28px 16px", display: "flex", flexDirection: "column", gap: 16, scrollBehavior: "smooth" }}>
         {messages.length === 0 && (
           <div style={{ width: "100%", maxWidth: 620, margin: "0 auto", display: "flex", flexDirection: "column", gap: 18, paddingTop: 8 }}>
             <div>
@@ -460,16 +505,16 @@ export default function Home() {
       {/* ── Header ───────────────────────────────────────────── */}
       {messages.length === 0 ? (
         <div style={{ flexShrink: 0, padding: "10px 16px 0", position: "relative", zIndex: 10 }}>
-          <HubHeader name={user?.username} onAvatar={() => nav("/profile")} />
+          <HubHeader name={user?.username} onAvatar={() => nav("/profile")} onHistory={() => setHistoryOpen(true)} />
         </div>
       ) : (
         <div style={{ flexShrink: 0, padding: "10px 16px 10px", position: "relative", zIndex: 10, display: "flex", alignItems: "center", gap: 10 }}>
           {/* The fixed ☰ menu button (ApexControlPanel) sits in this space */}
           <div style={{ width: 42, flexShrink: 0 }} aria-hidden />
           <button
-            onClick={() => setMessages([])}
+            onClick={newChat}
             className="mg-glass mg-press mg-focus"
-            aria-label="Back to home"
+            aria-label="New chat"
             style={{ display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 14px 0 10px", borderRadius: 20, color: "var(--mg-ink)", cursor: "pointer", minWidth: 0 }}
           >
             {mode === "chat"
@@ -478,11 +523,12 @@ export default function Home() {
             <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
               {mode === "chat" ? modelById(aiPreference).name : mode === "battle" ? "Battle" : "Hive"}
             </span>
-            <span style={{ fontSize: 11, color: "var(--mg-ink-3)", fontWeight: 600 }}>
-              {sendChat.isPending ? "thinking…" : "New chat"}
+            <span style={{ fontSize: 11, color: "var(--mg-ink-3)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, maxWidth: 120 }}>
+              {sendChat.isPending ? "thinking…" : conversationTitle ?? "New chat"}
             </span>
           </button>
           <div style={{ flex: 1 }} />
+          <HistoryButton onClick={() => setHistoryOpen(true)} />
           <button
             onClick={() => { tts.toggle(); if (tts.isEnabled) tts.stop(); }}
             className="mg-glass mg-press mg-focus"
@@ -827,6 +873,7 @@ export default function Home() {
               content={msg.content}
               provider={msg.provider}
               model={msg.model}
+              stream={!msg.saved}
               responseTime={msg.responseTime}
               error={msg.error}
             />
@@ -911,6 +958,8 @@ export default function Home() {
         </div>
       </div>
     </div>
+    <ChatHistorySheet open={historyOpen} onClose={() => setHistoryOpen(false)} activeId={conversationId}
+      onOpenConversation={(id) => void openConversation(id)} onNewChat={newChat} />
     </>
   );
 }

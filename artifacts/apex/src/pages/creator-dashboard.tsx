@@ -6,6 +6,7 @@ import { useMyProfile } from "@/hooks/useSocial";
 import { Button } from "@/components/ui/button";
 import { UpgradeModal } from "@/components/monetization/UpgradeModal";
 import { useState } from "react";
+import { goBackInTab } from "@/lib/tabHistory";
 
 function formatCents(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -39,7 +40,7 @@ export default function CreatorDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-5 pb-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => window.history.length > 1 ? window.history.back() : nav('/')} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+          <button onClick={() => goBackInTab(nav)} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
             <ArrowLeft size={16} />
           </button>
           <div>
