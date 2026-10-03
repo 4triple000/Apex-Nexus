@@ -88,7 +88,7 @@ export type AiProvider = "openai" | "claude" | "perplexity" | CompatProvider | "
 export const AI_PROVIDERS: AiProvider[] = ["openai", "claude", "perplexity", "gemini", "grok", "deepseek", "mistral", "llama", "free"];
 
 export interface AiResponse {
-  provider: AiProvider | "hive";
+  provider: AiProvider | "hive" | "agent";
   content: string;
   responseTime: number;
   error?: string;

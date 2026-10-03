@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { RiOpenaiFill } from "react-icons/ri";
 import { SiClaude, SiPerplexity } from "react-icons/si";
-import { Volume2, VolumeX, ThumbsUp, Check, Sparkles, Zap, Copy, CheckCheck, Share2, Gift } from "lucide-react";
+import { Volume2, VolumeX, ThumbsUp, Check, Sparkles, Zap, Copy, CheckCheck, Share2, Gift, Bot } from "lucide-react";
 import { ShareModal } from "@/components/share/ShareModal";
 import { ApexLogoMini } from "@/components/ui/ApexLogo";
 
@@ -99,6 +99,16 @@ export const PROVIDER_CONFIG: Record<string, ProviderCfg> = {
     gradient: "linear-gradient(135deg, rgba(190,75,219,0.10) 0%, rgba(190,75,219,0.04) 100%)",
     border: "rgba(190,75,219,0.22)",
     rankBorder: "#BE4BDB",
+  },
+  agent: {
+    name: "Apex Agent",
+    color: "#E2C17E",
+    glow: "rgba(226,193,126,0.24)",
+    glowStrong: "rgba(226,193,126,0.5)",
+    icon: Bot,
+    gradient: "linear-gradient(135deg, rgba(226,193,126,0.09) 0%, rgba(226,193,126,0.03) 100%)",
+    border: "rgba(226,193,126,0.24)",
+    rankBorder: "#E2C17E",
   },
   free: {
     name: "Apex Free",

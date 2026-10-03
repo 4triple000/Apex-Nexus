@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageBubble, MessageSkeleton, HiveBubble, PROVIDER_CONFIG } from "@/components/chat/message-bubble";
 import { ChatHistorySheet, HistoryButton, loadConversation } from "@/components/chat/ChatHistory";
+import { AgentExtras, type AgentStep, type AgentSource } from "@/components/chat/AgentExtras";
 import { ApexLogo, ApexLogoToggle } from "@/components/ui/ApexLogo";
 import { useSendChat, useCastVote, ApiError } from "@workspace/api-client-react";
 import { openCreditsSheet } from "@/hooks/useCredits";
@@ -41,6 +42,10 @@ type Message = {
   model?: string;
   /** Loaded from history: shown at once, without the typing effect */
   saved?: boolean;
+  /** Apex Agent: what it did, the pages it used, and a Social post it drafted */
+  agentSteps?: AgentStep[];
+  sources?: AgentSource[];
+  draft?: string | null;
   timestamp: number;
   responseTime?: number;
   error?: string;
@@ -54,7 +59,7 @@ type Message = {
   prompt?: string;
 };
 
-type ChatMode     = "chat" | "battle" | "hive";
+type ChatMode     = "chat" | "battle" | "hive" | "agent";
 type AiPreference = ModelId;
 
 // ── Provider config (the chat models, from the Home hub's list) ─────────────────
@@ -73,6 +78,7 @@ const MODES: { id: ChatMode; label: string; desc: string }[] = [
   { id: "chat",   label: "Chat",   desc: "Single AI response" },
   { id: "battle", label: "Battle", desc: "All AIs compete"    },
   { id: "hive",   label: "Hive",   desc: "AI collaboration"   },
+  { id: "agent",  label: "Agent",  desc: "Web search and tools" },
 ];
 
 const EASE_IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
@@ -233,7 +239,7 @@ export default function Home() {
     setMessages((prev) => [...prev, userMsg]);
     try {
       const response = await sendChat.mutateAsync({
-        data: { message: enrichedMessage, rawMessage: content, mode, sessionId, preferredProvider: aiPreference === "auto" ? undefined : aiPreference, conversationId: mode === "chat" ? conversationId : undefined },
+        data: { message: enrichedMessage, rawMessage: content, mode, sessionId, preferredProvider: aiPreference === "auto" ? undefined : aiPreference, conversationId: mode === "chat" || mode === "agent" ? conversationId : undefined },
       });
       if (mode === "battle" && response.messages.length > 0) {
         const battleMsg: Message = {
@@ -272,6 +278,10 @@ export default function Home() {
           id: crypto.randomUUID(), role: "ai", content: aiContent, error: aiError,
           provider: (response.messages[0]?.provider as any) || "auto",
           model: (response.messages[0] as { model?: string } | undefined)?.model,
+          ...(() => {
+            const m = response.messages[0] as { steps?: AgentStep[]; sources?: AgentSource[]; draft?: string | null } | undefined;
+            return mode === "agent" ? { agentSteps: m?.steps, sources: m?.sources, draft: m?.draft } : {};
+          })(),
           responseTime: response.messages[0]?.responseTime, timestamp: Date.now(),
         };
         setMessages((prev) => [...prev, aiMsg]);
@@ -283,8 +293,8 @@ export default function Home() {
       }
     } catch (err) {
       // Out of credits or signed out: explain instead of a generic failure
-      if (err instanceof ApiError && err.code === "FREE_LIMIT") {
-        setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "ai", content: err.message, error: "Free messages used up", timestamp: Date.now() }]);
+      if (err instanceof ApiError && (err.code === "FREE_LIMIT" || err.code === "AGENT_LIMIT")) {
+        setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "ai", content: err.message, error: err.code === "AGENT_LIMIT" ? "Agent tasks used up" : "Free messages used up", timestamp: Date.now() }]);
         return;
       }
       if (err instanceof ApiError && (err.code === "OUT_OF_CREDITS" || err.status === 401)) {
@@ -519,9 +529,9 @@ export default function Home() {
           >
             {mode === "chat"
               ? <ModelLogo id={aiPreference} size={18} />
-              : <span style={{ fontSize: 15 }}>{mode === "battle" ? "⚔️" : "🐝"}</span>}
+              : <span style={{ fontSize: 15 }}>{mode === "battle" ? "⚔️" : mode === "agent" ? "🧭" : "🐝"}</span>}
             <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap" }}>
-              {mode === "chat" ? modelById(aiPreference).name : mode === "battle" ? "Battle" : "Hive"}
+              {mode === "chat" ? modelById(aiPreference).name : mode === "battle" ? "Battle" : mode === "agent" ? "Agent" : "Hive"}
             </span>
             <span style={{ fontSize: 11, color: "var(--mg-ink-3)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, maxWidth: 120 }}>
               {sendChat.isPending ? "thinking…" : conversationTitle ?? "New chat"}
@@ -866,6 +876,14 @@ export default function Home() {
           }
 
           /* ── STANDARD MESSAGE ────────────────────────────── */
+          if (msg.agentSteps || msg.sources || msg.draft) {
+            return (
+              <div key={msg.id} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <MessageBubble role={msg.role} content={msg.content} provider={msg.provider} model={msg.model} stream={!msg.saved} responseTime={msg.responseTime} error={msg.error} />
+                <AgentExtras steps={msg.agentSteps} sources={msg.sources} draft={msg.draft} />
+              </div>
+            );
+          }
           return (
             <MessageBubble
               key={msg.id}

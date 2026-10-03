@@ -234,16 +234,29 @@ function handleFailure(m: FreeModel, err: unknown) {
   logger.warn({ model: m.id, status, err: text.slice(0, 200) }, "Free model failed; trying the next one");
 }
 
+export interface FreeToolReply {
+  /** The model's message: text, tool calls, or both */
+  message: OpenAI.Chat.ChatCompletionMessage;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+/** Hosts whose free models handle tool calls reliably (used by Apex Agent). */
+const TOOL_HOSTS: Host[] = ["cerebras", "groq", "github"];
+
 /**
- * Answer with the best free model that has room, falling through to the next on any failure.
+ * Ask the best free model that has room, falling through to the next on any failure.
+ * With `tools`, only tool-capable models are tried and the reply may be tool calls instead of text.
  * Throws a friendly error when every free model is used up or busy.
  */
-export async function askFree(messages: OpenAI.Chat.ChatCompletionMessageParam[]): Promise<FreeReply> {
+export async function askFreeRaw(messages: OpenAI.Chat.ChatCompletionMessageParam[], tools?: OpenAI.Chat.ChatCompletionTool[]): Promise<FreeToolReply> {
   const rows = await load();
-  const candidates = FREE_MODELS.filter((m) => statusOf(m, rows) === "ready");
   if (!freePoolConfigured()) throw new Error("Apex Free isn't set up yet. Add a free key (GROQ_API_KEY, CEREBRAS_API_KEY or GITHUB_MODELS_TOKEN) on the server.");
+  const pool = tools ? FREE_MODELS.filter((m) => TOOL_HOSTS.includes(m.host)) : FREE_MODELS;
+  const candidates = pool.filter((m) => statusOf(m, rows) === "ready");
   if (!candidates.length) {
-    const allUsedUp = FREE_MODELS.every((m) => ["used-up", "off"].includes(statusOf(m, rows)));
+    const allUsedUp = pool.every((m) => ["used-up", "off"].includes(statusOf(m, rows)));
     throw new Error(allUsedUp
       ? "All free models are used up for today. They reset at midnight UTC. Pick another model to keep chatting."
       : "The free models are busy right now. Try again in a minute, or pick another model.");
@@ -256,20 +269,38 @@ export async function askFree(messages: OpenAI.Chat.ChatCompletionMessageParam[]
     if (!model) continue;
     recent.set(m.id, [...(recent.get(m.id) ?? []), Date.now()]);
     try {
-      const res = await client(m.host).chat.completions.create({ model, messages, max_tokens: 4096 });
-      const content = res.choices[0]?.message?.content ?? "";
-      if (!content.trim()) throw new Error("empty reply");
+      const res = await client(m.host).chat.completions.create({ model, messages, max_tokens: 4096, ...(tools ? { tools, tool_choice: "auto" as const } : {}) });
+      const message = res.choices[0]?.message;
+      if (!message || (!message.content?.trim() && !message.tool_calls?.length)) throw new Error("empty reply");
       const inputTokens = res.usage?.prompt_tokens ?? 0;
       const outputTokens = res.usage?.completion_tokens ?? 0;
       bump(`model:${m.id}`, inputTokens + outputTokens);
       if (m.group) bump(`group:${m.group}`, 0);
       const label = m.host === "openrouter" ? model.replace(/:free$/, "").split("/").pop()! : m.name;
-      return { content, model: `${label} · ${HOSTS[m.host].name}`, inputTokens, outputTokens };
+      return { message, model: `${label} · ${HOSTS[m.host].name}`, inputTokens, outputTokens };
     } catch (err) {
       handleFailure(m, err);
     }
   }
   throw new Error("The free models are busy right now. Try again in a minute, or pick another model.");
+}
+
+/** A plain text answer from the best free model with room. */
+export async function askFree(messages: OpenAI.Chat.ChatCompletionMessageParam[]): Promise<FreeReply> {
+  const r = await askFreeRaw(messages);
+  return { content: r.message.content ?? "", model: r.model, inputTokens: r.inputTokens, outputTokens: r.outputTokens };
+}
+
+/** How many times `key` was used today (shared daily counters, e.g. Apex Agent's limits). */
+export async function usedToday(key: string): Promise<number> {
+  const rows = await load();
+  return rows.get(key)?.requests ?? 0;
+}
+
+/** Count one use of `key` today. */
+export async function countUse(key: string): Promise<void> {
+  await load();
+  bump(key, 0);
 }
 
 /** Every free model and how much of today's allowance is left, for the app's "Free models" list. */

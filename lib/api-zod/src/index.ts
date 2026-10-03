@@ -13,7 +13,7 @@ export type HealthCheckResponse = z.infer<typeof HealthCheckResponse>;
 // ── Chat ──────────────────────────────────────────────────────────────────────
 export const SendChatBody = z.object({
   message: z.string().min(1),
-  mode: z.enum(["chat", "battle", "hive"]).default("chat"),
+  mode: z.enum(["chat", "battle", "hive", "agent"]).default("chat"),
   sessionId: z.string().optional(),
   preferredProvider: AiProvider.nullish(),
   /** Continue a saved conversation (chat mode). Omit to start a new one. */

@@ -32,7 +32,8 @@ const envInt = (key: string, fallback: number) => {
 // ── Prices ────────────────────────────────────────────────────────────────────
 
 /** Credits one reply costs, by model. */
-const BASE_COST: Record<AiProvider | "elevenlabs", number> = {
+const BASE_COST: Record<AiProvider | "elevenlabs" | "agent", number> = {
+  agent: 0,      // Apex Agent (runs on the free models; has its own daily limit)
   free: 0,       // Apex Free: free models (each person has a daily free-message allowance instead)
   llama: 1,      // Llama 3.3 70B on Groq
   deepseek: 1,   // DeepSeek V3
@@ -51,7 +52,7 @@ export function creditCost(provider: string): number {
 }
 
 /** Estimated $ per million tokens [input, output]. Claude from Anthropic's price list; the rest are estimates. */
-const BASE_PRICE: Record<AiProvider | "elevenlabs", [number, number]> = {
+const BASE_PRICE: Record<AiProvider | "elevenlabs" | "agent", [number, number]> = {
   claude: [4, 20],
   openai: [1.75, 14],
   perplexity: [3, 15],
@@ -61,6 +62,7 @@ const BASE_PRICE: Record<AiProvider | "elevenlabs", [number, number]> = {
   deepseek: [0.28, 0.42],
   llama: [0.59, 0.79],
   free: [0, 0],
+  agent: [0, 0],
   elevenlabs: [0, 150], // billed per character: ~$0.15 per 1,000 (pass characters as outputTokens)
 };
 
