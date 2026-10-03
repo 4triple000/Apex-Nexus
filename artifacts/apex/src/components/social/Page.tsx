@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { ChevronLeft } from "lucide-react";
 import { S } from "./ui";
+import { goBackInTab } from "@/lib/tabHistory";
 
 export function SocialPage({ title, subtitle, right, back = "/feed", children, bare = false }: {
   title?: ReactNode;
@@ -15,7 +16,7 @@ export function SocialPage({ title, subtitle, right, back = "/feed", children, b
   bare?: boolean;
 }) {
   const [, nav] = useLocation();
-  const goBack = () => (window.history.length > 1 ? window.history.back() : nav(back));
+  const goBack = () => goBackInTab(nav, back);
   return (
     <div className="mg-font" style={{ flex: 1, overflowY: "auto", background: "transparent", color: S.ink }}>
       {bare ? children : (

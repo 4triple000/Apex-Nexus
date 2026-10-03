@@ -10,6 +10,7 @@ import { AvatarOverlay } from "@/components/avatar/AvatarOverlay";
 import { useAvatar } from "@/contexts/AvatarContext";
 import { ApexControlPanel } from "@/components/apex/ApexControlPanel";
 import { useStreakCheckin } from "@/lib/dailyStreak";
+import { useTabHistory } from "@/lib/tabHistory";
 
 /** Pages that paint their own full-screen background, including behind the ☰ button: all of Social. */
 const isFullScreen = (path: string) => path === "/feed" || path.startsWith("/feed/") || path.startsWith("/u/");
@@ -39,6 +40,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const avatarStore = useAvatar();
   const [location] = useLocation();
   useStreakCheckin();
+  useTabHistory();
   // Home and Chat leave room for the fixed ☰ button in their own headers; other pages start below it
 
   return (

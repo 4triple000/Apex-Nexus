@@ -11,6 +11,7 @@ import type { FeatureConfig } from '@/lib/featureFlags';
 import { PHASE_LABELS, PHASE_COLORS } from '@/lib/featureFlags';
 import { useWaitlistStatus } from '@/hooks/useWaitlist';
 import { WaitlistModal } from './WaitlistModal';
+import { goBackInTab } from "@/lib/tabHistory";
 
 // ── Easing ───────────────────────────────────────────────────────────────────
 const IOS    = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
@@ -78,8 +79,7 @@ export function ComingSoon({ feature }: ComingSoonProps) {
   }, []);
 
   function handleBack() {
-    if (window.history.length > 1) window.history.back();
-    else nav('/');
+    goBackInTab(nav);
   }
 
   const particleColors = [feature.accentColor, c1, c2];

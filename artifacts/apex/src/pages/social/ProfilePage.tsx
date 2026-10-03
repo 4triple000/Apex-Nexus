@@ -6,6 +6,7 @@ import { ChevronLeft, MoreHorizontal, Gamepad2, Mic, Sparkles, Flame, Heart, Fil
 import { socialApi, compact, type Post } from "@/lib/socialApi";
 import { S, card, Avatar, Sheet, primaryBtn, ghostBtn, COVERS } from "@/components/social/ui";
 import { PostCard } from "@/components/social/PostCard";
+import { goBackInTab } from "@/lib/tabHistory";
 
 type Tab = "posts" | "moments" | "creations" | "games";
 type Page = { posts: Post[]; nextCursor: string | null };
@@ -52,7 +53,7 @@ export default function SocialProfilePage() {
     nav("/feed");
   };
 
-  const goBack = () => (window.history.length > 1 ? window.history.back() : nav("/feed"));
+  const goBack = () => goBackInTab(nav, "/feed");
   const tile = (Icon: typeof Gamepad2, n: number, label: string) => (
     <div style={{ flex: 1, padding: "12px 6px", borderRadius: 14, background: S.surf, border: `1px solid ${S.line}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
       <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Icon size={18} color={S.ink2} /><span style={{ fontFamily: "Sora, sans-serif", fontSize: 18, fontWeight: 700 }}>{compact(n)}</span></span>

@@ -21,6 +21,7 @@ import { AutopilotPane, type AutopilotMode } from "@/components/ai-studio/Autopi
 import { MonitorPane } from "@/components/ai-studio/MonitorPane";
 import { useSession } from "@/hooks/use-session";
 import { useToast } from "@/hooks/use-toast";
+import { goBackInTab } from "@/lib/tabHistory";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 const apiUrl = (path: string) => `${BASE}/api${path}`;
@@ -428,7 +429,7 @@ export default function AiStudioPage() {
       >
         {/* Back */}
         <button
-          onClick={() => (window.history.length > 1 ? window.history.back() : setLocation("/"))}
+          onClick={() => goBackInTab(setLocation)}
           className="text-white/30 hover:text-white/70 transition-colors text-lg leading-none flex-shrink-0"
           title="Back"
           aria-label="Back"

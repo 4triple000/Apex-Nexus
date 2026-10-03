@@ -19,6 +19,7 @@ import { startUnlockEngine, onFeatureUnlock, stateLabel } from "@/systems/unlock
 import { FeatureCard } from "@/components/features/FeatureCard";
 import { FeatureModal } from "@/components/features/FeatureModal";
 import { DevPanel } from "@/components/features/DevPanel";
+import { goBackInTab } from "@/lib/tabHistory";
 
 const IOS    = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
 const IOS_EASE = [0.25, 0.46, 0.45, 0.94] as const;
@@ -278,7 +279,7 @@ export function ApexFeaturesPage() {
         background: "rgba(14,12,32,0.55)", backdropFilter: "blur(20px)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          <button onClick={() => window.history.back()} style={{
+          <button onClick={() => goBackInTab(nav)} style={{
             width: 36, height: 36, borderRadius: "50%",
             background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)",
             display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",

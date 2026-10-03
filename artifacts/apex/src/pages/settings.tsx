@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Moon, Mic, Brain, Speech, Volume2, FastForwa
 import { useApexState } from "@/contexts/ApexStateContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { planLabel } from "@/components/layout/topbar";
+import { goBackInTab } from "@/lib/tabHistory";
 
 const TONES = [
   { id: "friend",    label: "Friend",    emoji: "👋" },
@@ -30,7 +31,7 @@ export default function SettingsPage() {
     <div className="mg-font" style={{ flex: 1, overflowY: "auto", padding: "0 16px 32px" }}>
       <div style={{ maxWidth: 520, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
         <header style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => (window.history.length > 1 ? window.history.back() : nav("/"))} aria-label="Back" className="mg-cc mg-focus" style={{ width: 40, height: 40 }}>
+          <button onClick={() => goBackInTab(nav, "/profile")} aria-label="Back" className="mg-cc mg-focus" style={{ width: 40, height: 40 }}>
             <ChevronLeft size={20} strokeWidth={2.4} />
           </button>
           <h1 className="mg-display" style={{ margin: 0, fontSize: 28, fontWeight: 700, color: "var(--mg-ink)" }}>Settings</h1>
