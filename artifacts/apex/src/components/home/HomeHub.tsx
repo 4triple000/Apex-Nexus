@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles, Star, Clock, ScanText, Gift, History } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ArrowUpRight, Sparkles, Star, Clock, ScanText, Gift, History, Globe, FileText, Calculator, MessagesSquare, Send } from "lucide-react";
 import { RiOpenaiFill } from "react-icons/ri";
 import { SiClaude, SiPerplexity, SiGooglegemini, SiX, SiDeepseek, SiMistralai, SiMeta } from "react-icons/si";
 import { ApexLogo } from "@/components/ui/ApexLogo";
@@ -11,7 +11,7 @@ import { useCredits, openCreditsSheet, resetsIn } from "@/hooks/useCredits";
 // ── Models ─────────────────────────────────────────────────────────────────────
 
 export type ModelId = "auto" | "free" | "openai" | "claude" | "perplexity" | "gemini" | "grok" | "deepseek" | "mistral" | "llama";
-export type ChatMode = "chat" | "battle" | "hive";
+export type ChatMode = "chat" | "battle" | "hive" | "agent";
 
 type Model = {
   id: ModelId;
@@ -115,6 +115,7 @@ const MODE_ITEMS: { id: ChatMode; label: string; sub: string; aliases: string[] 
   { id: "chat",   label: "Chat",   sub: "One model answers",             aliases: ["chat", "single"] },
   { id: "battle", label: "Battle", sub: "Every model answers, you vote", aliases: ["battle", "compare", "versus", "vs"] },
   { id: "hive",   label: "Hive",   sub: "Models team up on one answer",  aliases: ["hive", "team", "combine", "together"] },
+  { id: "agent",  label: "Agent",  sub: "Searches the web and gets things done", aliases: ["agent", "search", "web", "research", "tools", "do"] },
 ];
 
 const TOOL_ITEMS = [
@@ -441,10 +442,45 @@ export function ModelCarousel({
   );
 }
 
+// ── Apex Agent card ────────────────────────────────────────────────────────────
+
+const AGENT_TOOLS = [
+  { Icon: Globe, label: "Searches the web" },
+  { Icon: FileText, label: "Reads pages" },
+  { Icon: Calculator, label: "Does the math" },
+  { Icon: MessagesSquare, label: "Finds your chats" },
+  { Icon: Send, label: "Drafts posts" },
+];
+
+function AgentCard() {
+  return (
+    <div className="mg-glass" style={{ borderRadius: 30, padding: 22, minHeight: 236, display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 16, background: "radial-gradient(120% 90% at 50% 0%, rgba(226,193,126,0.28) 0%, transparent 62%), linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))" }}>
+      <div style={{ display: "flex", justifyContent: "center", paddingTop: 6 }}>
+        {AGENT_TOOLS.map(({ Icon, label }, i) => (
+          <span key={label} title={label} style={{ width: 58, height: 58, borderRadius: 20, display: "grid", placeItems: "center", marginLeft: i ? -8 : 0, background: "rgba(24,20,48,0.85)", border: "1px solid rgba(255,255,255,0.2)", boxShadow: "0 10px 26px rgba(226,193,126,0.18)" }}>
+            <Icon size={24} color="#E2C17E" />
+          </span>
+        ))}
+      </div>
+      <div style={{ display: "grid", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div className="mg-display" style={{ fontSize: 24, fontWeight: 700, color: "var(--mg-ink)" }}>Apex Agent</div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#86EFAC" }}>Free</span>
+        </div>
+        <div style={{ fontSize: 13.5, color: "var(--mg-ink-2)", lineHeight: 1.5 }}>
+          Give it a task. It searches the web, reads pages, does the math and looks through your chats, step by step, then answers with sources.
+        </div>
+        <div style={{ fontSize: 12, color: "var(--mg-ink-3)" }}>Try: "What's new in AI this week?" or "Draft a post about my game"</div>
+      </div>
+    </div>
+  );
+}
+
 // ── Battle / Hive card ─────────────────────────────────────────────────────────
 
-export function ModeCard({ mode, status }: { mode: "battle" | "hive"; status: Partial<Record<ModelId, boolean>> | undefined }) {
+export function ModeCard({ mode, status }: { mode: "battle" | "hive" | "agent"; status: Partial<Record<ModelId, boolean>> | undefined }) {
   const [, nav] = useLocation();
+  if (mode === "agent") return <AgentCard />;
   const models = MODELS.filter((m) => m.id !== "auto");
   const connected = status ? models.filter((m) => status[m.id]).length : undefined;
   // Connected models first; five logos fit on a phone, the rest show as "+N"

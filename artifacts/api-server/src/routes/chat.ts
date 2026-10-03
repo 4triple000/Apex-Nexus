@@ -8,6 +8,7 @@ import type { ApexRequest } from "../shared/types";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { trackInteraction, getUserPersonalization } from "../lib/learningEngine";
 import { freeLeftFor, freePoolStatus } from "../lib/freeModels";
+import { runAgent, agentConfigured, agentRunsLeft } from "../lib/agent";
 import { db, mobileConversationsTable, mobileMessagesTable } from "@workspace/db";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
@@ -42,6 +43,30 @@ router.post("/chat", async (req, res): Promise<void> => {
     return;
   }
   const keys = await getUserKeys(who.userId);
+
+  // Apex Agent: free models with tools (web search, reading pages, calculator, your chats…)
+  if (mode === "agent") {
+    if (!agentConfigured()) { res.status(503).json({ error: "Apex Agent isn't set up on the server yet." }); return; }
+    if ((await agentRunsLeft(who)) === 0) {
+      res.status(429).json({ error: "You've used today's Apex Agent tasks. They come back at midnight UTC.", code: "AGENT_LIMIT" });
+      return;
+    }
+    const task = rawMessage?.trim() || message;
+    const conv = askedConversation ? await ownConversation(who.userId, askedConversation) : null;
+    const start = Date.now();
+    try {
+      const r = await runAgent(who, task, conv ? await recentTurns(conv.id) : []);
+      const reply: AiResponse = { provider: "agent", content: r.content, model: r.model, responseTime: Date.now() - start };
+      const conversationId = await saveExchange(who.userId, conv?.id ?? null, task, reply).catch(() => conv?.id ?? null);
+      await recordUsage(who, { provider: "agent", inputTokens: r.inputTokens, outputTokens: r.outputTokens }).catch(() => undefined);
+      const credits = await getBalance(who);
+      res.json({ mode: "agent", routedTo: "agent", conversationId, credits, usageRemaining: credits.remaining,
+        messages: [{ ...reply, steps: r.steps, sources: r.sources, draft: r.draft }] });
+    } catch (err) {
+      res.json({ mode: "agent", routedTo: "agent", messages: [{ provider: "agent", content: "", responseTime: Date.now() - start, error: err instanceof Error ? err.message : "Apex Agent couldn't finish that." }] });
+    }
+    return;
+  }
 
   // Check the person can afford this before asking any model
   const multi = mode === "battle" || mode === "hive";
