@@ -57,6 +57,7 @@ const WANTED: Record<AiProvider, { prefer: string[]; pattern: RegExp }> = {
   mistral:    { prefer: ["mistralai/mistral-large"], pattern: /^mistralai\/mistral-large/ },
   llama:      { prefer: ["meta-llama/llama-3.3-70b-instruct"], pattern: /^meta-llama\/llama-[\d.]+-70b-instruct$/ },
   perplexity: { prefer: ["perplexity/sonar-pro"], pattern: /^perplexity\/sonar(-pro)?$/ },
+  free:       { prefer: ["meta-llama/llama-3.3-70b-instruct:free"], pattern: /:free$/ },
 };
 
 let cache: { at: number; models: { id: string; created: number }[] } | null = null;
@@ -85,6 +86,18 @@ export async function openRouterModel(provider: AiProvider): Promise<string> {
   if (exact) return exact;
   const newest = models.filter((m) => wanted.pattern.test(m.id)).sort((a, b) => b.created - a.created)[0];
   return newest?.id ?? wanted.prefer[0]!;
+}
+
+/**
+ * OpenRouter's free models (ids ending in ":free"), strongest first. The free line-up changes often,
+ * so it's read from the live model list instead of being hard-coded.
+ */
+export async function openRouterFreeModels(): Promise<string[]> {
+  const rank = (id: string) => (/deepseek|gpt-oss-120b|qwen3-235b|llama-3\.3-70b|llama-4/.test(id) ? 0 : /70b|72b|32b|27b|24b/.test(id) ? 1 : 2);
+  return (await modelList())
+    .filter((m) => m.id.endsWith(":free"))
+    .sort((a, b) => rank(a.id) - rank(b.id) || b.created - a.created)
+    .map((m) => m.id);
 }
 
 // ── Asking a model through OpenRouter ─────────────────────────────────────────

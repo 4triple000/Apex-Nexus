@@ -10,6 +10,7 @@
  * model's usual credits.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { freeLeftFor } from "./freeModels";
 import { AI_PROVIDERS, chatWithHistory, hasOwnKey, providerStatus, type AiProvider } from "./aiRouter";
 import { canSpend, creditCost, creditUserFor, getBalance, outOfCredits, recordUsage, type CreditBalance } from "./credits";
 import { getUserKeys } from "./connectors";
@@ -32,7 +33,9 @@ export async function askApex(userId: number, system: string, prompt: string): P
   const keys = await getUserKeys(userId);
   const status = providerStatus(keys);
   const own = CHEAP_FIRST.find((p) => hasOwnKey(keys, p));
-  const provider = own ?? CHEAP_FIRST.find((p) => status[p] && AI_PROVIDERS.includes(p));
+  // Free models first (no credits) while this person has free messages left today
+  const freeOk = status.free && (await freeLeftFor(userId, who.isOwner)) !== 0;
+  const provider = own ?? (freeOk ? "free" : CHEAP_FIRST.find((p) => status[p] && AI_PROVIDERS.includes(p)));
   if (!provider) return { ok: false, status: 503, body: { ok: false, error: "Apex's AI isn't set up on the server yet." } };
 
   const needed = own ? 0 : creditCost(provider);
