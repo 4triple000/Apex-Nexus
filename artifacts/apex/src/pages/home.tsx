@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageBubble, MessageSkeleton, HiveBubble, PROVIDER_CONFIG } from "@/components/chat/message-bubble";
 import { ChatHistorySheet, HistoryButton, loadConversation } from "@/components/chat/ChatHistory";
-import { AgentExtras, type AgentStep, type AgentSource } from "@/components/chat/AgentExtras";
+import { AgentExtras, AgentSteps, type AgentStep, type AgentSource } from "@/components/chat/AgentExtras";
 import { ApexLogo, ApexLogoToggle } from "@/components/ui/ApexLogo";
 import { useSendChat, useCastVote, ApiError } from "@workspace/api-client-react";
 import { openCreditsSheet } from "@/hooks/useCredits";
@@ -879,8 +879,9 @@ export default function Home() {
           if (msg.agentSteps || msg.sources || msg.draft) {
             return (
               <div key={msg.id} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <AgentSteps steps={msg.agentSteps} />
                 <MessageBubble role={msg.role} content={msg.content} provider={msg.provider} model={msg.model} stream={!msg.saved} responseTime={msg.responseTime} error={msg.error} />
-                <AgentExtras steps={msg.agentSteps} sources={msg.sources} draft={msg.draft} />
+                <AgentExtras sources={msg.sources} draft={msg.draft} />
               </div>
             );
           }

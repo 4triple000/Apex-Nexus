@@ -5,8 +5,9 @@
  *
  * Runs on the free models (lib/freeModels.ts) that support tools, so it costs no credits.
  * Web search and page reading use Tavily (TAVILY_API_KEY). Limits, changeable on the server:
- *   APEX_AGENT_PER_USER_DAILY=30   agent tasks one person can run per day (-1 = no limit; owner unlimited)
- *   APEX_TAVILY_DAILY=30           Tavily calls per day for the whole app (the free plan is ~1,000 a month)
+ *   APEX_AGENT_PER_USER_DAILY=10   agent tasks one person can run per day (-1 = no limit; owner unlimited)
+ *   APEX_TAVILY_PER_USER_DAILY=10  web searches / page reads one person can use per day (owner unlimited)
+ *   APEX_TAVILY_DAILY=33           safety cap for the whole app, to stay inside Tavily's free plan (~1,000 a month)
  *
  * The agent never posts or changes anything by itself: draft_social_post only prepares a draft that the
  * person can post with one tap.
@@ -25,7 +26,16 @@ const envInt = (key: string, fallback: number) => {
 const MAX_STEPS = 6;
 const RESULT_CHARS = 6000;
 
-export interface AgentStep { tool: string; label: string; ok: boolean }
+export interface AgentStep {
+  tool: string;
+  /** "Searched the web", "Read a page"… */
+  label: string;
+  /** What it searched for, the page it read, the sum it worked out */
+  detail?: string;
+  /** Pages a search turned up */
+  results?: AgentSource[];
+  ok: boolean;
+}
 export interface AgentSource { title: string; url: string }
 export interface AgentResult {
   content: string;
@@ -42,7 +52,7 @@ export const agentConfigured = () => freePoolConfigured();
 
 /** Agent tasks this person has left today (null = no limit). */
 export async function agentRunsLeft(who: CreditUser): Promise<number | null> {
-  const cap = envInt("APEX_AGENT_PER_USER_DAILY", 30);
+  const cap = envInt("APEX_AGENT_PER_USER_DAILY", 10);
   if (who.isOwner || cap < 0) return null;
   return Math.max(0, cap - (await usedToday(`agent-user:${who.userId}`)));
 }
@@ -100,20 +110,31 @@ const TOOLS: OpenAI.Chat.ChatCompletionTool[] = [
   },
 ];
 
-const LABEL: Record<string, (a: Record<string, string>) => string> = {
-  web_search: (a) => `Searched the web for "${(a.query ?? "").slice(0, 60)}"`,
-  open_url: (a) => { try { return `Read ${new URL(a.url ?? "").hostname}`; } catch { return "Read a page"; } },
-  calculator: (a) => `Calculated ${(a.expression ?? "").slice(0, 40)}`,
-  search_my_chats: (a) => `Looked through your chats for "${(a.query ?? "").slice(0, 40)}"`,
-  get_my_credits: () => "Checked your credits",
-  draft_social_post: () => "Drafted a Social post",
+const LABEL: Record<string, string> = {
+  web_search: "Searched the web",
+  open_url: "Read a page",
+  calculator: "Calculated",
+  search_my_chats: "Searched your chats",
+  get_my_credits: "Checked your credits",
+  draft_social_post: "Drafted a Social post",
 };
 
-async function tavily(path: "search" | "extract", body: Record<string, unknown>): Promise<Record<string, unknown>> {
+function detailOf(name: string, a: Record<string, string>): string | undefined {
+  if (name === "web_search" || name === "search_my_chats") return a.query ? String(a.query).slice(0, 120) : undefined;
+  if (name === "open_url") { try { const u = new URL(a.url ?? ""); return `${u.hostname.replace(/^www\./, "")}${u.pathname === "/" ? "" : u.pathname}`.slice(0, 120); } catch { return undefined; } }
+  if (name === "calculator") return a.expression ? String(a.expression).slice(0, 120) : undefined;
+  return undefined;
+}
+
+async function tavily(who: CreditUser, path: "search" | "extract", body: Record<string, unknown>): Promise<Record<string, unknown>> {
   const key = process.env.TAVILY_API_KEY;
   if (!key) throw new Error("Web search isn't set up yet (TAVILY_API_KEY).");
-  if ((await usedToday("tool:tavily")) >= envInt("APEX_TAVILY_DAILY", 30)) throw new Error("Apex has used today's web searches. Try again tomorrow.");
+  const mine = `tavily-user:${who.userId}`;
+  const perUser = envInt("APEX_TAVILY_PER_USER_DAILY", 10);
+  if (!who.isOwner && perUser >= 0 && (await usedToday(mine)) >= perUser) throw new Error(`You've used today's ${perUser} web searches. They come back at midnight UTC.`);
+  if ((await usedToday("tool:tavily")) >= envInt("APEX_TAVILY_DAILY", 33)) throw new Error("Apex has used today's web searches. Try again tomorrow.");
   await countUse("tool:tavily");
+  await countUse(mine);
   // APEX_TAVILY_URL points at another address (tests)
   const res = await fetch(`${process.env.APEX_TAVILY_URL || "https://api.tavily.com"}/${path}`, {
     method: "POST",
@@ -187,21 +208,22 @@ export function calculate(expression: string): number {
   return v;
 }
 
-interface Ctx { who: CreditUser; sources: AgentSource[]; draft: string | null }
+interface Ctx { who: CreditUser; sources: AgentSource[]; draft: string | null; lastResults?: AgentSource[] }
 
 async function runTool(name: string, args: Record<string, string>, ctx: Ctx): Promise<unknown> {
   switch (name) {
     case "web_search": {
-      const data = await tavily("search", { query: String(args.query ?? "").slice(0, 300), max_results: 5, search_depth: "basic" });
+      const data = await tavily(ctx.who, "search", { query: String(args.query ?? "").slice(0, 300), max_results: 5, search_depth: "basic" });
       const results = ((data.results as { title?: string; url?: string; content?: string }[] | undefined) ?? []).slice(0, 5);
       for (const r of results) if (r.url && !ctx.sources.some((s) => s.url === r.url)) ctx.sources.push({ title: r.title ?? r.url, url: r.url });
+      ctx.lastResults = results.filter((r) => r.url).map((r) => ({ title: r.title ?? r.url!, url: r.url! }));
       return results.map((r) => ({ title: r.title, url: r.url, snippet: (r.content ?? "").slice(0, 700) }));
     }
     case "open_url": {
       const url = String(args.url ?? "");
       if (!/^https?:\/\//i.test(url)) throw new Error("Only http(s) links can be opened.");
       // Tavily fetches the page on its side, so the server never connects to arbitrary addresses
-      const data = await tavily("extract", { urls: [url] });
+      const data = await tavily(ctx.who, "extract", { urls: [url] });
       const page = ((data.results as { url?: string; raw_content?: string }[] | undefined) ?? [])[0];
       if (!page?.raw_content) throw new Error("Couldn't read that page.");
       if (!ctx.sources.some((s) => s.url === url)) ctx.sources.push({ title: new URL(url).hostname, url });
@@ -272,6 +294,7 @@ export async function runAgent(who: CreditUser, message: string, history: { role
       try { args = JSON.parse(call.function.arguments || "{}") as Record<string, string>; } catch { /* bad arguments are reported back below */ }
       let result: unknown;
       let ok = true;
+      ctx.lastResults = undefined;
       try {
         result = await runTool(name, args, ctx);
       } catch (err) {
@@ -279,7 +302,7 @@ export async function runAgent(who: CreditUser, message: string, history: { role
         result = { error: err instanceof Error ? err.message : "Tool failed" };
         logger.warn({ tool: name, err: (err as Error)?.message }, "Agent tool failed");
       }
-      steps.push({ tool: name, label: (LABEL[name] ?? (() => name))(args), ok });
+      steps.push({ tool: name, label: LABEL[name] ?? name, detail: detailOf(name, args), results: ctx.lastResults, ok });
       messages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result).slice(0, RESULT_CHARS) });
     }
   }
